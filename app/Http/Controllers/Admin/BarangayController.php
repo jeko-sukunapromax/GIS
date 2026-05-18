@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Barangay;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class BarangayController extends Controller
 {
@@ -12,6 +13,13 @@ class BarangayController extends Controller
     {
         $barangays = Barangay::all();
         return view('admin.barangays.index', compact('barangays'));
+    }
+
+    public function map()
+    {
+        $barangays = Barangay::where('is_visible', true)->get();
+        $layerTypes = \App\Models\MapLayerType::all();
+        return view('admin.map', compact('barangays', 'layerTypes'));
     }
 
     public function create()
@@ -86,5 +94,445 @@ class BarangayController extends Controller
     {
         $barangay->delete();
         return redirect()->route('admin.barangays.index')->with('success', 'Barangay deleted successfully!');
+    }
+
+    /**
+     * Show the Boundary & Layer Management page for a specific barangay.
+     */
+    public function manage(Barangay $barangay)
+    {
+        return view('admin.barangays.manage', compact('barangay'));
+    }
+
+    /**
+     * Upload GeoJSON or Shapefile to replace the barangay boundary.
+     */
+    public function uploadBoundary(Request $request, Barangay $barangay)
+    {
+        $request->validate([
+            'boundary_file' => 'required|file|max:10240', // Max 10MB
+            'boundary_source' => 'nullable|string|max:255',
+        ]);
+
+        $file = $request->file('boundary_file');
+        $extension = strtolower($file->getClientOriginalExtension());
+
+        try {
+            $boundary = null;
+            $centroid = null;
+
+            if ($extension === 'geojson' || $extension === 'json') {
+                $result = $this->parseGeoJson($file);
+                $boundary = $result['boundary'];
+                $centroid = $result['centroid'];
+            } elseif ($extension === 'shp') {
+                // For .shp files, we also need .shx and .dbf
+                $request->validate([
+                    'shx_file' => 'required|file',
+                    'dbf_file' => 'required|file',
+                ]);
+                $result = $this->parseShapefile($file, $request->file('shx_file'), $request->file('dbf_file'));
+                $boundary = $result['boundary'];
+                $centroid = $result['centroid'];
+            } elseif ($extension === 'zip') {
+                // ZIP containing .shp, .shx, .dbf
+                $result = $this->parseShapefileZip($file);
+                $boundary = $result['boundary'];
+                $centroid = $result['centroid'];
+            } elseif ($extension === 'kml') {
+                $result = $this->parseKml($file);
+                $boundary = $result['boundary'];
+                $centroid = $result['centroid'];
+            } else {
+                return back()->with('error', 'Unsupported file format. Please upload .geojson, .json, .kml, or .zip (Shapefile).');
+            }
+
+            if (!$boundary || count($boundary) < 3) {
+                return back()->with('error', 'Could not extract a valid polygon boundary from the uploaded file. Ensure it contains at least one polygon geometry.');
+            }
+
+            // Update the barangay boundary
+            $barangay->update([
+                'boundary' => $boundary,
+                'latitude' => $centroid['lat'],
+                'longitude' => $centroid['lng'],
+                'boundary_source' => $request->input('boundary_source', $file->getClientOriginalName()),
+                'boundary_updated_at' => now(),
+            ]);
+
+            return back()->with('success', 'Boundary updated successfully from ' . $file->getClientOriginalName() . '! (' . count($boundary) . ' vertices loaded)');
+
+        } catch (\Exception $e) {
+            Log::error('Boundary upload error: ' . $e->getMessage());
+            return back()->with('error', 'Error processing file: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Toggle boundary visibility for public map.
+     */
+    public function toggleVisibility(Request $request, Barangay $barangay)
+    {
+        $barangay->update([
+            'is_visible' => !$barangay->is_visible,
+        ]);
+
+        $status = $barangay->is_visible ? 'visible' : 'hidden';
+        return response()->json([
+            'success' => true,
+            'is_visible' => $barangay->is_visible,
+            'message' => "Barangay {$barangay->name} is now {$status} on the public map."
+        ]);
+    }
+
+    /**
+     * Bulk update attributes for a barangay (population, hazard, land use, etc.)
+     */
+    public function updateAttributes(Request $request, Barangay $barangay)
+    {
+        $validated = $request->validate([
+            'population' => 'nullable|string|max:255',
+            'land_use' => 'nullable|string|max:255',
+            'hazard_level' => 'nullable|string|max:255',
+            'total_area' => 'nullable|numeric',
+            'agri_area' => 'nullable|numeric',
+            'residential_area' => 'nullable|numeric',
+            'commercial_area' => 'nullable|numeric',
+            'unidentified_area' => 'nullable|numeric',
+            'description' => 'nullable|string',
+        ]);
+
+        $barangay->update($validated);
+        return back()->with('success', 'Attributes updated successfully for ' . $barangay->name . '!');
+    }
+
+    // ─── GeoJSON Parser ─────────────────────────────────────────────────
+
+    private function parseGeoJson($file)
+    {
+        $content = file_get_contents($file->getRealPath());
+        $geojson = json_decode($content, true);
+
+        if (!$geojson) {
+            throw new \Exception('Invalid GeoJSON format — could not parse JSON.');
+        }
+
+        $coordinates = null;
+
+        // Handle FeatureCollection
+        if (isset($geojson['type']) && $geojson['type'] === 'FeatureCollection') {
+            foreach ($geojson['features'] as $feature) {
+                $coords = $this->extractPolygonFromGeometry($feature['geometry'] ?? null);
+                if ($coords) {
+                    $coordinates = $coords;
+                    break; // Use the first polygon found
+                }
+            }
+        }
+        // Handle single Feature
+        elseif (isset($geojson['type']) && $geojson['type'] === 'Feature') {
+            $coordinates = $this->extractPolygonFromGeometry($geojson['geometry'] ?? null);
+        }
+        // Handle raw Geometry
+        elseif (isset($geojson['type']) && in_array($geojson['type'], ['Polygon', 'MultiPolygon'])) {
+            $coordinates = $this->extractPolygonFromGeometry($geojson);
+        }
+
+        if (!$coordinates) {
+            throw new \Exception('No polygon geometry found in the GeoJSON file.');
+        }
+
+        // GeoJSON uses [lng, lat] — convert to [lat, lng] for Leaflet
+        $boundary = array_map(function ($coord) {
+            return [$coord[1], $coord[0]];
+        }, $coordinates);
+
+        $centroid = $this->calculateCentroid($boundary);
+
+        return ['boundary' => $boundary, 'centroid' => $centroid];
+    }
+
+    private function extractPolygonFromGeometry($geometry)
+    {
+        if (!$geometry || !isset($geometry['type'])) return null;
+
+        if ($geometry['type'] === 'Polygon') {
+            return $geometry['coordinates'][0]; // Outer ring
+        }
+
+        if ($geometry['type'] === 'MultiPolygon') {
+            return $geometry['coordinates'][0][0]; // First polygon, outer ring
+        }
+
+        return null;
+    }
+
+    // ─── Shapefile ZIP Parser ───────────────────────────────────────────
+
+    private function parseShapefileZip($zipFile)
+    {
+        $extractPath = storage_path('app/temp_shp_' . uniqid());
+        mkdir($extractPath, 0755, true);
+
+        $zip = new \ZipArchive();
+        if ($zip->open($zipFile->getRealPath()) !== true) {
+            throw new \Exception('Could not open ZIP file.');
+        }
+        $zip->extractTo($extractPath);
+        $zip->close();
+
+        // Find the .shp file inside
+        $shpFile = null;
+        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($extractPath));
+        foreach ($iterator as $file) {
+            if (strtolower($file->getExtension()) === 'shp') {
+                $shpFile = $file->getRealPath();
+                break;
+            }
+        }
+
+        if (!$shpFile) {
+            $this->cleanupDir($extractPath);
+            throw new \Exception('No .shp file found inside the ZIP archive.');
+        }
+
+        // Check for required companion files
+        $baseName = substr($shpFile, 0, -4);
+        $shxFile = $baseName . '.shx';
+        $dbfFile = $baseName . '.dbf';
+
+        if (!file_exists($shxFile)) {
+            // Try case-insensitive
+            $shxFile = $baseName . '.SHX';
+        }
+        if (!file_exists($dbfFile)) {
+            $dbfFile = $baseName . '.DBF';
+        }
+
+        if (!file_exists($shxFile) || !file_exists($dbfFile)) {
+            $this->cleanupDir($extractPath);
+            throw new \Exception('ZIP must contain .shp, .shx, and .dbf files together.');
+        }
+
+        try {
+            $result = $this->readShapefileFromPath($shpFile);
+        } finally {
+            $this->cleanupDir($extractPath);
+        }
+
+        return $result;
+    }
+
+    private function parseShapefile($shpFile, $shxFile, $dbfFile)
+    {
+        $extractPath = storage_path('app/temp_shp_' . uniqid());
+        mkdir($extractPath, 0755, true);
+
+        $shpPath = $extractPath . '/data.shp';
+        $shxPath = $extractPath . '/data.shx';
+        $dbfPath = $extractPath . '/data.dbf';
+
+        copy($shpFile->getRealPath(), $shpPath);
+        copy($shxFile->getRealPath(), $shxPath);
+        copy($dbfFile->getRealPath(), $dbfPath);
+
+        try {
+            $result = $this->readShapefileFromPath($shpPath);
+        } finally {
+            $this->cleanupDir($extractPath);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Read shapefile using a simple binary parser for Polygon shapes.
+     * This avoids needing external PHP libraries.
+     */
+    private function readShapefileFromPath($shpPath)
+    {
+        $handle = fopen($shpPath, 'rb');
+        if (!$handle) {
+            throw new \Exception('Could not read .shp file.');
+        }
+
+        // Read file header (100 bytes)
+        $header = fread($handle, 100);
+        if (strlen($header) < 100) {
+            fclose($handle);
+            throw new \Exception('Invalid .shp file — header too short.');
+        }
+
+        // Check magic number (big-endian 9994)
+        $fileCode = unpack('Ncode', substr($header, 0, 4))['code'];
+        if ($fileCode !== 9994) {
+            fclose($handle);
+            throw new \Exception('Invalid .shp file — bad magic number.');
+        }
+
+        // Shape type at offset 32 (little-endian int32)
+        $shapeType = unpack('Vtype', substr($header, 32, 4))['type'];
+        // 5 = Polygon, 15 = PolygonZ, 25 = PolygonM
+        if (!in_array($shapeType, [5, 15, 25])) {
+            fclose($handle);
+            throw new \Exception("Shapefile contains shape type {$shapeType} — only Polygon types (5/15/25) are supported.");
+        }
+
+        $coordinates = [];
+
+        // Read records
+        while (!feof($handle)) {
+            // Record header: 8 bytes (record number + content length, big-endian)
+            $recHeader = fread($handle, 8);
+            if (strlen($recHeader) < 8) break;
+
+            $recInfo = unpack('NrecNum/NcontentLen', $recHeader);
+            $contentLen = $recInfo['contentLen'] * 2; // in bytes
+
+            $recordData = fread($handle, $contentLen);
+            if (strlen($recordData) < 4) break;
+
+            // Shape type of this record
+            $recShapeType = unpack('Vtype', substr($recordData, 0, 4))['type'];
+
+            if (in_array($recShapeType, [5, 15, 25])) {
+                // Polygon record layout:
+                // 4 bytes: shape type
+                // 32 bytes: bounding box (minx, miny, maxx, maxy) - doubles
+                // 4 bytes: numParts (int32 LE)
+                // 4 bytes: numPoints (int32 LE)
+                // numParts * 4 bytes: part indices
+                // numPoints * 16 bytes: points (x, y doubles)
+
+                $offset = 4 + 32; // skip shape type and bbox
+                $numParts = unpack('Vn', substr($recordData, $offset, 4))['n'];
+                $offset += 4;
+                $numPoints = unpack('Vn', substr($recordData, $offset, 4))['n'];
+                $offset += 4;
+
+                // Read part indices
+                $parts = [];
+                for ($i = 0; $i < $numParts; $i++) {
+                    $parts[] = unpack('Vn', substr($recordData, $offset, 4))['n'];
+                    $offset += 4;
+                }
+
+                // Read points
+                $points = [];
+                for ($i = 0; $i < $numPoints; $i++) {
+                    $x = unpack('dx', substr($recordData, $offset, 8))['x']; // longitude
+                    $offset += 8;
+                    $y = unpack('dy', substr($recordData, $offset, 8))['y']; // latitude
+                    $offset += 8;
+                    $points[] = [$y, $x]; // [lat, lng] for Leaflet
+                }
+
+                // Use first part (outer ring) of first polygon
+                if (count($points) > 0 && empty($coordinates)) {
+                    $endIndex = isset($parts[1]) ? $parts[1] : count($points);
+                    $coordinates = array_slice($points, $parts[0], $endIndex - $parts[0]);
+                    break; // Use first polygon found
+                }
+            }
+        }
+
+        fclose($handle);
+
+        if (empty($coordinates)) {
+            throw new \Exception('No polygon geometry found in the Shapefile.');
+        }
+
+        $centroid = $this->calculateCentroid($coordinates);
+        return ['boundary' => $coordinates, 'centroid' => $centroid];
+    }
+
+    // ─── KML Parser ─────────────────────────────────────────────────────
+
+    private function parseKml($file)
+    {
+        $content = file_get_contents($file->getRealPath());
+        
+        // Remove namespace prefixes for simpler parsing
+        $content = preg_replace('/xmlns[^=]*="[^"]*"/i', '', $content);
+        $content = preg_replace('/<kml[^>]*>/', '<kml>', $content);
+        
+        $xml = simplexml_load_string($content);
+        if (!$xml) {
+            throw new \Exception('Invalid KML file — could not parse XML.');
+        }
+
+        $coordinates = $this->findKmlCoordinates($xml);
+
+        if (!$coordinates || count($coordinates) < 3) {
+            throw new \Exception('No polygon geometry found in the KML file.');
+        }
+
+        $centroid = $this->calculateCentroid($coordinates);
+        return ['boundary' => $coordinates, 'centroid' => $centroid];
+    }
+
+    private function findKmlCoordinates($element)
+    {
+        // Look for Polygon > outerBoundaryIs > LinearRing > coordinates
+        if (isset($element->Polygon)) {
+            $coordStr = (string) $element->Polygon->outerBoundaryIs->LinearRing->coordinates;
+            return $this->parseKmlCoordString($coordStr);
+        }
+
+        // Search children recursively
+        foreach ($element->children() as $child) {
+            $result = $this->findKmlCoordinates($child);
+            if ($result) return $result;
+        }
+
+        return null;
+    }
+
+    private function parseKmlCoordString($str)
+    {
+        $str = trim($str);
+        $pairs = preg_split('/\s+/', $str);
+        $coords = [];
+        foreach ($pairs as $pair) {
+            $parts = explode(',', $pair);
+            if (count($parts) >= 2) {
+                $lng = floatval($parts[0]);
+                $lat = floatval($parts[1]);
+                $coords[] = [$lat, $lng]; // [lat, lng] for Leaflet
+            }
+        }
+        return $coords;
+    }
+
+    // ─── Helpers ─────────────────────────────────────────────────────────
+
+    private function calculateCentroid($points)
+    {
+        $latSum = 0;
+        $lngSum = 0;
+        $count = count($points);
+
+        foreach ($points as $p) {
+            $latSum += $p[0];
+            $lngSum += $p[1];
+        }
+
+        return [
+            'lat' => $count > 0 ? $latSum / $count : 0,
+            'lng' => $count > 0 ? $lngSum / $count : 0,
+        ];
+    }
+
+    private function cleanupDir($dir)
+    {
+        if (!is_dir($dir)) return;
+        $items = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
+        foreach ($items as $item) {
+            $item->isDir() ? rmdir($item->getRealPath()) : unlink($item->getRealPath());
+        }
+        rmdir($dir);
     }
 }

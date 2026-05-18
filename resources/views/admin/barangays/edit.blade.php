@@ -6,7 +6,7 @@
     <title>Edit Barangay</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+    <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -265,13 +265,24 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+    <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.min.js"></script>
     <script>
         const existingBoundary = @json($barangay->boundary);
         const existingLat = {{ $barangay->latitude ?? 15.8287 }};
         const existingLng = {{ $barangay->longitude ?? 120.4173 }};
 
-        const map = L.map('map', { maxZoom: 20 }).setView([existingLat, existingLng], 14);
+        // Bounding box strictly around Bayambang
+        const bayambangBounds = L.latLngBounds(
+            L.latLng(15.70, 120.28), // Southwest corner
+            L.latLng(15.92, 120.58)  // Northeast corner
+        );
+
+        const map = L.map('map', { 
+            minZoom: 12,
+            maxZoom: 20,
+            maxBounds: bayambangBounds,
+            maxBoundsViscosity: 1.0
+        }).setView([existingLat, existingLng], 14);
 
         // Dark Basemap matches dashboard premium look
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -280,62 +291,77 @@
             maxNativeZoom: 20
         }).addTo(map);
 
-        const drawnItems = new L.FeatureGroup();
-        map.addLayer(drawnItems);
-
         let currentPolygon = null;
+
+        // Initialize Geoman Controls
+        map.pm.addControls({
+            position: 'topleft',
+            drawMarker: false,
+            drawCircleMarker: false,
+            drawPolyline: false,
+            drawRectangle: false,
+            drawPolygon: true,
+            drawCircle: false,
+            editMode: true,
+            dragMode: true,
+            removalMode: true,
+        });
+
+        // Set global snapping options
+        map.pm.setGlobalOptions({
+            snapping: true,
+            snapDistance: 20, // Snaps magnetically when within 20px of neighboring vertex
+            allowSelfIntersection: false
+        });
+
+        // Load existing boundary if present
         if (existingBoundary && existingBoundary.length > 0) {
             currentPolygon = L.polygon(existingBoundary, {
                 color: '#38bdf8',
                 fillColor: '#38bdf8',
                 fillOpacity: 0.15,
                 weight: 2
-            });
-            drawnItems.addLayer(currentPolygon);
+            }).addTo(map);
+            
             map.fitBounds(currentPolygon.getBounds());
+
+            // Enable Geoman editing listeners immediately for existing boundary
+            currentPolygon.on('pm:edit', function() {
+                updateFormData(currentPolygon);
+            });
+            
+            currentPolygon.on('pm:dragend', function() {
+                updateFormData(currentPolygon);
+            });
         }
 
-        const drawControl = new L.Control.Draw({
-            draw: {
-                polygon: { 
-                    allowIntersection: false, 
-                    showArea: true,
-                    shapeOptions: {
-                        color: '#38bdf8',
-                        fillColor: '#38bdf8',
-                        fillOpacity: 0.15,
-                        weight: 2
-                    }
-                },
-                polyline: false,
-                rectangle: false,
-                circle: false,
-                marker: false,
-                circlemarker: false
-            },
-            edit: { 
-                featureGroup: drawnItems, 
-                remove: true 
+        // Capture newly drawn polygon and auto-populate fields
+        map.on('pm:create', function (event) {
+            if (currentPolygon) {
+                map.removeLayer(currentPolygon);
             }
-        });
-        map.addControl(drawControl);
-
-        map.on(L.Draw.Event.CREATED, function (event) {
-            if (currentPolygon) drawnItems.removeLayer(currentPolygon);
             currentPolygon = event.layer;
-            drawnItems.addLayer(currentPolygon);
             updateFormData(currentPolygon);
+
+            // Listen to edit changes
+            currentPolygon.on('pm:edit', function() {
+                updateFormData(currentPolygon);
+            });
+            
+            // Listen to drag changes
+            currentPolygon.on('pm:dragend', function() {
+                updateFormData(currentPolygon);
+            });
         });
 
-        map.on(L.Draw.Event.EDITED, function (event) {
-            event.layers.eachLayer(updateFormData);
-        });
-
-        map.on(L.Draw.Event.DELETED, function () {
-            document.getElementById('latitude').value = '';
-            document.getElementById('longitude').value = '';
-            document.getElementById('boundary').value = '';
-            currentPolygon = null;
+        // Handle deletion of boundary polygon
+        map.on('pm:remove', function (event) {
+            if (event.layer === currentPolygon) {
+                document.getElementById('latitude').value = '';
+                document.getElementById('longitude').value = '';
+                document.getElementById('boundary').value = '';
+                currentPolygon = null;
+            }
         });
 
         function updateFormData(layer) {

@@ -3,1056 +3,339 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bayambang GIS Portal</title>
+    <title>Bayambang GIS Portal - Public View</title>
     
+    <!-- Tailwind CSS (CDN for rapid prototyping/standalone views) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Tailwind Config for Custom Colors/Fonts -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            cyan: '#00ffff',
+                            'cyan-glow': 'rgba(0, 255, 255, 0.4)',
+                            dark: '#050a0f',
+                            panel: 'rgba(5, 10, 15, 0.6)',
+                            text: '#b3d4e0',
+                            muted: '#9aa0a6'
+                        }
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        rajdhani: ['Rajdhani', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Google Fonts for Sci-Fi Aesthetic -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        :root {
-            --bg-dark: #0f172a;
-            --bg-panel: rgba(30, 41, 59, 0.7);
-            --bg-card: rgba(15, 23, 42, 0.6);
-            --accent-blue: #38bdf8;
-            --accent-blue-glow: rgba(56, 189, 248, 0.3);
-            --text-heading: #f8fafc;
-            --text-main: #cbd5e1;
-            --text-muted: #94a3b8;
-            --border-color: rgba(148, 163, 184, 0.1);
-            --glass-blur: blur(12px);
+        /* Minimal custom CSS for elements that Tailwind doesn't handle natively without plugins */
+        .scrollbar-cyber::-webkit-scrollbar { width: 4px; }
+        .scrollbar-cyber::-webkit-scrollbar-track { background: rgba(0, 255, 255, 0.05); }
+        .scrollbar-cyber::-webkit-scrollbar-thumb { background: #00ffff; }
+
+        /* Dynamic Scope Tooltip on Map */
+        .scope-box {
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4), inset 0 0 10px rgba(0, 255, 255, 0.1);
+            backdrop-filter: blur(4px);
         }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        /* Navbar */
-        .navbar {
-            height: 64px;
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: var(--glass-blur);
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 24px;
-            z-index: 1000;
-        }
-
-        .logo-area { display: flex; align-items: center; gap: 12px; }
-        .logo-area i { font-size: 24px; color: var(--accent-blue); text-shadow: 0 0 10px var(--accent-blue-glow); }
-        .logo-text { font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 700; color: var(--text-heading); letter-spacing: -0.5px; }
-        .logo-tagline { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
-
-        .nav-links { display: flex; gap: 24px; }
-        .nav-link { color: var(--text-main); text-decoration: none; font-size: 14px; font-weight: 500; transition: 0.2s; }
-        .nav-link:hover { color: var(--accent-blue); }
-
-        .nav-right { display: flex; align-items: center; gap: 16px; }
-        .search-container {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            padding: 6px 16px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            width: 280px;
-        }
-        .search-container input {
-            background: transparent;
-            border: none;
-            color: white;
-            font-size: 13px;
-            width: 100%;
-            outline: none;
-        }
-        .search-container i { color: var(--text-muted); font-size: 14px; }
-
-        /* Main Layout */
-        .main-container { flex: 1; display: flex; position: relative; overflow: hidden; }
-
-        /* Sidebar Left: Layers & Tools */
-        .sidebar-left {
-            width: 320px;
-            background: var(--bg-panel);
-            backdrop-filter: var(--glass-blur);
-            border-right: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            z-index: 900;
-        }
-
-        .sidebar-section { padding: 20px; border-bottom: 1px solid var(--border-color); }
-        .section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
-
-        .layer-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-        .layer-info { display: flex; align-items: center; gap: 12px; font-size: 14px; }
-        .layer-icon { width: 32px; height: 32px; border-radius: 8px; background: var(--bg-card); display: flex; align-items: center; justify-content: center; color: var(--accent-blue); }
         
-        /* Switch UI */
-        .switch { position: relative; display: inline-block; width: 36px; height: 20px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .4s; border-radius: 20px; }
-        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--accent-blue); }
-        input:checked + .slider:before { transform: translateX(16px); }
-
-        .basemap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .basemap-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 8px; cursor: pointer; transition: 0.2s; }
-        .basemap-card:hover, .basemap-card.active { border-color: var(--accent-blue); box-shadow: 0 0 15px var(--accent-blue-glow); }
-        .basemap-img { height: 60px; border-radius: 8px; margin-bottom: 6px; background-size: cover; }
-        .basemap-label { font-size: 11px; text-align: center; font-weight: 600; }
-        .bg-street { background-image: url('https://tiles.stadiamaps.com/tiles/osm_bright/14/40.7128/-74.0060.png'); }
-        .bg-satellite { background-image: url('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/14/40.7128/-74.0060'); }
-        .bg-terrain { background-image: url('https://tiles.stadiamaps.com/tiles/stamen_terrain/14/40.7128/-74.0060.png'); }
-        .bg-dark { background-image: url('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/14/40.7128/-74.0060.png'); }
-
-        /* Map Container */
-        .map-container { flex: 1; position: relative; background: #000; }
-        #map { width: 100%; height: 100%; }
-
-        .map-toolbar {
-            position: absolute;
-            top: 280px;
-            left: 20px;
-            background: var(--bg-panel);
-            backdrop-filter: var(--glass-blur);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            padding: 6px;
-            z-index: 800;
-        }
-        .toolbar-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            border: none;
-            background: transparent;
-            color: var(--text-main);
-            cursor: pointer;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .toolbar-btn:hover, .toolbar-btn.active { background: var(--accent-blue); color: white; }
-
-        /* Sidebar Right: Data Viz */
-        .sidebar-right {
-            width: 380px;
-            background: var(--bg-panel);
-            backdrop-filter: var(--glass-blur);
-            border-left: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            z-index: 900;
-            overflow-y: auto;
-        }
-
-        .data-header { padding: 24px; }
-        .data-title { font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 700; color: var(--text-heading); margin-bottom: 4px; }
-        .data-subtitle { font-size: 13px; color: var(--text-muted); }
-
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 24px 24px; }
-        .stat-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px; }
-        .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
-        .stat-value { font-size: 18px; font-weight: 700; color: var(--text-heading); }
-        .stat-trend { font-size: 11px; color: #10b981; margin-top: 4px; }
-
-        .viz-section { padding: 24px; background: rgba(15, 23, 42, 0.4); border-top: 1px solid var(--border-color); }
-        .chart-placeholder { height: 160px; border-radius: 12px; background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(56, 189, 248, 0.05) 10px, rgba(56, 189, 248, 0.05) 20px); border: 1px dashed var(--border-color); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px; }
-        
-        .distribution-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 16px; }
-        .dist-item { display: flex; align-items: center; gap: 12px; }
-        .dist-bar-bg { flex: 1; height: 8px; background: #334155; border-radius: 4px; position: relative; }
-        .dist-bar-fill { position: absolute; height: 100%; border-radius: 4px; background: var(--accent-blue); }
-        .dist-label { font-size: 12px; width: 100px; }
-        .dist-value { font-size: 12px; font-weight: 600; width: 60px; text-align: right; }
-
-        /* Floating Tooltips & Legends */
-        .legend-card {
-            position: absolute;
-            bottom: 24px;
-            right: 24px;
-            background: var(--bg-panel);
-            backdrop-filter: var(--glass-blur);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 16px;
-            z-index: 800;
-            width: 200px;
-        }
-        .legend-item { display: flex; align-items: center; gap: 10px; font-size: 12px; margin-bottom: 8px; }
-        .legend-color { width: 12px; height: 12px; border-radius: 3px; }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
-
-        /* Detail Rows */
-        .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
-        .detail-row span:first-child { color: var(--text-muted); }
-        .detail-row span:last-child { color: var(--text-heading); font-weight: 500; }
-        
-        .grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .grid-item { background: var(--bg-card); border-radius: 8px; padding: 10px; border: 1px solid var(--border-color); }
-        .item-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; }
-        .item-value { font-size: 13px; font-weight: 600; color: var(--accent-blue); }
-        
-        /* Barangay List Items */
-        .brgy-list-item {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .brgy-list-item:hover {
-            border-color: var(--accent-blue);
-            background: rgba(56, 189, 248, 0.1);
-        }
-        .brgy-list-item.active {
-            border-color: var(--accent-blue);
-            background: rgba(56, 189, 248, 0.15);
-            box-shadow: 0 0 10px var(--accent-blue-glow);
-        }
-        .brgy-name {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-heading);
-            margin-bottom: 4px;
-        }
-        .brgy-info {
-            font-size: 11px;
-            color: var(--text-muted);
-        }
-        .no-results {
-            text-align: center;
-            padding: 20px;
-            color: var(--text-muted);
-            font-size: 13px;
-        }
-
-        /* Floating Coordinate Display */
-        .coord-display {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            background: var(--bg-panel);
-            backdrop-filter: var(--glass-blur);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 8px 12px;
-            font-size: 12px;
-            color: var(--text-main);
-            z-index: 800;
-            display: flex;
-            gap: 15px;
-            pointer-events: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-        }
-        .coord-item span {
-            color: var(--accent-blue);
-            font-weight: 600;
-        }
-
-        /* Premium Leaflet Popup Styling */
-        .leaflet-popup-content-wrapper {
-            background-color: rgba(15, 23, 42, 0.85) !important;
-            backdrop-filter: blur(12px) !important;
-            -webkit-backdrop-filter: blur(12px) !important;
-            color: var(--text-heading) !important;
-            border: 1px solid var(--border-color) !important;
-            border-radius: 12px !important;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
-        }
-        .leaflet-popup-tip {
-            background-color: rgba(15, 23, 42, 0.85) !important;
-            backdrop-filter: blur(12px) !important;
-        }
-        .leaflet-popup-content {
-            margin: 16px !important;
-            line-height: 1.5 !important;
-            font-family: 'Inter', sans-serif !important;
-        }
-        .leaflet-container a.leaflet-popup-close-button {
-            color: var(--text-muted) !important;
-            padding: 8px !important;
-            font-size: 18px !important;
-            transition: 0.2s !important;
-        }
-        .leaflet-container a.leaflet-popup-close-button:hover {
-            color: var(--accent-blue) !important;
-            background: transparent !important;
-        }
-
-        /* Custom DivIcon for Map Facilities */
-        .custom-map-icon {
-            background: transparent !important;
-            border: none !important;
-        }
-        .custom-map-icon div {
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .custom-map-icon div:hover {
-            transform: scale(1.15);
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.8) !important;
-        }
-
-        /* Style for the dynamic badges */
-        .badge {
-            transition: all 0.3s ease;
-        }
+        /* Required for Leaflet Map to sit in background */
+        #map { background: #020508; }
     </style>
 </head>
-<body>
+<body class="bg-cyber-dark text-cyber-text font-rajdhani h-screen overflow-hidden relative">
 
-    <nav class="navbar">
-        <div class="logo-area">
-            <i class="fa-solid fa-earth-philippines"></i>
-            <div>
-                <div class="logo-text">Bayambang GIS Portal</div>
-                <div class="logo-tagline">Comprehensive Municipal Mapping System</div>
-            </div>
+    <!-- Map Background -->
+    <div id="map" class="absolute inset-0 z-0 pointer-events-auto"></div>
+
+    <!-- UI Overlay (Pointer Events None so map is clickable) -->
+    <div class="absolute inset-0 z-50 pointer-events-none flex flex-col">
+        
+        <!-- Black Fades -->
+        <div class="absolute top-0 left-0 h-full w-[500px] -z-10 bg-gradient-to-r from-black/95 via-black/70 to-transparent"></div>
+        <div class="absolute top-0 right-0 h-full w-[500px] -z-10 bg-gradient-to-l from-black/95 via-black/70 to-transparent"></div>
+        
+        <!-- Top Nav -->
+        <div class="flex justify-center p-5 gap-10 font-orbitron text-[11px] tracking-[2px] uppercase pointer-events-auto">
+            <a href="#" class="text-cyber-cyan no-underline flex items-center gap-2 transition-all duration-300 drop-shadow-[0_0_5px_rgba(0,255,255,0.4)] hover:text-white hover:drop-shadow-[0_0_10px_#00ffff]">
+                <span class="text-cyber-text text-[9px] opacity-70">01</span> HOME
+            </a>
+            <a href="#" class="text-cyber-cyan no-underline flex items-center gap-2 transition-all duration-300 drop-shadow-[0_0_5px_rgba(0,255,255,0.4)] hover:text-white hover:drop-shadow-[0_0_10px_#00ffff]">
+                <span class="text-cyber-text text-[9px] opacity-70">02</span> MAP EXPLORER
+            </a>
+            <a href="#" class="text-cyber-cyan no-underline flex items-center gap-2 transition-all duration-300 drop-shadow-[0_0_5px_rgba(0,255,255,0.4)] hover:text-white hover:drop-shadow-[0_0_10px_#00ffff]">
+                <span class="text-cyber-text text-[9px] opacity-70">03</span> ABOUT
+            </a>
+            <a href="#" class="text-cyber-cyan no-underline flex items-center gap-2 transition-all duration-300 drop-shadow-[0_0_5px_rgba(0,255,255,0.4)] hover:text-white hover:drop-shadow-[0_0_10px_#00ffff]">
+                <span class="text-cyber-text text-[9px] opacity-70">04</span> SUPPORT
+            </a>
         </div>
-        <div class="nav-links">
-            <a href="#" class="nav-link">Dashboard</a>
-            <a href="#" class="nav-link">Planning</a>
-            <a href="#" class="nav-link">Analysis</a>
-            <a href="#" class="nav-link">Reports</a>
-            <a href="#" class="nav-link">Help</a>
-            <a href="/admin/barangays" class="nav-link" style="color: var(--accent-blue); font-weight: 600;"><i class="fa-solid fa-user-shield"></i> Admin Dashboard</a>
-        </div>
-        <div class="nav-right">
-            <div class="search-container">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="searchInput" placeholder="Search barangays..." onkeyup="searchBarangays()">
-                <button onclick="clearSearch()" id="clearBtn" style="display:none; background:none; border:none; color:var(--text-muted); cursor:pointer; padding:0;"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <button class="toolbar-btn" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 50%;"><i class="fa-solid fa-bell"></i></button>
-            <button class="toolbar-btn" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 50%;"><i class="fa-solid fa-user"></i></button>
-        </div>
-    </nav>
 
-    <div class="main-container">
-        <!-- Sidebar Left -->
-        <aside class="sidebar-left">
-            <div class="sidebar-section">
-                <div class="section-title">Barangay List <span id="resultCount" style="font-weight:400; color:var(--accent-blue);"></span></div>
-                <div id="barangayList" style="max-height: 300px; overflow-y: auto;">
-                    <!-- Barangay list will be populated here -->
-                </div>
-            </div>
+        <a href="/admin/map" class="absolute top-5 right-10 font-orbitron text-[10px] text-cyber-cyan no-underline tracking-[1px] px-2.5 py-1 border border-cyber-cyan/30 transition-all duration-300 hover:bg-cyber-cyan/10 hover:shadow-[0_0_10px_rgba(0,255,255,0.4)] pointer-events-auto">
+            <i class="fa-solid fa-lock"></i> ADMIN ACCESS
+        </a>
 
-            <div class="sidebar-section" style="max-height: 420px; overflow-y: auto;">
-                <div class="section-title" style="margin-bottom: 8px;">
-                    <div>Layers — <span id="active-brgy-name" style="color: var(--accent-blue);">Tococ East</span></div>
-                </div>
-                <div id="active-brgy-subtitle" style="font-size: 11px; color: var(--text-muted); margin-bottom: 16px; margin-top: -6px; text-transform: none; letter-spacing: 0;">Bayambang, Pangasinan</div>
-
-                <!-- BOUNDARY SECTION -->
-                <div style="margin-bottom: 14px;">
-                    <div style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 6px;">Boundary</div>
-                    <div class="layer-item" style="margin-bottom: 0;">
-                        <div class="layer-info">
-                            <div class="layer-icon" style="color: var(--accent-blue); width: 26px; height: 26px; border-radius: 6px; font-size: 11px;"><i class="fa-solid fa-draw-polygon"></i></div>
-                            <span style="font-size: 13px;">Brgy. Boundary</span>
-                        </div>
-                        <label class="switch" style="width: 32px; height: 18px;">
-                            <input type="checkbox" id="layer-boundary" checked>
-                            <span class="slider" style="border-radius: 18px;"></span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- DYNAMIC SECTIONS LOADED FROM DATABASE -->
-                @php
-                    $categories = [
-                        'critical_facilities' => 'Critical Facilities',
-                        'drrm' => 'DRRM Group',
-                        'population' => 'Population Data',
-                        'infrastructure' => 'Infrastructure'
-                    ];
-                @endphp
-
-                @foreach($categories as $catCode => $catName)
-                    @php
-                        $filteredTypes = $layerTypes->where('category', $catCode);
-                    @endphp
-
-                    @if($filteredTypes->count() > 0)
-                        <div style="margin-bottom: 14px;">
-                            <div style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 6px;">{{ $catName }}</div>
-                            
-                            @foreach($filteredTypes as $type)
-                                <div class="layer-item" style="margin-bottom: 8px;">
-                                    <div class="layer-info">
-                                        <div class="layer-icon" style="color: {{ $type->color }}; width: 26px; height: 26px; border-radius: 6px; font-size: 11px; background: {{ $type->color }}12;">
-                                            <i class="{{ $type->icon }}"></i>
-                                        </div>
-                                        <span style="font-size: 13px;">{{ $type->name }}</span>
-                                    </div>
-                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                        <span id="badge-{{ $type->code }}" class="badge" style="font-size: 10px; padding: 1px 6px; border-radius: 8px; background: rgba(255,255,255,0.05); color: var(--text-muted); font-weight: bold;">0</span>
-                                        <label class="switch" style="width: 32px; height: 18px;">
-                                            <input type="checkbox" id="layer-{{ $type->code }}" checked>
-                                            <span class="slider" style="border-radius: 18px;"></span>
-                                        </label>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    @endif
-                @endforeach
-            </div>
-
-            <div class="sidebar-section" style="flex: 1;">
-                <div class="section-title">Basemap Selection</div>
-                <div class="basemap-grid">
-                    <div class="basemap-card" onclick="setBasemap('roadmap', this)">
-                        <div class="basemap-img bg-street"></div>
-                        <div class="basemap-label">Street</div>
-                    </div>
-                    <div class="basemap-card" onclick="setBasemap('satellite', this)">
-                        <div class="basemap-img bg-satellite"></div>
-                        <div class="basemap-label">Satellite</div>
-                    </div>
-                    <div class="basemap-card" onclick="setBasemap('terrain', this)">
-                        <div class="basemap-img bg-terrain"></div>
-                        <div class="basemap-label">Terrain</div>
-                    </div>
-                    <div class="basemap-card active" onclick="setBasemap('dark', this)">
-                        <div class="basemap-img bg-dark"></div>
-                        <div class="basemap-label">Dark Matter</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="sidebar-section">
-                <div class="section-title">Analysis Tools</div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <button class="toolbar-btn" onclick="startMeasure()" style="width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 12px; gap: 8px;"><i class="fa-solid fa-ruler"></i> Measure</button>
-                    <button class="toolbar-btn" onclick="startMeasure()" style="width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 12px; gap: 8px;"><i class="fa-solid fa-draw-polygon"></i> Area</button>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Map Container -->
-        <main class="map-container">
-            <div id="map"></div>
+        <!-- Main Content Layout -->
+        <div class="flex-1 flex justify-between px-10">
             
-            <!-- Coordinate Display -->
-            <div class="coord-display">
-                <div class="coord-item">LAT: <span id="lat-val">0.000000</span></div>
-                <div class="coord-item">LNG: <span id="lng-val">0.000000</span></div>
-                <div class="coord-item">ZOOM: <span id="zoom-val">14</span></div>
-            </div>
-            
-            <div class="map-toolbar">
-                <button class="toolbar-btn" onclick="map.zoomIn()" title="Zoom In"><i class="fa-solid fa-plus"></i></button>
-                <button class="toolbar-btn" onclick="map.zoomOut()" title="Zoom Out"><i class="fa-solid fa-minus"></i></button>
-                <div style="height: 1px; background: var(--border-color);"></div>
-                <button class="toolbar-btn" onclick="map.setView([15.8287, 120.4173], 14)" title="Default Extent"><i class="fa-solid fa-house"></i></button>
-                <button class="toolbar-btn" title="Find my location"><i class="fa-solid fa-crosshairs"></i></button>
-                <div style="height: 1px; background: var(--border-color);"></div>
-                <button class="toolbar-btn" onclick="toggleIdentify(this)" title="Identify (Click map for coordinates)"><i class="fa-solid fa-arrow-pointer"></i></button>
+            <!-- Left Panel -->
+            <div class="w-[380px] flex flex-col justify-center pb-[100px] pointer-events-auto">
+                <div class="font-orbitron text-[32px] font-black text-cyber-cyan leading-tight mb-4 drop-shadow-[0_0_15px_rgba(0,255,255,0.4)] tracking-[1px]">GEOBAYAMBANG</div>
             </div>
 
-            <div class="legend-card">
-                <div class="section-title" style="margin-bottom: 12px; font-size: 10px;">Legend</div>
-                <div class="legend-item"><div class="legend-color" style="background: #10b981;"></div> Agricultural</div>
-                <div class="legend-item"><div class="legend-color" style="background: #ef4444;"></div> Residential</div>
-                <div class="legend-item"><div class="legend-color" style="background: #f59e0b;"></div> Commercial</div>
-                <div class="legend-item"><div class="legend-color" style="background: #3b82f6;"></div> Institutional</div>
-            </div>
-        </main>
+            <!-- Right Panel -->
+            <div class="w-[320px] flex flex-col h-[80vh] pointer-events-auto">
+                <div class="font-orbitron text-[14px] font-bold text-cyber-cyan tracking-[3px] mb-4 flex items-center gap-2.5 before:content-[''] before:block before:h-px before:bg-cyber-cyan before:flex-1 before:opacity-50 after:content-[''] after:block after:h-px after:bg-cyber-cyan after:flex-1 after:opacity-50">BARANGAYS</div>
+                
+                <div class="bg-cyber-dark/60 border border-cyber-cyan/20 px-4 py-2.5 flex items-center gap-2.5 mb-4">
+                    <input type="text" id="searchInput" placeholder="SEARCH BARANGAY..." onkeyup="filterBarangays()" class="bg-transparent border-none text-cyber-cyan font-rajdhani text-[14px] w-full outline-none placeholder-cyber-cyan/30 placeholder:tracking-[1px]">
+                    <i class="fa-solid fa-magnifying-glass text-cyber-cyan text-[12px]"></i>
+                </div>
 
-        <!-- Sidebar Right -->
-        <aside class="sidebar-right">
-            <div class="data-header">
-                <div class="data-title">Barangay Profile</div>
-                <div class="data-subtitle">Statistical data visualization and records</div>
-            </div>
+                <div class="text-[11px] text-cyber-muted mb-4 tracking-[1px] flex gap-1.5">
+                    <span class="text-cyber-cyan">BAYAMBANG</span>
+                </div>
 
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-label">Barangay Name</div>
-                    <div class="stat-value">Tococ East</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Total Land Area</div>
-                    <div class="stat-value">345.2 ha</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Total Population</div>
-                    <div class="stat-value">2,841</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Hazard Level</div>
-                    <div class="stat-value" style="color: #ef4444;">Moderate</div>
+                <div class="flex-1 overflow-y-auto flex flex-col gap-0.5 pr-2.5 scrollbar-cyber" id="barangayList">
+                    <!-- Loaded dynamically via JS -->
                 </div>
             </div>
+        </div>
 
-            <div class="viz-section">
-                <div class="section-title">General Information</div>
-                <div class="detail-row"><span>Official Name</span><span>Brgy. Tococ East</span></div>
-                <div class="detail-row"><span>Municipality</span><span>Bayambang</span></div>
-                <div class="detail-row"><span>Province</span><span>Pangasinan</span></div>
-                <div class="detail-row"><span>Land Area</span><span>345.2 ha</span></div>
-                <div class="detail-row"><span>Primary Land Use</span><span>Agricultural</span></div>
-                <div class="detail-row"><span>Status</span><span>Active</span></div>
-            </div>
-
-            <div class="viz-section">
-                <div class="section-title">Land Cover Distribution</div>
-                <div class="grid-layout">
-                    <div class="grid-item">
-                        <div class="item-label">Agriculture</div>
-                        <div class="item-value">245.5 ha</div>
-                    </div>
-                    <div class="grid-item">
-                        <div class="item-label">Residential</div>
-                        <div class="item-value">82.1 ha</div>
-                    </div>
-                    <div class="grid-item">
-                        <div class="item-label">Commercial</div>
-                        <div class="item-value">12.4 ha</div>
-                    </div>
-                    <div class="grid-item">
-                        <div class="item-label">Not Identified</div>
-                        <div class="item-value">5.2 ha</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="viz-section">
-                <div class="section-title">Population Trend</div>
-                <div class="chart-placeholder">
-                    <i class="fa-solid fa-chart-line" style="font-size: 24px; color: var(--accent-blue); opacity: 0.5;"></i>
-                    <span style="font-size: 11px; color: var(--text-muted);">Trend analysis incoming</span>
-                </div>
-            </div>
-        </aside>
-
+        <!-- Footer -->
+        <div class="absolute bottom-5 w-full text-center font-orbitron text-[9px] tracking-[2px] text-cyber-cyan/40 pointer-events-none">
+            ALL RIGHTS RESERVED &copy; 2026 BAYAMBANG MUNICIPALITY
+        </div>
     </div>
 
-    <!-- Leaflet CSS and JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
-    <!-- Leaflet Geoman (Drawing Tools) -->
-    <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" />
-    <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.min.js"></script>
-    <!-- Leaflet Measure Plugin -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-measure@3.1.0/dist/leaflet-measure.css">
-    <script src="https://cdn.jsdelivr.net/npm/leaflet-measure@3.1.0/dist/leaflet-measure.js"></script>
 
     <script>
-        let map;
-        let currentLayer;
-        let markers = {};
-        let filteredBarangays = [];
-        let identifyActive = false;
-        let measureControl = L.control.measure({ position: 'topright' });
         const barangays = {!! json_encode($barangays) !!};
-        const dbLayerTypes = {!! json_encode($layerTypes) !!};
-
-        // Dynamic operational layers matching the sidebar checkboxes
-        let featureLayers = {
-            boundary: L.layerGroup()
-        };
-        dbLayerTypes.forEach(type => {
-            featureLayers[type.code] = L.layerGroup();
-        });
+        let map;
+        let barangayPolygons = {};
+        let activeBarangayId = null;
 
         function initMap() {
-            console.log("Initializing map with barangays:", barangays);
-            
-            // Initialize map centered on Bayambang
-            map = L.map('map', { zoomControl: false, maxZoom: 20 }).setView([15.8287, 120.4173], 14);
+            // Strict bounds for Bayambang
+            const bayambangBounds = L.latLngBounds(
+                L.latLng(15.70, 120.28),
+                L.latLng(15.92, 120.58)
+            );
 
-            // Set default dark basemap
-            setBasemap('dark');
+            map = L.map('map', {
+                zoomControl: false,
+                attributionControl: false,
+                minZoom: 12,
+                maxBounds: bayambangBounds
+            }).setView([15.8287, 120.4173], 13);
 
-            // Add all operational layer groups to the map by default
-            Object.keys(featureLayers).forEach(type => {
-                const checkbox = document.getElementById(`layer-${type}`);
-                // Only add to map if the checkbox is checked initially
-                if (!checkbox || checkbox.checked) {
-                    featureLayers[type].addTo(map);
-                }
-            });
+            // Using Esri World Imagery (Satellite) for the basemap
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19,
+                attribution: 'Tiles &copy; Esri'
+            }).addTo(map);
 
-            // Initialize Geoman Drawing Tools
-            map.pm.addControls({
-                position: 'topleft',
-                drawMarker: false,
-                drawCircleMarker: false,
-                drawPolyline: false,
-                drawRectangle: true,
-                drawPolygon: true,
-                drawCircle: false,
-                editMode: true,
-                dragMode: true,
-                removalMode: true,
-            });
+            renderBarangayList(barangays);
+            drawBoundaries();
+        }
 
-            // Handle Drawn Shapes (Admin digitized boundaries helper)
-            map.on('pm:create', function(e) {
-                const layer = e.layer;
-                const shape = e.shape;
-                
-                if (shape === 'Polygon' || shape === 'Rectangle') {
-                    const latlngs = layer.getLatLngs()[0];
-                    const formattedCoords = latlngs.map(ll => [ll.lat, ll.lng]);
-                    
-                    console.log("Drawn Boundary:", JSON.stringify(formattedCoords));
-                    
-                    const popupContent = `
-                        <div style="padding:10px; min-width:200px; font-family: 'Inter', sans-serif;">
-                            <b style="color:var(--accent-blue); font-size: 13px;"><i class="fa-solid fa-draw-polygon"></i> Boundary Created!</b><br>
-                            <p style="font-size:11px; margin:5px 0; color:#ccc;">Copy the coordinates below to use in the Admin panel:</p>
-                            <textarea readonly style="width:100%; height:60px; font-size:10px; background:#1e293b; color:#fff; border:1px solid rgba(255,255,255,0.1); border-radius:4px; padding:5px; font-family: monospace;">${JSON.stringify(formattedCoords)}</textarea>
-                            <div style="font-size:10px; color:var(--text-muted); margin-top:5px;">Paste this in the "Boundary Data" field of the Barangay creation page.</div>
-                        </div>
-                    `;
-                    layer.bindPopup(popupContent).openPopup();
-                }
-            });
-
-            // Draw markers for each barangay centroid from the database
+        function drawBoundaries() {
             barangays.forEach(brgy => {
-                const lat = parseFloat(brgy.latitude);
-                const lng = parseFloat(brgy.longitude);
-                
-                if (!isNaN(lat) && !isNaN(lng)) {
-                    // Custom pin for Barangay centroid
-                    const brgyIcon = L.divIcon({
-                        html: `<div style="background-color: var(--accent-blue); width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid rgba(15, 23, 42, 0.9); box-shadow: 0 0 10px var(--accent-blue-glow);"><div style="width: 6px; height: 6px; background-color: white; border-radius: 50%;"></div></div>`,
-                        className: 'brgy-centroid-icon',
-                        iconSize: [20, 20],
-                        iconAnchor: [10, 10]
-                    });
-
-                    const marker = L.marker([lat, lng], { icon: brgyIcon }).addTo(map);
-                    markers[brgy.id] = marker;
-                    
-                    const infoWindowContent = `
-                        <div style="padding: 4px; color: var(--text-heading); font-family: 'Inter', sans-serif;">
-                            <h4 style="margin: 0 0 4px 0; font-size: 14px; font-weight:700; color:var(--accent-blue);">${brgy.name}</h4>
-                            <div style="display:flex; flex-direction:column; gap:4px; font-size:11px; margin-top:8px;">
-                                <div><span style="color:var(--text-muted);">Pop:</span> <b>${brgy.population || 'N/A'}</b></div>
-                                <div><span style="color:var(--text-muted);">Area:</span> <b>${brgy.total_area || 'N/A'} ha</b></div>
-                                <div><span style="color:var(--text-muted);">⚠️ Hazard:</span> <b style="color:#ef4444;">${brgy.hazard_level || 'Low'}</b></div>
-                            </div>
-                            <button onclick="selectBarangay(${brgy.id})" style="margin-top:12px; width:100%; padding:6px; font-size:11px; font-weight:600; background:var(--accent-blue); border:none; color:white; border-radius:6px; cursor:pointer; transition:0.2s;">Focus & View Layers</button>
-                        </div>
-                    `;
-                    
-                    marker.bindPopup(infoWindowContent);
-                    marker.on('click', () => selectBarangay(brgy.id));
-                }
-            });
-
-            // Mouse Move Coordinates (bottom left display)
-            map.on('mousemove', function(e) {
-                const latVal = document.getElementById('lat-val');
-                const lngVal = document.getElementById('lng-val');
-                if (latVal) latVal.innerText = e.latlng.lat.toFixed(6);
-                if (lngVal) lngVal.innerText = e.latlng.lng.toFixed(6);
-            });
-
-            map.on('zoomend', function() {
-                const zoomVal = document.getElementById('zoom-val');
-                if (zoomVal) zoomVal.innerText = map.getZoom();
-            });
-
-            // Map Click (Identify Coordinate Tool)
-            map.on('click', function(e) {
-                if(identifyActive) {
-                    L.popup()
-                        .setLatLng(e.latlng)
-                        .setContent(`
-                            <div style="padding:4px; font-family:Inter; color:var(--text-heading); min-width: 160px;">
-                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                                    <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent-blue); box-shadow: 0 0 8px var(--accent-blue);"></div>
-                                    <b style="color:white; font-size:14px; letter-spacing: 0.5px;">Location Picked</b>
-                                </div>
-                                <div style="background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; border: 1px solid rgba(255,255,255,0.05);">
-                                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                                        <span style="color:var(--text-muted); font-size:11px; font-weight:600;">LAT</span>
-                                        <span style="color:#fff; font-size:12px; font-family:monospace;">${e.latlng.lat.toFixed(7)}</span>
-                                    </div>
-                                    <div style="display:flex; justify-content:space-between;">
-                                        <span style="color:var(--text-muted); font-size:11px; font-weight:600;">LNG</span>
-                                        <span style="color:#fff; font-size:12px; font-family:monospace;">${e.latlng.lng.toFixed(7)}</span>
-                                    </div>
-                                </div>
-                                <div style="font-size:10px; color:var(--text-muted); margin-top:12px; text-align: center;">Click anywhere to pick again.</div>
-                            </div>
-                        `)
-                        .openOn(map);
-                }
-            });
-
-            // Hook up switch toggles dynamically
-            const layerTypes = [
-                'boundary', 'barangay_hall', 'health_center', 'multipurpose_bldg', 
-                'covered_court', 'police_post', 'evac_center', 'bert_member', 
-                'population_density', 'household_distribution', 'road_network'
-            ];
-
-            layerTypes.forEach(type => {
-                const checkbox = document.getElementById(`layer-${type}`);
-                if (checkbox) {
-                    checkbox.addEventListener('change', function(e) {
-                        handleLayerToggle(type, e.target.checked);
-                    });
-                }
-            });
-
-            // Initialize barangay list sidebar
-            filteredBarangays = [...barangays];
-            renderBarangayList();
-
-            // Default: Show the first Barangay on load
-            if (barangays && barangays.length > 0) {
-                selectBarangay(barangays[0].id);
-            }
-        }
-
-        function createCustomIcon(iconClass, color) {
-            return L.divIcon({
-                html: `<div style="background-color: ${color}; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.5);"><i class="${iconClass}" style="color: white; font-size: 11px;"></i></div>`,
-                className: 'custom-map-icon',
-                iconSize: [28, 28],
-                iconAnchor: [14, 14]
-            });
-        }
-
-        // Toggles a layer on/off the Leaflet canvas
-        function handleLayerToggle(type, isChecked) {
-            if (isChecked) {
-                if (!map.hasLayer(featureLayers[type])) {
-                    map.addLayer(featureLayers[type]);
-                }
-            } else {
-                if (map.hasLayer(featureLayers[type])) {
-                    map.removeLayer(featureLayers[type]);
-                }
-            }
-        }
-
-        // Fetches operational layers/features from database for the active Barangay
-        function fetchBarangayFeatures(id) {
-            const brgy = barangays.find(b => b.id == id);
-            if (!brgy) return;
-
-            // Clear previous features from the canvas groups
-            Object.values(featureLayers).forEach(layerGroup => layerGroup.clearLayers());
-
-            // 1. Draw the active Barangay's boundary in the boundary layer group
-            if (brgy.boundary) {
-                try {
-                    let boundaryCoords = typeof brgy.boundary === 'string' ? JSON.parse(brgy.boundary) : brgy.boundary;
-                    if (Array.isArray(boundaryCoords) && boundaryCoords.length > 0) {
-                        const polygon = L.polygon(boundaryCoords, {
-                            color: '#38bdf8',
-                            fillColor: '#38bdf8',
-                            fillOpacity: 0.12,
-                            weight: 2
-                        });
-                        
-                        polygon.on('click', () => {
-                            selectBarangay(brgy.id);
-                        });
-                        
-                        polygon.bindTooltip(brgy.name + " Boundary", {
-                            permanent: false,
-                            direction: 'center'
-                        });
-                        
-                        polygon.addTo(featureLayers.boundary);
-                    }
-                } catch (e) {
-                    console.error("Error drawing boundary for " + brgy.name, e);
-                }
-            }
-
-            // 2. Fetch facilities, DRRM, infrastructure, and population data from Laravel API
-            fetch(`/api/barangays/${id}/features`)
-                .then(res => res.json())
-                .then(features => {
-                    console.log(`Fetched ${features.length} map features for Barangay ID ${id}:`, features);
-                    
-                    // Reset counts dynamically for badges
-                    const counts = {};
-                    dbLayerTypes.forEach(t => {
-                        counts[t.code] = 0;
-                    });
-
-                    features.forEach(feat => {
-                        const type = feat.feature_type;
-                        if (counts[type] !== undefined) {
-                            counts[type]++;
-                        }
-
-                        const metadata = feat.metadata || {};
-                        let popupHtml = `
-                            <div style="padding: 4px; font-family: 'Inter', sans-serif; min-width: 180px;">
-                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;">
-                                    <b style="font-size: 13px; color: var(--accent-blue);">${feat.name}</b>
-                                </div>
-                                <div style="font-size: 11px; display: flex; flex-direction: column; gap: 4px; color:#cbd5e1;">
-                        `;
-
-                        // Populate metadata into descriptive rows
-                        Object.keys(metadata).forEach(key => {
-                            const label = key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-                            popupHtml += `<div><span style="color: var(--text-muted);">${label}:</span> <span style="font-weight: 500;">${metadata[key]}</span></div>`;
-                        });
-                        popupHtml += `
-                                </div>
-                            </div>
-                        `;
-
-                        // Render feature to its specific Leaflet LayerGroup
-                        if (feat.latitude && feat.longitude) {
-                            const lat = parseFloat(feat.latitude);
-                            const lng = parseFloat(feat.longitude);
+                if (brgy.boundary) {
+                    try {
+                        let boundaryCoords = typeof brgy.boundary === 'string' ? JSON.parse(brgy.boundary) : brgy.boundary;
+                        if (Array.isArray(boundaryCoords) && boundaryCoords.length > 0) {
                             
-                            const config = dbLayerTypes.find(t => t.code === type) || {};
-                            const iconClass = config.icon || 'fa-solid fa-location-dot';
-                            const color = config.color || '#38bdf8';
+                            // Futuristic neon cyan polygon
+                            const polygon = L.polygon(boundaryCoords, {
+                                color: '#00ffff',
+                                fillColor: '#00ffff',
+                                opacity: 0.15,
+                                fillOpacity: 0.0,
+                                weight: 1.5,
+                                dashArray: '4 6',
+                                className: 'cyber-polygon'
+                            }).addTo(map);
+
+                            polygon.on('click', () => selectBarangay(brgy.id));
                             
-                            const markerIcon = createCustomIcon(iconClass, color);
-                            
-                            if (featureLayers[type] !== undefined) {
-                                L.marker([lat, lng], { icon: markerIcon })
-                                    .bindPopup(popupHtml)
-                                    .addTo(featureLayers[type]);
-                            }
-                        } else if (feat.coordinates) {
-                            // Render polyline or polygon vectors dynamically
-                            let coords = typeof feat.coordinates === 'string' ? JSON.parse(feat.coordinates) : feat.coordinates;
-                            const config = dbLayerTypes.find(t => t.code === type) || {};
-                            const color = config.color || '#8b5cf6';
-                            
-                            if (type === 'road_network') {
-                                L.polyline(coords, {
-                                    color: color,
-                                    weight: 4,
-                                    opacity: 0.8
-                                }).bindPopup(popupHtml).addTo(featureLayers.road_network);
-                            } else if (type === 'population_density') {
-                                L.polygon(coords, {
-                                    color: color,
-                                    fillColor: color,
-                                    fillOpacity: 0.15,
-                                    weight: 1.5,
-                                    dashArray: '5, 5'
-                                }).bindPopup(popupHtml).addTo(featureLayers.population_density);
-                            } else {
-                                // Fallback generic vector renderer
-                                const geomType = config.geom_type || 'polyline';
-                                if (geomType === 'polyline') {
-                                    L.polyline(coords, { color: color, weight: 4, opacity: 0.8 })
-                                        .bindPopup(popupHtml).addTo(featureLayers[type]);
-                                } else {
-                                    L.polygon(coords, { color: color, fillColor: color, fillOpacity: 0.15, weight: 1.5 })
-                                        .bindPopup(popupHtml).addTo(featureLayers[type]);
+                            // Hover effects
+                            polygon.on('mouseover', () => {
+                                if (activeBarangayId !== brgy.id) {
+                                    polygon.setStyle({ opacity: 0.6, fillOpacity: 0.05, dashArray: '' });
                                 }
-                            }
-                        }
-                    });
+                            });
+                            polygon.on('mouseout', () => {
+                                if (activeBarangayId !== brgy.id) {
+                                    polygon.setStyle({ opacity: 0.15, fillOpacity: 0.0, dashArray: '4 6' });
+                                }
+                            });
 
-                    // Update count badges dynamically
-                    Object.keys(counts).forEach(type => {
-                        const badge = document.getElementById(`badge-${type}`);
-                        if (badge) {
-                            badge.innerText = counts[type];
-                            // If 0, mute the colors, else highlight
-                            const config = dbLayerTypes.find(t => t.code === type) || {};
-                            const color = config.color || '#38bdf8';
-                            if (counts[type] === 0) {
-                                badge.style.background = 'rgba(255, 255, 255, 0.05)';
-                                badge.style.color = 'var(--text-muted)';
-                            } else {
-                                badge.style.background = color + '20';
-                                badge.style.color = color;
-                            }
+                            barangayPolygons[brgy.id] = polygon;
                         }
-                    });
-                })
-                .catch(err => console.error("Error loading features:", err));
+                    } catch (e) {
+                        console.error('Error drawing boundary for ' + brgy.name);
+                    }
+                }
+            });
         }
 
-        function renderBarangayList() {
-            const listContainer = document.getElementById('barangayList');
-            const resultCount = document.getElementById('resultCount');
-            
-            if (filteredBarangays.length === 0) {
-                listContainer.innerHTML = '<div class="no-results"><i class="fa-solid fa-magnifying-glass"></i><br>No barangays found</div>';
-                resultCount.textContent = '(0)';
-                return;
-            }
-            
-            resultCount.textContent = `(${filteredBarangays.length})`;
-            
-            listContainer.innerHTML = filteredBarangays.map(brgy => `
-                <div class="brgy-list-item" id="brgy-item-${brgy.id}" onclick="selectBarangay(${brgy.id})">
-                    <div class="brgy-name">${brgy.name}</div>
-                    <div class="brgy-info">
-                        <i class="fa-solid fa-location-dot"></i> ${brgy.latitude ? brgy.latitude.toFixed(4) : 'N/A'}, ${brgy.longitude ? brgy.longitude.toFixed(4) : 'N/A'}
+        function renderBarangayList(list) {
+            const container = document.getElementById('barangayList');
+            container.innerHTML = '';
+
+            list.forEach((brgy, index) => {
+                // Pad index with leading zero
+                const num = String(index + 1).padStart(2, '0');
+                
+                const div = document.createElement('div');
+                // Added "group" class for targeting child elements on hover, and active states
+                div.className = `brgy-item px-4 py-2.5 text-[13px] font-semibold text-cyber-text tracking-[1px] cursor-pointer transition-all duration-200 flex justify-between items-center border-l-2 border-transparent uppercase hover:bg-gradient-to-r hover:from-cyber-cyan/10 hover:to-transparent hover:border-cyber-cyan hover:text-white hover:drop-shadow-[0_0_5px_#00ffff] group`;
+                div.id = `brgy-item-${brgy.id}`;
+                div.onclick = () => selectBarangay(brgy.id);
+                
+                div.innerHTML = `
+                    <div class="flex items-center">
+                        <span class="font-orbitron text-[9px] text-cyber-cyan/30 mr-2.5 group-hover:text-cyber-cyan transition-colors" id="brgy-num-${brgy.id}">${num}</span>
+                        <span>${brgy.name}</span>
                     </div>
-                </div>
-            `).join('');
+                    <i class="fa-solid fa-chevron-right text-[10px] opacity-0 transition duration-200 text-cyber-cyan group-hover:opacity-100" id="brgy-icon-${brgy.id}"></i>
+                `;
+                
+                container.appendChild(div);
+            });
+        }
+
+        function filterBarangays() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = barangays.filter(b => b.name.toLowerCase().includes(query));
+            renderBarangayList(filtered);
+            
+            // Re-apply active state if the active item is still in the list
+            if (activeBarangayId) {
+                const activeItem = document.getElementById(`brgy-item-${activeBarangayId}`);
+                if (activeItem) setItemActiveState(activeBarangayId);
+            }
+        }
+        
+        function setItemActiveState(id) {
+            // Remove active state from all items manually via class toggling since we are using Tailwind utilities
+            document.querySelectorAll('.brgy-item').forEach(el => {
+                el.classList.remove('bg-gradient-to-r', 'from-cyber-cyan/10', 'to-transparent', 'border-cyber-cyan', 'text-white', 'drop-shadow-[0_0_5px_#00ffff]');
+                el.classList.add('border-transparent');
+                el.querySelector('span:first-child').classList.remove('text-cyber-cyan');
+                el.querySelector('span:first-child').classList.add('text-cyber-cyan/30');
+                el.querySelector('i').classList.remove('opacity-100');
+                el.querySelector('i').classList.add('opacity-0');
+            });
+            
+            // Add active state to target item
+            const activeItem = document.getElementById(`brgy-item-${id}`);
+            if (activeItem) {
+                activeItem.classList.remove('border-transparent');
+                activeItem.classList.add('bg-gradient-to-r', 'from-cyber-cyan/10', 'to-transparent', 'border-cyber-cyan', 'text-white', 'drop-shadow-[0_0_5px_#00ffff]');
+                
+                // Update children manually for persistent active state without relying on hover
+                activeItem.querySelector('span:first-child').classList.remove('text-cyber-cyan/30');
+                activeItem.querySelector('span:first-child').classList.add('text-cyber-cyan');
+                
+                activeItem.querySelector('i').classList.remove('opacity-0');
+                activeItem.querySelector('i').classList.add('opacity-100');
+                
+                activeItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         }
 
         function selectBarangay(id) {
-            const brgy = barangays.find(b => b.id === id);
-            if (!brgy) return;
-            
-            // Update active state in list
-            document.querySelectorAll('.brgy-list-item').forEach(el => el.classList.remove('active'));
-            document.getElementById(`brgy-item-${id}`)?.classList.add('active');
-            
-            // Update sidebars & dynamic layer tree header
-            updateSidebar(id);
-            document.getElementById('active-brgy-name').innerText = brgy.name;
-            document.getElementById('active-brgy-subtitle').innerText = `${brgy.municipality || 'Bayambang'}, ${brgy.province || 'Pangasinan'}`;
-
-            // Fetch and draw features/operational layers
-            fetchBarangayFeatures(id);
-            
-            // Center map on the selected barangay centroid
-            if (markers[id]) {
-                const lat = parseFloat(brgy.latitude);
-                const lng = parseFloat(brgy.longitude);
-                if (!isNaN(lat) && !isNaN(lng)) {
-                    map.setView([lat, lng], 15);
-                    markers[id].openPopup();
-                }
-            }
-        }
-
-        function searchBarangays() {
-            const query = document.getElementById('searchInput').value.toLowerCase().trim();
-            const clearBtn = document.getElementById('clearBtn');
-            
-            if (clearBtn) clearBtn.style.display = query ? 'block' : 'none';
-            
-            if (query === '') {
-                filteredBarangays = [...barangays];
-            } else {
-                filteredBarangays = barangays.filter(brgy => 
-                    brgy.name.toLowerCase().includes(query)
-                );
-            }
-            
-            renderBarangayList();
-        }
-
-        function clearSearch() {
-            const queryInput = document.getElementById('searchInput');
-            if (queryInput) queryInput.value = '';
-            searchBarangays();
-        }
-
-        function toggleIdentify(btn) {
-            identifyActive = !identifyActive;
-            btn.classList.toggle('active', identifyActive);
-            document.getElementById('map').style.cursor = identifyActive ? 'crosshair' : '';
-            if(identifyActive) {
-                alert("Identify Mode Active: Click anywhere on the map to get coordinates.");
-            }
-        }
-
-        function startMeasure() {
-            if(!map.hasLayer(measureControl)) {
-                map.addControl(measureControl);
-            }
-            measureControl._startMeasure();
-        }
-
-        function updateSidebar(id) {
             const brgy = barangays.find(b => b.id == id);
             if (!brgy) return;
-
-            // Stats cards
-            const statValues = document.querySelectorAll('.stat-value');
-            if(statValues.length >= 4) {
-                statValues[0].innerText = brgy.name;
-                statValues[1].innerText = (brgy.total_area || 0) + ' ha';
-                statValues[2].innerText = brgy.population || 'N/A';
-                statValues[3].innerText = brgy.hazard_level || 'Low';
-            }
-
-            // General Profile details
-            const details = document.querySelectorAll('.detail-row');
-            if(details.length >= 6) {
-                details[0].querySelector('span:last-child').innerText = brgy.name;
-                details[1].querySelector('span:last-child').innerText = brgy.municipality || 'Bayambang';
-                details[2].querySelector('span:last-child').innerText = brgy.province || 'Pangasinan';
-                details[3].querySelector('span:last-child').innerText = (brgy.total_area || 0) + ' ha';
-                details[4].querySelector('span:last-child').innerText = brgy.land_use || 'N/A';
-                details[5].querySelector('span:last-child').innerText = brgy.status || 'Active';
-            }
-        }
-
-        function setBasemap(type, element = null) {
-            if (element) {
-                document.querySelectorAll('.basemap-card').forEach(el => el.classList.remove('active'));
-                element.classList.add('active');
-            }
-            if(currentLayer) map.removeLayer(currentLayer);
             
-            const layers = {
-                'dark': L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                    attribution: '&copy; OpenStreetMap &copy; CARTO',
-                    maxZoom: 20,
-                    maxNativeZoom: 20
-                }),
-                'roadmap': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; OpenStreetMap',
-                    maxZoom: 20,
-                    maxNativeZoom: 19
-                }),
-                'satellite': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                    attribution: 'Esri',
-                    maxZoom: 20,
-                    maxNativeZoom: 18
-                }),
-                'terrain': L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-                    attribution: 'OpenTopoMap',
-                    maxZoom: 20,
-                    maxNativeZoom: 17
-                })
-            };
-            currentLayer = layers[type] || layers['dark'];
-            currentLayer.addTo(map);
+            activeBarangayId = brgy.id;
+
+            // Update List Active State visually
+            setItemActiveState(id);
+
+            // Update Polygons (Glowing Effect)
+            Object.keys(barangayPolygons).forEach(polyId => {
+                const poly = barangayPolygons[polyId];
+                if (polyId == id) {
+                    poly.setStyle({
+                        color: '#00ffff',
+                        fillColor: '#00ffff',
+                        opacity: 1.0,
+                        fillOpacity: 0.15,
+                        weight: 2.5,
+                        dashArray: ''
+                    });
+                    poly.bringToFront();
+                    
+                    // Fly to polygon
+                    map.flyToBounds(poly.getBounds(), {
+                        padding: [50, 50],
+                        duration: 1.5,
+                        easeLinearity: 0.25
+                    });
+
+                    // Show HUD Scope exactly in center of polygon
+                    const center = poly.getBounds().getCenter();
+                    showHudScope(brgy.name, center);
+
+                } else {
+                    poly.setStyle({
+                        opacity: 0.15,
+                        fillOpacity: 0.0,
+                        weight: 1.5,
+                        dashArray: '4 6'
+                    });
+                }
+            });
         }
 
+        let hudMarker = null;
+        function showHudScope(name, latlng) {
+            if (hudMarker) {
+                map.removeLayer(hudMarker);
+            }
+
+            const icon = L.divIcon({
+                html: `
+                    <div class="flex items-center pointer-events-none">
+                        <div class="scope-box font-orbitron text-[13px] font-bold text-cyber-cyan tracking-[2px] uppercase px-5 py-2.5 bg-cyber-dark/85 border border-cyber-cyan pointer-events-auto whitespace-nowrap">
+                            SCOPE: <span class="text-white ml-1.5">${name}</span>
+                        </div>
+                        <svg width="100" height="20" class="-ml-1.5 pointer-events-none">
+                            <line x1="0" y1="10" x2="100" y2="10" stroke="#00ffff" stroke-width="1.5" />
+                            <circle cx="100" cy="10" r="3" fill="#00ffff" />
+                        </svg>
+                    </div>
+                `,
+                className: 'custom-hud-icon',
+                iconSize: [0, 0],
+                iconAnchor: [0, 10]
+            });
+
+            hudMarker = L.marker(latlng, { icon: icon }).addTo(map);
+        }
+
+        // Initialize
         document.addEventListener('DOMContentLoaded', initMap);
+
     </script>
 </body>
 </html>

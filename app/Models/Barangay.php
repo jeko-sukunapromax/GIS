@@ -15,6 +15,7 @@ class Barangay extends Model
         'land_use',
         'hazard_level',
         'status',
+        'is_visible',
         'agri_area',
         'residential_area',
         'commercial_area',
@@ -22,10 +23,18 @@ class Barangay extends Model
         'latitude',
         'longitude',
         'boundary',
+        'boundary_source',
+        'boundary_updated_at',
         'description'
     ];
     
-    protected $casts = ['boundary' => 'array'];
+    protected $casts = [
+        'boundary' => 'array',
+        'is_visible' => 'boolean',
+        'boundary_updated_at' => 'datetime',
+        'latitude' => 'float',
+        'longitude' => 'float',
+    ];
 
     /**
      * Get the map features for this barangay.

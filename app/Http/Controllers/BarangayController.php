@@ -8,14 +8,14 @@ class BarangayController extends Controller
 {
     public function index()
     {
-        $barangays = Barangay::all();
+        $barangays = Barangay::where('is_visible', true)->get();
         $layerTypes = \App\Models\MapLayerType::all();
         return view('map', compact('barangays', 'layerTypes'));
     }
 
     public function getBarangays()
     {
-        return response()->json(Barangay::all());
+        return response()->json(Barangay::where('is_visible', true)->get());
     }
 
     public function getFeatures(Barangay $barangay)

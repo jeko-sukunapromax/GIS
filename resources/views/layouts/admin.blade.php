@@ -239,19 +239,35 @@
             align-items: center;
             gap: 10px;
         }
+        
+        .alert-danger { 
+            background: rgba(239, 68, 68, 0.15); 
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5; 
+            padding: 16px; 
+            border-radius: 8px; 
+            margin-bottom: 24px; 
+            font-weight: 500; 
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
     </style>
 </head>
-<body>
+<body class="admin-body">
 
     <div class="sidebar">
         <div class="sidebar-header">
-            <i class="fa-solid fa-earth-asia"></i> GeoPortal Admin
+            <i class="fa-solid fa-earth-asia"></i>
+            <span>GIS Admin Dashboard</span>
         </div>
         <div class="sidebar-menu">
-            <a href="{{ route('admin.barangays.index') }}" class="menu-item {{ request()->routeIs('admin.barangays.*') ? 'active' : '' }}"><i class="fa-solid fa-map-location-dot"></i> Barangays</a>
-            <a href="{{ route('admin.features.index') }}" class="menu-item {{ request()->routeIs('admin.features.*') ? 'active' : '' }}"><i class="fa-solid fa-layer-group"></i> Map Editor</a>
-            <a href="{{ route('admin.layer-types.index') }}" class="menu-item {{ request()->routeIs('admin.layer-types.*') ? 'active' : '' }}"><i class="fa-solid fa-gear"></i> Layer Settings</a>
-            <a href="/" class="menu-item" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> View Map</a>
+            <a href="/" class="menu-item"><i class="fa-solid fa-map"></i> Public Map</a>
+            <a href="{{ route('admin.uploads.index') }}" class="menu-item {{ Request::routeIs('admin.uploads.*') ? 'active' : '' }}"><i class="fa-solid fa-arrow-up-from-bracket"></i> Upload Data</a>
+            <a href="{{ route('admin.barangays.index') }}" class="menu-item {{ Request::routeIs('admin.barangays.*') ? 'active' : '' }}"><i class="fa-solid fa-mountain-city"></i> Barangay Management</a>
+            <a href="{{ route('admin.features.index') }}" class="menu-item {{ Request::routeIs('admin.features.*') ? 'active' : '' }}"><i class="fa-solid fa-draw-polygon"></i> Map Features</a>
+            <a href="{{ route('admin.layer-types.index') }}" class="menu-item {{ Request::routeIs('admin.layer-types.*') ? 'active' : '' }}"><i class="fa-solid fa-layer-group"></i> Layer Types</a>
         </div>
     </div>
 
@@ -268,7 +284,14 @@
             @if(session('success'))
                 <div class="alert-success">
                     <i class="fa-solid fa-circle-check"></i>
-                    {{ session('success') }}
+                    <div>{!! session('success') !!}</div>
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="alert-danger">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                    <div>{!! session('error') !!}</div>
                 </div>
             @endif
             

@@ -3,12 +3,16 @@
 @section('content')
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
     <h1 class="page-title">Barangay Management</h1>
-    <a href="{{ route('admin.barangays.create') }}" class="btn btn-primary">
-        <i class="fa-solid fa-plus"></i> Add New Barangay
-    </a>
 </div>
 
 <div class="card" style="padding: 24px;">
+    <div style="margin-bottom: 18px; display: flex; justify-content: flex-end;">
+        <div style="position: relative; width: 300px;">
+            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; top: 12px; color: var(--text-muted);"></i>
+            <input type="text" id="adminSearchInput" placeholder="Search barangay..." onkeyup="filterAdminBarangays()" style="width: 100%; padding: 10px 14px 10px 40px; background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; color: #f8fafc; outline: none; transition: all 0.2s ease;">
+        </div>
+    </div>
+
     <div class="table-responsive">
         <table>
             <thead>
@@ -45,8 +49,8 @@
                         </td>
                         <td>
                             <div style="display: flex; gap: 8px;">
-                                <a href="{{ route('admin.barangays.edit', $barangay) }}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;">
-                                    <i class="fa-solid fa-pen"></i> Edit
+                                <a href="{{ route('admin.barangays.manage', $barangay) }}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;">
+                                    <i class="fa-solid fa-gear"></i> Manage
                                 </a>
                                 <form action="{{ route('admin.barangays.destroy', $barangay) }}" method="POST" style="display: inline;" onsubmit="return confirm('Delete this barangay?')">
                                     @csrf
@@ -61,7 +65,7 @@
                 @empty
                     <tr>
                         <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">
-                            No barangays yet. Click "Add New Barangay" to get started.
+                            No barangays found. Upload GeoJSON or Shapefiles in the Upload Data center to automatically add barangays.
                         </td>
                     </tr>
                 @endforelse
@@ -69,4 +73,25 @@
         </table>
     </div>
 </div>
+
+<script>
+function filterAdminBarangays() {
+    const input = document.getElementById('adminSearchInput');
+    const filter = input.value.toLowerCase().trim();
+    const table = document.querySelector('table');
+    const tr = table.getElementsByTagName('tr');
+
+    for (let i = 1; i < tr.length; i++) {
+        const td = tr[i].getElementsByTagName('td')[1]; // Barangay Name is index 1
+        if (td) {
+            const txtValue = td.textContent || td.innerText;
+            if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                tr[i].style.display = "";
+            } else {
+                tr[i].style.display = "none";
+            }
+        }
+    }
+}
+</script>
 @endsection

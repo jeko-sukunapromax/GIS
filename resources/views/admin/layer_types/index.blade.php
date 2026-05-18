@@ -14,11 +14,6 @@
             </button>
         </div>
 
-        @if(session('success'))
-            <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #a7f3d0; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; display: flex; align-items: center; gap: 8px;">
-                <i class="fa-solid fa-circle-check"></i> {{ session('success') }}
-            </div>
-        @endif
 
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead>
