@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bayambang GIS Portal</title>
+    <title>GeoBayambang</title>
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -17,8 +17,8 @@
             --bg-dark: #0f172a;
             --bg-panel: rgba(30, 41, 59, 0.7);
             --bg-card: rgba(15, 23, 42, 0.6);
-            --accent-blue: #38bdf8;
-            --accent-blue-glow: rgba(56, 189, 248, 0.3);
+            --accent-blue: #0099ff;
+            --accent-blue-glow: rgba(0, 153, 255, 0.3);
             --text-heading: #f8fafc;
             --text-main: #cbd5e1;
             --text-muted: #94a3b8;
@@ -183,7 +183,7 @@
         .stat-trend { font-size: 11px; color: #10b981; margin-top: 4px; }
 
         .viz-section { padding: 24px; background: rgba(15, 23, 42, 0.4); border-top: 1px solid var(--border-color); }
-        .chart-placeholder { height: 160px; border-radius: 12px; background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(56, 189, 248, 0.05) 10px, rgba(56, 189, 248, 0.05) 20px); border: 1px dashed var(--border-color); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px; }
+        .chart-placeholder { height: 160px; border-radius: 12px; background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 153, 255, 0.05) 10px, rgba(0, 153, 255, 0.05) 20px); border: 1px dashed var(--border-color); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px; }
         
         .distribution-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 16px; }
         .dist-item { display: flex; align-items: center; gap: 12px; }
@@ -236,11 +236,11 @@
         }
         .brgy-list-item:hover {
             border-color: var(--accent-blue);
-            background: rgba(56, 189, 248, 0.1);
+            background: rgba(0, 153, 255, 0.1);
         }
         .brgy-list-item.active {
             border-color: var(--accent-blue);
-            background: rgba(56, 189, 248, 0.15);
+            background: rgba(0, 153, 255, 0.15);
             box-shadow: 0 0 10px var(--accent-blue-glow);
         }
         .brgy-name {
@@ -361,14 +361,14 @@
             text-transform: uppercase;
             letter-spacing: 0.8px;
             text-align: center;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95), 0 0 8px rgba(56, 189, 248, 0.3);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0, 153, 255, 0.3);
             white-space: nowrap;
             transition: all 0.2s ease;
         }
         .brgy-centroid-icon-container:hover .brgy-map-label {
-            color: #38bdf8;
+            color: #0099ff;
             transform: scale(1.08);
-            text-shadow: 0 2px 6px rgba(0, 0, 0, 1.0), 0 0 12px rgba(56, 189, 248, 0.7);
+            text-shadow: 0 2px 6px rgba(0, 0, 0, 1.0), 0 0 12px rgba(0, 153, 255, 0.7);
         }
     </style>
 </head>
@@ -378,8 +378,8 @@
         <div class="logo-area">
             <i class="fa-solid fa-earth-philippines"></i>
             <div>
-                <div class="logo-text">Bayambang GIS Portal</div>
-                <div class="logo-tagline">Comprehensive Municipal Mapping System</div>
+                <div class="logo-text">GeoBayambang</div>
+                <div class="logo-tagline">Geographic Information Systems</div>
             </div>
         </div>
         <div class="nav-links">
@@ -512,7 +512,7 @@
             
             <!-- Dynamic Map HUD Title (Scope) styled exactly like the picture! -->
             <div id="map-hud-scope" style="display: none; position: absolute; top: 24px; left: 50%; transform: translateX(-50%); z-index: 1000; pointer-events: none; text-align: center;">
-                <div style="font-family: 'Outfit', 'Inter', sans-serif; font-size: 15px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(56, 189, 248, 0.6), 0 2px 4px rgba(0,0,0,0.95); padding: 8px 20px; background: rgba(9, 13, 22, 0.85); border: 1.5px solid rgba(56, 189, 248, 0.45); border-radius: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: inline-flex; align-items: center; justify-content: center;">
+                <div style="font-family: 'Outfit', 'Inter', sans-serif; font-size: 15px; font-weight: 800; color: #0099ff; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(0, 153, 255, 0.6), 0 2px 4px rgba(0,0,0,0.95); padding: 8px 20px; background: rgba(9, 13, 22, 0.85); border: 1.5px solid rgba(0, 153, 255, 0.45); border-radius: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: inline-flex; align-items: center; justify-content: center;">
                     SCOPE: <span id="hud-scope-name" style="margin-left: 6px;">NONE</span>
                 </div>
             </div>
@@ -638,6 +638,7 @@
         const barangays = {!! json_encode($barangays) !!};
         const dbLayerTypes = {!! json_encode($layerTypes) !!};
         let allSelected = false;
+        let municipalPolygon = null;
 
         // Dynamic operational layers matching the sidebar checkboxes
         let featureLayers = {
@@ -723,9 +724,23 @@
                     try {
                         let boundaryCoords = typeof brgy.boundary === 'string' ? JSON.parse(brgy.boundary) : brgy.boundary;
                         if (Array.isArray(boundaryCoords) && boundaryCoords.length > 0) {
+                            if (brgy.name.toLowerCase() === 'bayambang') {
+                                // Draw municipal boundary — solid blue outline, no fill (matches screenshot)
+                                municipalPolygon = L.polygon(boundaryCoords, {
+                                    color: '#0099ff',
+                                    fillColor: '#0099ff',
+                                    opacity: 1.0,
+                                    fillOpacity: 0.0,
+                                    weight: 2.5,
+                                    dashArray: '',
+                                    className: 'municipal-polygon'
+                                }).addTo(featureLayers.boundary);
+                                return;
+                            }
+
                             const polygon = L.polygon(boundaryCoords, {
-                                color: '#38bdf8',
-                                fillColor: '#38bdf8',
+                                color: '#0099ff',
+                                fillColor: '#0099ff',
                                 opacity: 0.0, // Completely invisible initially
                                 fillOpacity: 0.0,
                                 weight: 2.0, // Retain interactive stroke area
@@ -770,7 +785,9 @@
                     }
                 }
 
-                // 2. Draw centroid marker
+                // 2. Draw centroid marker (Skip for the whole municipality)
+                if (brgy.name.toLowerCase() === 'bayambang') return;
+
                 const lat = parseFloat(brgy.latitude);
                 const lng = parseFloat(brgy.longitude);
                 
@@ -864,13 +881,13 @@
                 }
             });
 
-            // Initialize barangay list sidebar
-            filteredBarangays = [...barangays];
+            // Initialize barangay list sidebar (Filter out Bayambang)
+            filteredBarangays = barangays.filter(b => b.name.toLowerCase() !== 'bayambang');
             renderBarangayList();
-
-            // Default: Show the first Barangay on load
-            if (barangays && barangays.length > 0) {
-                selectBarangay(barangays[0].id);
+ 
+            // Default: Show the first Barangay on load (Use filtered list)
+            if (filteredBarangays && filteredBarangays.length > 0) {
+                selectBarangay(filteredBarangays[0].id);
             }
         }
 
@@ -956,7 +973,7 @@
                             
                             const config = dbLayerTypes.find(t => t.code === type) || {};
                             const iconClass = config.icon || 'fa-solid fa-location-dot';
-                            const color = config.color || '#38bdf8';
+                            const color = config.color || '#0099ff';
                             
                             const markerIcon = createCustomIcon(iconClass, color);
                             
@@ -1006,7 +1023,7 @@
                             badge.innerText = counts[type];
                             // If 0, mute the colors, else highlight
                             const config = dbLayerTypes.find(t => t.code === type) || {};
-                            const color = config.color || '#38bdf8';
+                            const color = config.color || '#0099ff';
                             if (counts[type] === 0) {
                                 badge.style.background = 'rgba(255, 255, 255, 0.05)';
                                 badge.style.color = 'var(--text-muted)';
@@ -1067,6 +1084,14 @@
                     });
                 });
                 
+                // Show municipal boundary again
+                if (municipalPolygon) {
+                    municipalPolygon.setStyle({
+                        opacity: 0.8,
+                        weight: 3.0
+                    });
+                }
+                
                 // Clear operational layers
                 Object.keys(featureLayers).forEach(type => {
                     if (type !== 'boundary') {
@@ -1082,6 +1107,14 @@
             allSelected = false;
             activeBarangayId = parseInt(id);
 
+            // Hide municipal boundary when a barangay is selected
+            if (municipalPolygon) {
+                municipalPolygon.setStyle({
+                    opacity: 0.0,
+                    weight: 0.0
+                });
+            }
+ 
             // Robust UX: Auto-enable and check the boundary layer checkbox if it was hidden
             const boundaryCheckbox = document.getElementById('layer-boundary');
             if (boundaryCheckbox && !boundaryCheckbox.checked) {
@@ -1090,7 +1123,7 @@
                     map.addLayer(featureLayers.boundary);
                 }
             }
-
+ 
             // Update active state in list
             document.querySelectorAll('.brgy-list-item').forEach(el => el.classList.remove('active'));
             document.getElementById(`brgy-item-${id}`)?.classList.add('active');
@@ -1099,15 +1132,15 @@
             updateSidebar(id);
             document.getElementById('active-brgy-name').innerText = brgy.name;
             document.getElementById('active-brgy-subtitle').innerText = `${brgy.municipality || 'Bayambang'}, ${brgy.province || 'Pangasinan'}`;
-
+ 
             // Update all boundaries' styling dynamically (Glowing Active Highlight vs completely transparent inactives)
             Object.keys(barangayPolygons).forEach(brgyId => {
                 const poly = barangayPolygons[brgyId];
                 if (parseInt(brgyId) === parseInt(id)) {
                     poly.setStyle({
                         opacity: 1.0, // Fully visible border!
-                        color: '#38bdf8', // bright cyan
-                        fillColor: '#38bdf8',
+                        color: '#0099ff', // bright cyan
+                        fillColor: '#0099ff',
                         fillOpacity: 0.18,
                         weight: 3.5,
                         dashArray: ''
@@ -1157,10 +1190,10 @@
             if (clearBtn) clearBtn.style.display = query ? 'block' : 'none';
             
             if (query === '') {
-                filteredBarangays = [...barangays];
+                filteredBarangays = barangays.filter(b => b.name.toLowerCase() !== 'bayambang');
             } else {
                 filteredBarangays = barangays.filter(brgy => 
-                    brgy.name.toLowerCase().includes(query)
+                    brgy.name.toLowerCase().includes(query) && brgy.name.toLowerCase() !== 'bayambang'
                 );
             }
             
@@ -1270,13 +1303,21 @@
                 // Update button text
                 btn.innerHTML = '<i class="fa-solid fa-layer-group" style="font-size:8px;"></i> Deselect All';
                 
+                // Hide municipal boundary
+                if (municipalPolygon) {
+                    municipalPolygon.setStyle({
+                        opacity: 0.0,
+                        weight: 0.0
+                    });
+                }
+                
                 // Show all boundaries
                 Object.values(barangayPolygons).forEach(poly => {
                     poly.setStyle({
-                        color: '#38bdf8',
-                        fillColor: '#38bdf8',
+                        color: '#0099ff',
+                        fillColor: '#0099ff',
                         opacity: 0.8,
-                        fillOpacity: 0.12,
+                        fillOpacity: 0.1,
                         weight: 2.5,
                         dashArray: ''
                     });
@@ -1299,6 +1340,14 @@
             } else {
                 // Update button text
                 btn.innerHTML = '<i class="fa-solid fa-layer-group" style="font-size:8px;"></i> Select All';
+                
+                // Show municipal boundary again
+                if (municipalPolygon) {
+                    municipalPolygon.setStyle({
+                        opacity: 0.8,
+                        weight: 3.0
+                    });
+                }
                 
                 // Reset to default state
                 Object.values(barangayPolygons).forEach(poly => {

@@ -38,7 +38,7 @@
                         </td>
                         <td>
                             @if($barangay->boundary)
-                                <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); color: var(--accent-blue); border-radius: 20px; font-size: 12px; font-weight: 600; text-shadow: 0 0 5px rgba(56,189,248,0.2);">
+                                <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(0, 153, 255, 0.12); border: 1px solid rgba(0, 153, 255, 0.3); color: var(--accent-blue); border-radius: 20px; font-size: 12px; font-weight: 600; text-shadow: 0 0 5px rgba(0,153,255,0.2);">
                                     <i class="fa-solid fa-draw-polygon"></i> Digitized
                                 </span>
                             @else

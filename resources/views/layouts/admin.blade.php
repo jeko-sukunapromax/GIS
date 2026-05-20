@@ -15,9 +15,9 @@
             --text-main: #cbd5e1;
             --text-muted: #94a3b8;
             --text-heading: #f8fafc;
-            --accent-blue: #38bdf8;
-            --accent-blue-hover: #0ea5e9;
-            --accent-blue-glow: rgba(56, 189, 248, 0.25);
+            --accent-blue: #0099ff;
+            --accent-blue-hover: #0077cc;
+            --accent-blue-glow: rgba(0, 153, 255, 0.25);
             --sidebar-bg: rgba(15, 23, 42, 0.85);
             --sidebar-text: #94a3b8;
             --sidebar-active: rgba(30, 41, 59, 0.6);
@@ -27,7 +27,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { 
             background-color: var(--bg-base); 
-            background-image: radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.05) 0%, transparent 40%),
+            background-image: radial-gradient(circle at 10% 20%, rgba(0, 153, 255, 0.05) 0%, transparent 40%),
                               radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 40%);
             color: var(--text-main); 
             display: flex; 
@@ -137,7 +137,7 @@
         .btn-primary { 
             background: var(--accent-blue); 
             color: #090d16; 
-            box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+            box-shadow: 0 0 15px rgba(0, 153, 255, 0.2);
         }
         .btn-primary:hover { 
             background: var(--accent-blue-hover); 
@@ -214,7 +214,7 @@
         .form-control:focus { 
             border-color: var(--accent-blue); 
             background: rgba(15, 23, 42, 0.6);
-            box-shadow: 0 0 12px rgba(56, 189, 248, 0.15); 
+            box-shadow: 0 0 12px rgba(0, 153, 255, 0.15); 
         }
         .form-control::placeholder {
             color: var(--text-muted);
