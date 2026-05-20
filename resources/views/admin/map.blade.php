@@ -99,6 +99,7 @@
             display: flex;
             flex-direction: column;
             z-index: 900;
+            overflow-y: auto;
         }
 
         .sidebar-section { padding: 20px; border-bottom: 1px solid var(--border-color); }
@@ -403,14 +404,16 @@
     <div class="main-container">
         <!-- Sidebar Left -->
         <aside class="sidebar-left">
-            <div class="sidebar-section">
-                <div class="section-title">Barangay List <span id="resultCount" style="font-weight:400; color:var(--accent-blue);"></span></div>
-                <div id="barangayList" style="max-height: 300px; overflow-y: auto;">
+            <div class="sidebar-section" style="flex-shrink: 0;">
+                <div class="section-title">Barangay List <span id="resultCount" style="font-weight:400; color:var(--accent-blue);"></span>
+                    <button onclick="selectAllBarangays()" id="selectAllBtn" style="font-size:9px; padding:3px 8px; background:var(--bg-card); border:1px solid var(--border-color); color:var(--accent-blue); border-radius:4px; cursor:pointer; transition:0.2s; text-transform:uppercase; letter-spacing:0.5px;" onmouseover="this.style.background='rgba(56,189,248,0.1)'; this.style.borderColor='var(--accent-blue)';" onmouseout="this.style.background='var(--bg-card)'; this.style.borderColor='var(--border-color)';"><i class="fa-solid fa-layer-group" style="font-size:8px;"></i> Select All</button>
+                </div>
+                <div id="barangayList" style="max-height: 180px; overflow-y: auto;">
                     <!-- Barangay list will be populated here -->
                 </div>
             </div>
 
-            <div class="sidebar-section" style="max-height: 420px; overflow-y: auto;">
+            <div class="sidebar-section" style="flex: 1; overflow-y: auto; min-height: 0;">
                 <div class="section-title" style="margin-bottom: 8px;">
                     <div>Layers — <span id="active-brgy-name" style="color: var(--accent-blue);">Tococ East</span></div>
                 </div>
@@ -472,7 +475,7 @@
                 @endforeach
             </div>
 
-            <div class="sidebar-section" style="flex: 1;">
+            <div class="sidebar-section" style="flex-shrink: 0;">
                 <div class="section-title">Basemap Selection</div>
                 <div class="basemap-grid">
                     <div class="basemap-card" onclick="setBasemap('roadmap', this)">
@@ -494,7 +497,7 @@
                 </div>
             </div>
 
-            <div class="sidebar-section">
+            <div class="sidebar-section" style="flex-shrink: 0;">
                 <div class="section-title">Analysis Tools</div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                     <button class="toolbar-btn" onclick="startMeasure()" style="width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 12px; gap: 8px;"><i class="fa-solid fa-ruler"></i> Measure</button>
@@ -634,6 +637,7 @@
         let measureControl = L.control.measure({ position: 'topright' });
         const barangays = {!! json_encode($barangays) !!};
         const dbLayerTypes = {!! json_encode($layerTypes) !!};
+        let allSelected = false;
 
         // Dynamic operational layers matching the sidebar checkboxes
         let featureLayers = {
@@ -1042,6 +1046,40 @@
             const brgy = barangays.find(b => parseInt(b.id) === parseInt(id));
             if (!brgy) return;
             
+            // If clicking the same barangay, deselect it
+            if (activeBarangayId === parseInt(id)) {
+                activeBarangayId = null;
+                allSelected = false;
+                
+                // Clear active states from list
+                document.querySelectorAll('.brgy-list-item').forEach(el => el.classList.remove('active'));
+                
+                // Hide HUD scope
+                const hudScope = document.getElementById('map-hud-scope');
+                if (hudScope) hudScope.style.display = 'none';
+                
+                // Reset all polygons to invisible
+                Object.values(barangayPolygons).forEach(poly => {
+                    poly.setStyle({
+                        opacity: 0.0,
+                        fillOpacity: 0.0,
+                        weight: 2.0
+                    });
+                });
+                
+                // Clear operational layers
+                Object.keys(featureLayers).forEach(type => {
+                    if (type !== 'boundary') {
+                        featureLayers[type].clearLayers();
+                    }
+                });
+                
+                // Reset map view
+                map.setView([15.8287, 120.4173], 14);
+                return;
+            }
+            
+            allSelected = false;
             activeBarangayId = parseInt(id);
 
             // Robust UX: Auto-enable and check the boundary layer checkbox if it was hidden
@@ -1213,6 +1251,66 @@
             };
             currentLayer = layers[type] || layers['dark'];
             currentLayer.addTo(map);
+        }
+
+        function selectAllBarangays() {
+            allSelected = !allSelected;
+            activeBarangayId = null;
+            
+            const btn = document.getElementById('selectAllBtn');
+            
+            // Clear active states from list
+            document.querySelectorAll('.brgy-list-item').forEach(el => el.classList.remove('active'));
+            
+            // Hide HUD scope
+            const hudScope = document.getElementById('map-hud-scope');
+            if (hudScope) hudScope.style.display = 'none';
+            
+            if (allSelected) {
+                // Update button text
+                btn.innerHTML = '<i class="fa-solid fa-layer-group" style="font-size:8px;"></i> Deselect All';
+                
+                // Show all boundaries
+                Object.values(barangayPolygons).forEach(poly => {
+                    poly.setStyle({
+                        color: '#38bdf8',
+                        fillColor: '#38bdf8',
+                        opacity: 0.8,
+                        fillOpacity: 0.12,
+                        weight: 2.5,
+                        dashArray: ''
+                    });
+                });
+                
+                // Fit map to show all boundaries
+                const group = L.featureGroup(Object.values(barangayPolygons));
+                map.fitBounds(group.getBounds(), {
+                    padding: [50, 50],
+                    animate: true,
+                    duration: 1.2
+                });
+                
+                // Clear operational layers
+                Object.keys(featureLayers).forEach(type => {
+                    if (type !== 'boundary') {
+                        featureLayers[type].clearLayers();
+                    }
+                });
+            } else {
+                // Update button text
+                btn.innerHTML = '<i class="fa-solid fa-layer-group" style="font-size:8px;"></i> Select All';
+                
+                // Reset to default state
+                Object.values(barangayPolygons).forEach(poly => {
+                    poly.setStyle({
+                        opacity: 0.0,
+                        fillOpacity: 0.0,
+                        weight: 2.0
+                    });
+                });
+                
+                map.setView([15.8287, 120.4173], 14);
+            }
         }
 
         document.addEventListener('DOMContentLoaded', initMap);

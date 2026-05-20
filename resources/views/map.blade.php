@@ -106,8 +106,11 @@
                     <i class="fa-solid fa-magnifying-glass text-cyber-cyan text-[12px]"></i>
                 </div>
 
-                <div class="text-[11px] text-cyber-muted mb-4 tracking-[1px] flex gap-1.5">
+                <div class="text-[11px] text-cyber-muted mb-4 tracking-[1px] flex gap-1.5 justify-between items-center">
                     <span class="text-cyber-cyan">BAYAMBANG</span>
+                    <button onclick="selectAllBarangays()" id="selectAllBtn" class="font-orbitron text-[9px] text-cyber-cyan px-2 py-1 border border-cyber-cyan/30 transition-all duration-300 hover:bg-cyber-cyan/10 hover:shadow-[0_0_10px_rgba(0,255,255,0.4)] tracking-[1px]">
+                        <i class="fa-solid fa-layer-group mr-1"></i> SELECT ALL
+                    </button>
                 </div>
 
                 <div class="flex-1 overflow-y-auto flex flex-col gap-0.5 pr-2.5 scrollbar-cyber" id="barangayList">
@@ -123,13 +126,14 @@
     </div>
 
     <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script> -->
 
     <script>
         const barangays = {!! json_encode($barangays) !!};
         let map;
         let barangayPolygons = {};
         let activeBarangayId = null;
+        let allSelected = false;
 
         function initMap() {
             // Strict bounds for Bayambang
@@ -175,14 +179,14 @@
 
                             polygon.on('click', () => selectBarangay(brgy.id));
                             
-                            // Hover effects
+                            // Hover effects - only apply if not active or all selected
                             polygon.on('mouseover', () => {
-                                if (activeBarangayId !== brgy.id) {
+                                if (activeBarangayId !== brgy.id && !allSelected) {
                                     polygon.setStyle({ opacity: 0.6, fillOpacity: 0.05, dashArray: '' });
                                 }
                             });
                             polygon.on('mouseout', () => {
-                                if (activeBarangayId !== brgy.id) {
+                                if (activeBarangayId !== brgy.id && !allSelected) {
                                     polygon.setStyle({ opacity: 0.15, fillOpacity: 0.0, dashArray: '4 6' });
                                 }
                             });
@@ -266,6 +270,38 @@
             const brgy = barangays.find(b => b.id == id);
             if (!brgy) return;
             
+            // If clicking the same barangay, deselect it
+            if (activeBarangayId === id) {
+                activeBarangayId = null;
+                allSelected = false;
+                
+                // Clear active states from list
+                document.querySelectorAll('.brgy-item').forEach(el => {
+                    el.classList.remove('bg-gradient-to-r', 'from-cyber-cyan/10', 'to-transparent', 'border-cyber-cyan', 'text-white', 'drop-shadow-[0_0_5px_#00ffff]');
+                    el.classList.add('border-transparent');
+                    el.querySelector('span:first-child').classList.remove('text-cyber-cyan');
+                    el.querySelector('span:first-child').classList.add('text-cyber-cyan/30');
+                    el.querySelector('i').classList.remove('opacity-100');
+                    el.querySelector('i').classList.add('opacity-0');
+                });
+                
+                // Reset all polygons
+                Object.values(barangayPolygons).forEach(poly => {
+                    poly.setStyle({
+                        opacity: 0.15,
+                        fillOpacity: 0.0,
+                        weight: 1.5,
+                        dashArray: '4 6'
+                    });
+                });
+                
+                // Reset map view
+                map.setView([15.8287, 120.4173], 13);
+                if (hudMarker) map.removeLayer(hudMarker);
+                return;
+            }
+            
+            allSelected = false;
             activeBarangayId = brgy.id;
 
             // Update List Active State visually
@@ -331,6 +367,61 @@
             });
 
             hudMarker = L.marker(latlng, { icon: icon }).addTo(map);
+        }
+
+        function selectAllBarangays() {
+            allSelected = !allSelected;
+            activeBarangayId = null;
+            
+            const btn = document.getElementById('selectAllBtn');
+            
+            // Clear active states from list
+            document.querySelectorAll('.brgy-item').forEach(el => {
+                el.classList.remove('bg-gradient-to-r', 'from-cyber-cyan/10', 'to-transparent', 'border-cyber-cyan', 'text-white', 'drop-shadow-[0_0_5px_#00ffff]');
+                el.classList.add('border-transparent');
+            });
+            
+            if (allSelected) {
+                // Update button text
+                btn.innerHTML = '<i class="fa-solid fa-layer-group mr-1"></i> DESELECT ALL';
+                
+                // Show all boundaries
+                Object.values(barangayPolygons).forEach(poly => {
+                    poly.setStyle({
+                        color: '#00ffff',
+                        fillColor: '#00ffff',
+                        opacity: 0.8,
+                        fillOpacity: 0.1,
+                        weight: 2,
+                        dashArray: ''
+                    });
+                });
+                
+                // Fit map to show all boundaries
+                const group = L.featureGroup(Object.values(barangayPolygons));
+                map.flyToBounds(group.getBounds(), {
+                    padding: [50, 50],
+                    duration: 1.5
+                });
+                
+                if (hudMarker) map.removeLayer(hudMarker);
+            } else {
+                // Update button text
+                btn.innerHTML = '<i class="fa-solid fa-layer-group mr-1"></i> SELECT ALL';
+                
+                // Reset to default state
+                Object.values(barangayPolygons).forEach(poly => {
+                    poly.setStyle({
+                        opacity: 0.15,
+                        fillOpacity: 0.0,
+                        weight: 1.5,
+                        dashArray: '4 6'
+                    });
+                });
+                
+                map.setView([15.8287, 120.4173], 13);
+                if (hudMarker) map.removeLayer(hudMarker);
+            }
         }
 
         // Initialize
