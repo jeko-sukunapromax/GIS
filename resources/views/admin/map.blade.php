@@ -388,7 +388,11 @@
             <a href="#" class="nav-link">Analysis</a>
             <a href="#" class="nav-link">Reports</a>
             <a href="#" class="nav-link">Help</a>
-            <a href="/admin/barangays" class="nav-link" style="color: var(--accent-blue); font-weight: 600;"><i class="fa-solid fa-user-shield"></i> Admin Dashboard</a>
+            @hasanyrole('admin|super-admin')
+                <a href="{{ route('admin.barangays.index') }}" class="nav-link" style="color: var(--accent-blue); font-weight: 600;"><i class="fa-solid fa-user-shield"></i> Admin Dashboard</a>
+            @else
+                <a href="{{ route('admin.features.index') }}" class="nav-link" style="color: var(--accent-blue); font-weight: 600;"><i class="fa-solid fa-draw-polygon"></i> Features</a>
+            @endhasanyrole
         </div>
         <div class="nav-right">
             <div class="search-container">
@@ -512,8 +516,9 @@
             
             <!-- Dynamic Map HUD Title (Scope) styled exactly like the picture! -->
             <div id="map-hud-scope" style="display: none; position: absolute; top: 24px; left: 50%; transform: translateX(-50%); z-index: 1000; pointer-events: none; text-align: center;">
-                <div style="font-family: 'Outfit', 'Inter', sans-serif; font-size: 15px; font-weight: 800; color: #0099ff; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(0, 153, 255, 0.6), 0 2px 4px rgba(0,0,0,0.95); padding: 8px 20px; background: rgba(9, 13, 22, 0.85); border: 1.5px solid rgba(0, 153, 255, 0.45); border-radius: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: inline-flex; align-items: center; justify-content: center;">
+                <div style="position: relative; font-family: 'Outfit', 'Inter', sans-serif; font-size: 15px; font-weight: 800; color: #0099ff; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(0, 153, 255, 0.6), 0 2px 4px rgba(0,0,0,0.95); padding: 8px 20px; background: rgba(9, 13, 22, 0.85); border: 1.5px solid rgba(0, 153, 255, 0.45); border-radius: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: inline-flex; align-items: center; justify-content: center; pointer-events: auto;">
                     SCOPE: <span id="hud-scope-name" style="margin-left: 6px;">NONE</span>
+                    <button type="button" onclick="closeHudScope(event)" title="Clear selection" onmouseover="this.style.background='#0099ff'; this.style.color='#07111f'; this.style.transform='scale(1.08)';" onmouseout="this.style.background='#07111f'; this.style.color='#0099ff'; this.style.transform='scale(1)';" style="position: absolute; top: -8px; right: -8px; width: 18px; height: 18px; display: inline-grid; place-items: center; border: 1px solid rgba(0,153,255,0.65); border-radius: 999px; background: #07111f; color: #0099ff; font-size: 13px; font-weight: 900; line-height: 1; cursor: pointer; box-shadow: 0 0 8px rgba(0,153,255,0.4), 0 2px 6px rgba(0,0,0,0.55); transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;">×</button>
                 </div>
             </div>
             
@@ -617,11 +622,11 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
-    @auth
+    @hasanyrole('admin|super-admin')
     <!-- Leaflet Geoman (Drawing Tools for Admins) -->
     <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" />
     <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.min.js"></script>
-    @endauth
+    @endhasanyrole
     <!-- Leaflet Measure Plugin -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-measure@3.1.0/dist/leaflet-measure.css">
     <script src="https://cdn.jsdelivr.net/npm/leaflet-measure@3.1.0/dist/leaflet-measure.js"></script>
@@ -632,13 +637,32 @@
         let markers = {};
         let barangayPolygons = {}; // Holds preloaded interactive boundaries
         let activeBarangayId = null; // Tracks active selected Barangay
+        let selectedBarangayIds = new Set();
         let filteredBarangays = [];
         let identifyActive = false;
         let measureControl = L.control.measure({ position: 'topright' });
-        const barangays = {!! json_encode($barangays) !!};
-        const dbLayerTypes = {!! json_encode($layerTypes) !!};
+        const barangays = @json($barangays);
+        const dbLayerTypes = @json($layerTypes);
         let allSelected = false;
         let municipalPolygon = null;
+
+        function isMunicipalBoundary(brgy) {
+            return brgy.is_municipal_boundary || brgy.name.toLowerCase() === 'bayambang';
+        }
+
+        function drawMunicipalPolygon(boundaryCoords) {
+            municipalPolygon = L.polygon(boundaryCoords, {
+                color: '#0099ff',
+                fillColor: '#0099ff',
+                opacity: 1.0,
+                fillOpacity: 0.0,
+                weight: 4,
+                dashArray: '',
+                className: 'municipal-polygon'
+            }).addTo(featureLayers.boundary);
+
+            municipalPolygon.bringToBack();
+        }
 
         // Dynamic operational layers matching the sidebar checkboxes
         let featureLayers = {
@@ -649,12 +673,10 @@
         });
 
         function initMap() {
-            console.log("Initializing map with barangays:", barangays);
-            
-            // Bounding box strictly around Bayambang
+            // Keep the map around Bayambang, with enough buffer to center edge barangays.
             const bayambangBounds = L.latLngBounds(
-                L.latLng(15.70, 120.28), // Southwest corner
-                L.latLng(15.92, 120.58)  // Northeast corner
+                L.latLng(15.58, 120.12), // Southwest corner
+                L.latLng(16.02, 120.78)  // Northeast corner
             );
 
             // Initialize map centered on Bayambang with strict zoom and pan restrictions
@@ -663,7 +685,7 @@
                 minZoom: 12,
                 maxZoom: 20,
                 maxBounds: bayambangBounds,
-                maxBoundsViscosity: 1.0
+                maxBoundsViscosity: 0.45
             }).setView([15.8287, 120.4173], 14);
 
             // Set default dark basemap
@@ -678,7 +700,7 @@
                 }
             });
 
-            @auth
+            @hasanyrole('admin|super-admin')
             // Initialize Geoman Drawing Tools
             map.pm.addControls({
                 position: 'topleft',
@@ -702,8 +724,6 @@
                     const latlngs = layer.getLatLngs()[0];
                     const formattedCoords = latlngs.map(ll => [ll.lat, ll.lng]);
                     
-                    console.log("Drawn Boundary:", JSON.stringify(formattedCoords));
-                    
                     const popupContent = `
                         <div style="padding:10px; min-width:200px; font-family: 'Inter', sans-serif;">
                             <b style="color:var(--accent-blue); font-size: 13px;"><i class="fa-solid fa-draw-polygon"></i> Boundary Created!</b><br>
@@ -715,7 +735,7 @@
                     layer.bindPopup(popupContent).openPopup();
                 }
             });
-            @endauth
+            @endhasanyrole
 
             // Draw boundaries and centroid markers for each barangay from the database
             barangays.forEach(brgy => {
@@ -724,19 +744,11 @@
                     try {
                         let boundaryCoords = typeof brgy.boundary === 'string' ? JSON.parse(brgy.boundary) : brgy.boundary;
                         if (Array.isArray(boundaryCoords) && boundaryCoords.length > 0) {
-                            if (brgy.name.toLowerCase() === 'bayambang') {
+                            if (isMunicipalBoundary(brgy)) {
                                 // Draw municipal boundary — solid blue outline, no fill (matches screenshot)
-                                municipalPolygon = L.polygon(boundaryCoords, {
-                                    color: '#0099ff',
-                                    fillColor: '#0099ff',
-                                    opacity: 1.0,
-                                    fillOpacity: 0.0,
-                                    weight: 2.5,
-                                    dashArray: '',
-                                    className: 'municipal-polygon'
-                                }).addTo(featureLayers.boundary);
-                                return;
-                            }
+	                                drawMunicipalPolygon(boundaryCoords);
+	                                return;
+	                            }
 
                             const polygon = L.polygon(boundaryCoords, {
                                 color: '#0099ff',
@@ -786,7 +798,7 @@
                 }
 
                 // 2. Draw centroid marker (Skip for the whole municipality)
-                if (brgy.name.toLowerCase() === 'bayambang') return;
+                if (isMunicipalBoundary(brgy)) return;
 
                 const lat = parseFloat(brgy.latitude);
                 const lng = parseFloat(brgy.longitude);
@@ -821,10 +833,10 @@
                     
                     marker.bindPopup(infoWindowContent);
                     marker.on('click', () => selectBarangay(brgy.id));
-                }
-            });
+	                }
+	            });
 
-            // Mouse Move Coordinates (bottom left display)
+	            // Mouse Move Coordinates (bottom left display)
             map.on('mousemove', function(e) {
                 const latVal = document.getElementById('lat-val');
                 const lngVal = document.getElementById('lng-val');
@@ -881,14 +893,8 @@
                 }
             });
 
-            // Initialize barangay list sidebar (Filter out Bayambang)
-            filteredBarangays = barangays.filter(b => b.name.toLowerCase() !== 'bayambang');
+            filteredBarangays = barangays.filter(b => !isMunicipalBoundary(b));
             renderBarangayList();
- 
-            // Default: Show the first Barangay on load (Use filtered list)
-            if (filteredBarangays && filteredBarangays.length > 0) {
-                selectBarangay(filteredBarangays[0].id);
-            }
         }
 
         function createCustomIcon(iconClass, color) {
@@ -933,8 +939,6 @@
             fetch(`/api/barangays/${id}/features`)
                 .then(res => res.json())
                 .then(features => {
-                    console.log(`Fetched ${features.length} map features for Barangay ID ${id}:`, features);
-                    
                     // Reset counts dynamically for badges
                     const counts = {};
                     dbLayerTypes.forEach(t => {
@@ -1057,55 +1061,85 @@
                     </div>
                 </div>
             `).join('');
+
+            syncSelectedListState();
         }
 
         function selectBarangay(id) {
             const brgy = barangays.find(b => parseInt(b.id) === parseInt(id));
             if (!brgy) return;
-            
-            // If clicking the same barangay, deselect it
-            if (activeBarangayId === parseInt(id)) {
-                activeBarangayId = null;
-                allSelected = false;
-                
-                // Clear active states from list
-                document.querySelectorAll('.brgy-list-item').forEach(el => el.classList.remove('active'));
-                
-                // Hide HUD scope
-                const hudScope = document.getElementById('map-hud-scope');
-                if (hudScope) hudScope.style.display = 'none';
-                
-                // Reset all polygons to invisible
-                Object.values(barangayPolygons).forEach(poly => {
-                    poly.setStyle({
-                        opacity: 0.0,
-                        fillOpacity: 0.0,
-                        weight: 2.0
-                    });
+
+            allSelected = false;
+            const selectAllBtn = document.getElementById('selectAllBtn');
+            if (selectAllBtn) {
+                selectAllBtn.innerHTML = '<i class="fa-solid fa-layer-group" style="font-size:8px;"></i> Select All';
+            }
+            const numericId = parseInt(id);
+            selectedBarangayIds.has(numericId)
+                ? selectedBarangayIds.delete(numericId)
+                : selectedBarangayIds.add(numericId);
+
+            applySelectedBarangays();
+        }
+
+        function syncSelectedListState() {
+            document.querySelectorAll('.brgy-list-item').forEach(el => el.classList.remove('active'));
+            selectedBarangayIds.forEach(id => {
+                document.getElementById(`brgy-item-${id}`)?.classList.add('active');
+            });
+        }
+
+        function resetBarangaySelection() {
+            activeBarangayId = null;
+            selectedBarangayIds.clear();
+            syncSelectedListState();
+
+            const hudScope = document.getElementById('map-hud-scope');
+            if (hudScope) hudScope.style.display = 'none';
+
+            Object.values(barangayPolygons).forEach(poly => {
+                poly.setStyle({
+                    opacity: 0.0,
+                    fillOpacity: 0.0,
+                    weight: 2.0
                 });
-                
-                // Show municipal boundary again
-                if (municipalPolygon) {
-                    municipalPolygon.setStyle({
-                        opacity: 0.8,
-                        weight: 3.0
-                    });
+            });
+
+            if (municipalPolygon) {
+                municipalPolygon.setStyle({
+                    opacity: 0.8,
+                    weight: 3.0
+                });
+            }
+
+            Object.keys(featureLayers).forEach(type => {
+                if (type !== 'boundary') {
+                    featureLayers[type].clearLayers();
                 }
-                
-                // Clear operational layers
-                Object.keys(featureLayers).forEach(type => {
-                    if (type !== 'boundary') {
-                        featureLayers[type].clearLayers();
-                    }
-                });
-                
-                // Reset map view
-                map.setView([15.8287, 120.4173], 14);
+            });
+
+            map.setView([15.8287, 120.4173], 14);
+        }
+
+        function closeHudScope(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            resetBarangaySelection();
+        }
+
+        function applySelectedBarangays() {
+            const selectedIds = Array.from(selectedBarangayIds);
+
+            if (selectedIds.length === 0) {
+                resetBarangaySelection();
                 return;
             }
-            
-            allSelected = false;
-            activeBarangayId = parseInt(id);
+
+            activeBarangayId = selectedIds.length === 1 ? selectedIds[0] : null;
+            syncSelectedListState();
 
             // Hide municipal boundary when a barangay is selected
             if (municipalPolygon) {
@@ -1124,28 +1158,22 @@
                 }
             }
  
-            // Update active state in list
-            document.querySelectorAll('.brgy-list-item').forEach(el => el.classList.remove('active'));
-            document.getElementById(`brgy-item-${id}`)?.classList.add('active');
-            
-            // Update sidebars & dynamic layer tree header
-            updateSidebar(id);
-            document.getElementById('active-brgy-name').innerText = brgy.name;
-            document.getElementById('active-brgy-subtitle').innerText = `${brgy.municipality || 'Bayambang'}, ${brgy.province || 'Pangasinan'}`;
+            const selectedPolygons = [];
  
             // Update all boundaries' styling dynamically (Glowing Active Highlight vs completely transparent inactives)
             Object.keys(barangayPolygons).forEach(brgyId => {
                 const poly = barangayPolygons[brgyId];
-                if (parseInt(brgyId) === parseInt(id)) {
-                    poly.setStyle({
-                        opacity: 1.0, // Fully visible border!
-                        color: '#0099ff', // bright cyan
-                        fillColor: '#0099ff',
-                        fillOpacity: 0.18,
-                        weight: 3.5,
-                        dashArray: ''
-                    });
+                if (selectedBarangayIds.has(parseInt(brgyId))) {
+	                    poly.setStyle({
+	                        opacity: 1.0, // Fully visible border!
+	                        color: '#0099ff', // bright cyan
+	                        fillColor: '#0099ff',
+	                        fillOpacity: 0.16,
+	                        weight: 3.5,
+	                        dashArray: ''
+	                    });
                     poly.bringToFront();
+                    selectedPolygons.push(poly);
                 } else {
                     poly.setStyle({
                         opacity: 0.0, // Completely invisible!
@@ -1159,28 +1187,51 @@
             const hudScope = document.getElementById('map-hud-scope');
             const hudScopeName = document.getElementById('hud-scope-name');
             if (hudScope && hudScopeName) {
-                hudScopeName.innerText = brgy.name;
+                hudScopeName.innerText = selectedIds.length === 1
+                    ? barangays.find(b => parseInt(b.id) === selectedIds[0])?.name
+                    : `${selectedIds.length} BARANGAYS`;
                 hudScope.style.display = 'block';
             }
 
-            // Fetch and draw features/operational layers
-            fetchBarangayFeatures(id);
+            if (selectedIds.length === 1) {
+                const selectedBrgy = barangays.find(b => parseInt(b.id) === selectedIds[0]);
+                updateSidebar(selectedBrgy.id);
+                document.getElementById('active-brgy-name').innerText = selectedBrgy.name;
+                document.getElementById('active-brgy-subtitle').innerText = `${selectedBrgy.municipality || 'Bayambang'}, ${selectedBrgy.province || 'Pangasinan'}`;
+                fetchBarangayFeatures(selectedBrgy.id);
+            } else {
+                document.getElementById('active-brgy-name').innerText = `${selectedIds.length} Selected`;
+                document.getElementById('active-brgy-subtitle').innerText = 'Multiple barangays selected';
+                Object.keys(featureLayers).forEach(type => {
+                    if (type !== 'boundary') {
+                        featureLayers[type].clearLayers();
+                    }
+                });
+            }
             
             // Premium smooth transition: fit map bounds strictly to the active boundary
-            if (barangayPolygons[id]) {
-                map.fitBounds(barangayPolygons[id].getBounds(), {
-                    padding: [50, 50],
-                    animate: true,
-                    duration: 1.2
-                });
-            } else if (markers[id]) {
-                const lat = parseFloat(brgy.latitude);
-                const lng = parseFloat(brgy.longitude);
+            if (selectedPolygons.length > 0) {
+                const group = L.featureGroup(selectedPolygons);
+                fitSelectionBounds(group.getBounds());
+            } else if (selectedIds.length === 1 && markers[selectedIds[0]]) {
+                const selectedBrgy = barangays.find(b => parseInt(b.id) === selectedIds[0]);
+                const lat = parseFloat(selectedBrgy.latitude);
+                const lng = parseFloat(selectedBrgy.longitude);
                 if (!isNaN(lat) && !isNaN(lng)) {
-                    map.setView([lat, lng], 15);
-                    markers[id].openPopup();
+                    map.setView([lat, lng], 14);
+                    markers[selectedIds[0]].openPopup();
                 }
             }
+        }
+
+        function fitSelectionBounds(bounds) {
+            map.fitBounds(bounds, {
+                paddingTopLeft: [380, 120],
+                paddingBottomRight: [430, 120],
+                maxZoom: 13,
+                animate: true,
+                duration: 1.0
+            });
         }
 
         function searchBarangays() {
@@ -1190,10 +1241,10 @@
             if (clearBtn) clearBtn.style.display = query ? 'block' : 'none';
             
             if (query === '') {
-                filteredBarangays = barangays.filter(b => b.name.toLowerCase() !== 'bayambang');
+                filteredBarangays = barangays.filter(b => !isMunicipalBoundary(b));
             } else {
                 filteredBarangays = barangays.filter(brgy => 
-                    brgy.name.toLowerCase().includes(query) && brgy.name.toLowerCase() !== 'bayambang'
+                    brgy.name.toLowerCase().includes(query) && !isMunicipalBoundary(brgy)
                 );
             }
             
@@ -1210,9 +1261,6 @@
             identifyActive = !identifyActive;
             btn.classList.toggle('active', identifyActive);
             document.getElementById('map').style.cursor = identifyActive ? 'crosshair' : '';
-            if(identifyActive) {
-                alert("Identify Mode Active: Click anywhere on the map to get coordinates.");
-            }
         }
 
         function startMeasure() {
@@ -1289,11 +1337,12 @@
         function selectAllBarangays() {
             allSelected = !allSelected;
             activeBarangayId = null;
+            selectedBarangayIds.clear();
             
             const btn = document.getElementById('selectAllBtn');
             
             // Clear active states from list
-            document.querySelectorAll('.brgy-list-item').forEach(el => el.classList.remove('active'));
+            syncSelectedListState();
             
             // Hide HUD scope
             const hudScope = document.getElementById('map-hud-scope');
@@ -1302,12 +1351,16 @@
             if (allSelected) {
                 // Update button text
                 btn.innerHTML = '<i class="fa-solid fa-layer-group" style="font-size:8px;"></i> Deselect All';
+                barangays
+                    .filter(b => !isMunicipalBoundary(b))
+                    .forEach(brgy => selectedBarangayIds.add(parseInt(brgy.id)));
+                syncSelectedListState();
                 
-                // Hide municipal boundary
+                // Keep municipal boundary visible until an individual barangay is selected.
                 if (municipalPolygon) {
                     municipalPolygon.setStyle({
-                        opacity: 0.0,
-                        weight: 0.0
+                        opacity: 0.8,
+                        weight: 3.0
                     });
                 }
                 
@@ -1327,6 +1380,7 @@
                 const group = L.featureGroup(Object.values(barangayPolygons));
                 map.fitBounds(group.getBounds(), {
                     padding: [50, 50],
+                    maxZoom: 13,
                     animate: true,
                     duration: 1.2
                 });
@@ -1340,6 +1394,8 @@
             } else {
                 // Update button text
                 btn.innerHTML = '<i class="fa-solid fa-layer-group" style="font-size:8px;"></i> Select All';
+                selectedBarangayIds.clear();
+                syncSelectedListState();
                 
                 // Show municipal boundary again
                 if (municipalPolygon) {

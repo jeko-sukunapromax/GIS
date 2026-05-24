@@ -16,6 +16,7 @@ class Barangay extends Model
         'hazard_level',
         'status',
         'is_visible',
+        'is_municipal_boundary',
         'agri_area',
         'residential_area',
         'commercial_area',
@@ -31,6 +32,7 @@ class Barangay extends Model
     protected $casts = [
         'boundary' => 'array',
         'is_visible' => 'boolean',
+        'is_municipal_boundary' => 'boolean',
         'boundary_updated_at' => 'datetime',
         'latitude' => 'float',
         'longitude' => 'float',

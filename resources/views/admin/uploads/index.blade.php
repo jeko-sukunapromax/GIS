@@ -82,21 +82,24 @@
     .status-processed { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
     .status-pending { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
     .status-failed { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .status-create { background: rgba(56, 189, 248, 0.15); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.3); }
+    .status-update { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .status-skipped { background: rgba(148, 163, 184, 0.12); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.24); }
 </style>
 
 <div class="page-header">
     <div class="page-title">Upload Data</div>
-    <div class="page-subtitle">Upload shapefiles, GeoJSON, or CSV files</div>
+    <div class="page-subtitle">Upload GeoJSON files or zipped shapefiles for barangay boundary mapping</div>
 </div>
 
-<form action="{{ route('admin.uploads.store') }}" method="POST" enctype="multipart/form-data" id="uploadForm">
+<form action="{{ route('admin.uploads.preview') }}" method="POST" enctype="multipart/form-data" id="uploadForm">
     @csrf
     
     <label class="upload-zone" for="upload_file" id="dropZone">
         <div id="uploadPlaceholder">
             <i class="fa-solid fa-arrow-up-from-bracket"></i>
             <div class="upload-zone-title">Drag and drop your file(s) here</div>
-            <div class="upload-zone-desc">Supports: .shp, .geojson, .json, .csv, .kml, .gpx, or .zip — Multi-select enabled (Max 50MB per file)</div>
+            <div class="upload-zone-desc">Supports: .geojson, .json, or .zip containing .shp and .dbf files. Multi-select enabled, max 50MB per file.</div>
         </div>
         
         <div id="fileInfo" style="display: none; width: 100%; max-width: 500px; margin-left: auto; margin-right: auto; text-align: center;">
@@ -106,15 +109,92 @@
             <div id="fileNameDisplay" style="margin-bottom: 24px;"></div>
             
             <button type="submit" class="btn btn-primary" style="padding: 10px 24px; font-size: 15px; font-weight: 600;" onclick="event.stopPropagation()">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> Process & Auto-Map Boundaries
+                <i class="fa-solid fa-eye"></i> Preview Upload
             </button>
             <div style="margin-top: 12px; font-size: 12px; color: #94a3b8; text-decoration: underline; cursor: pointer;" onclick="event.preventDefault(); document.getElementById('upload_file').value = ''; document.getElementById('upload_file').dispatchEvent(new Event('change'));">
                 Cancel / Select Different Files
             </div>
         </div>
     </label>
-    <input type="file" id="upload_file" name="upload_files[]" style="display: none;" accept=".shp,.geojson,.json,.csv,.kml,.gpx,.zip" multiple>
+    <input type="file" id="upload_file" name="upload_files[]" style="display: none;" accept=".geojson,.json,.zip" multiple>
 </form>
+
+@if(session('upload_preview'))
+    @php($preview = session('upload_preview'))
+    <div class="card" style="margin-bottom: 24px; border-color: rgba(56, 189, 248, 0.28); background: rgba(14, 165, 233, 0.08);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 18px; flex-wrap: wrap;">
+            <div>
+                <div class="card-title" style="margin-bottom: 6px;">Upload Preview</div>
+                <div style="font-size: 13px; color: #94a3b8;">Review detected boundaries before saving them to the database.</div>
+            </div>
+            <form action="{{ route('admin.uploads.store') }}" method="POST">
+                @csrf
+                <input type="hidden" name="preview_token" value="{{ $preview['token'] }}">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-floppy-disk"></i> Confirm & Save
+                </button>
+            </form>
+        </div>
+
+        @foreach($preview['files'] as $file)
+            <div style="padding: 16px; border: 1px solid rgba(148, 163, 184, 0.14); border-radius: 10px; background: rgba(15, 23, 42, 0.35); margin-bottom: 14px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px;">
+                    <div>
+                        <div style="color: #f8fafc; font-weight: 700;">{{ $file['file_name'] }}</div>
+                        <div style="color: #94a3b8; font-size: 12px; margin-top: 3px;">{{ $file['file_type'] }} · {{ $file['file_size'] }}</div>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <span class="status-badge status-update">{{ $file['matched'] }} update</span>
+                        <span class="status-badge status-create">{{ $file['created'] }} create</span>
+                        <span class="status-badge status-pending">{{ $file['municipal'] }} municipal</span>
+                        @if($file['skipped'] > 0)
+                            <span class="status-badge status-skipped">{{ $file['skipped'] }} skipped</span>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>BOUNDARY</th>
+                                <th>ACTION</th>
+                                <th>TYPE</th>
+                                <th>POINTS</th>
+                                <th>AREA</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse(array_slice($file['items'], 0, 12) as $item)
+                                <tr>
+                                    <td style="font-weight: 600; color: #f8fafc;">{{ $item['display_name'] }}</td>
+                                    <td>
+                                        <span class="status-badge {{ $item['action'] === 'Create' ? 'status-create' : ($item['action'] === 'Update' ? 'status-update' : 'status-skipped') }}">
+                                            {{ $item['action'] }}
+                                        </span>
+                                    </td>
+                                    <td style="color: #94a3b8;">{{ $item['is_municipal_boundary'] ? 'Municipal Boundary' : 'Barangay Boundary' }}</td>
+                                    <td style="color: #94a3b8;">{{ number_format($item['points']) }}</td>
+                                    <td style="color: #94a3b8;">{{ $item['area'] ? number_format($item['area'], 2).' ha' : '—' }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" style="text-align: center; color: #64748b; padding: 22px;">
+                                        No polygon boundaries were detected in this file.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                @if(count($file['items']) > 12)
+                    <div style="margin-top: 10px; color: #94a3b8; font-size: 12px;">Showing first 12 of {{ count($file['items']) }} detected boundaries.</div>
+                @endif
+            </div>
+        @endforeach
+    </div>
+@endif
 
 <div class="card">
     <div class="card-title">Recent Uploads</div>
@@ -126,7 +206,7 @@
                     <th>FILE</th>
                     <th>TYPE</th>
                     <th>SIZE</th>
-                    <th>UPLOADED BY</th>
+                    <th>UPLOADER</th>
                     <th>DATE</th>
                     <th>STATUS</th>
                     <th>ACTIONS</th>
@@ -208,14 +288,14 @@
         if (this.files && this.files.length > 0) {
             uploadPlaceholder.style.display = 'none';
             if (this.files.length === 1) {
-                fileNameDisplay.innerHTML = `<div style="font-size: 18px; color: #f8fafc; font-weight: 600;">${this.files[0].name}</div><div style="font-size: 13px; color: #94a3b8; margin-top: 4px;">Ready to process</div>`;
+                fileNameDisplay.innerHTML = `<div style="font-size: 18px; color: #f8fafc; font-weight: 600;">${escapeHtml(this.files[0].name)}</div><div style="font-size: 13px; color: #94a3b8; margin-top: 4px;">Ready to process</div>`;
             } else {
                 let fileListHtml = `<div style="font-size: 16px; color: #f8fafc; font-weight: 600; margin-bottom: 12px;">${this.files.length} Files Selected</div>`;
                 fileListHtml += `<div style="max-height: 120px; overflow-y: auto; text-align: left; padding: 12px; background: rgba(15, 23, 42, 0.4); border-radius: 8px; border: 1px solid rgba(148, 163, 184, 0.1);"><ul style="list-style: none; padding: 0; margin: 0;">`;
                 for (let i = 0; i < this.files.length; i++) {
                     const sizeKB = (this.files[i].size / 1024).toFixed(1);
                     fileListHtml += `<li style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; color: #cbd5e1; font-size: 13px;">
-                        <span><i class="fa-solid fa-file" style="color: #38bdf8; font-size: 11px; margin-right: 8px;"></i> ${this.files[i].name}</span>
+                        <span><i class="fa-solid fa-file" style="color: #38bdf8; font-size: 11px; margin-right: 8px;"></i> ${escapeHtml(this.files[i].name)}</span>
                         <span style="color: #64748b; font-family: monospace; font-size: 11px;">${sizeKB} KB</span>
                     </li>`;
                 }
@@ -233,9 +313,16 @@
             dropZone.style.borderColor = 'rgba(56, 189, 248, 0.4)';
             dropZone.style.background = 'rgba(30, 41, 59, 0.45)';
         }
-    });
+	    });
 
-    // --- Custom Confirm Modal Logic ---
+    function escapeHtml(value) {
+        const div = document.createElement('div');
+        div.textContent = value;
+
+        return div.innerHTML;
+    }
+
+	    // --- Custom Confirm Modal Logic ---
     let formToSubmit = null;
 
     function showConfirmModal(event, form) {

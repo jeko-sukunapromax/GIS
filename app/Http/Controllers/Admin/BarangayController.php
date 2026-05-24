@@ -11,7 +11,7 @@ class BarangayController extends Controller
 {
     public function index()
     {
-        $barangays = Barangay::all();
+        $barangays = Barangay::where('is_municipal_boundary', false)->get();
         return view('admin.barangays.index', compact('barangays'));
     }
 

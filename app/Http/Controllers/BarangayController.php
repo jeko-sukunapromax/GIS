@@ -15,7 +15,11 @@ class BarangayController extends Controller
 
     public function getBarangays()
     {
-        return response()->json(Barangay::where('is_visible', true)->get());
+        return response()->json(
+            Barangay::where('is_visible', true)
+                ->where('is_municipal_boundary', false)
+                ->get()
+        );
     }
 
     public function getFeatures(Barangay $barangay)

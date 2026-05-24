@@ -242,7 +242,7 @@
                     <span class="status-badge">{{ $barangay->features()->count() }} items</span>
                 </div>
                 
-                <a href="{{ route('admin.features.index') }}?barangay={{ $barangay->id }}" class="btn btn-secondary" style="width: 100%; margin-top: 10px;">
+                <a href="{{ route('admin.features.index', ['barangay_id' => $barangay->id]) }}" class="btn btn-secondary" style="width: 100%; margin-top: 10px;">
                     <i class="fa-solid fa-list"></i> View All Features
                 </a>
             </div>
