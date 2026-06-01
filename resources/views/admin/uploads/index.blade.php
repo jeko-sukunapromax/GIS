@@ -19,43 +19,209 @@
         font-size: 14px;
     }
 
+    .upload-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        text-align: center;
+    }
+
+    /* Premium Widescreen Upload Zone Redesign */
     .upload-zone {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         width: 100%;
-        border: 2px dashed rgba(56, 189, 248, 0.4);
-        border-radius: 12px;
-        padding: 40px;
+        border: 2px dashed rgba(56, 189, 248, 0.35);
+        border-radius: 16px;
+        padding: 48px 32px;
         text-align: center;
-        background: rgba(30, 41, 59, 0.45);
+        background: linear-gradient(180deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.4) 100%);
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         margin-bottom: 24px;
+        position: relative;
+        overflow: hidden;
     }
     
     .upload-zone:hover {
-        background: rgba(56, 189, 248, 0.05);
-        border-color: #38bdf8;
+        background: linear-gradient(180deg, rgba(56, 189, 248, 0.05) 0%, rgba(56, 189, 248, 0.02) 100%);
+        border-color: rgba(56, 189, 248, 0.7);
+        box-shadow: 0 0 20px rgba(56, 189, 248, 0.06);
+    }
+
+    .upload-icon-container {
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        background: rgba(56, 189, 248, 0.08);
+        border: 1px solid rgba(56, 189, 248, 0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+    }
+
+    .upload-zone:hover .upload-icon-container {
+        transform: translateY(-4px);
+        background: rgba(56, 189, 248, 0.12);
+        border-color: rgba(56, 189, 248, 0.45);
+        box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
     }
     
-    .upload-zone i {
-        font-size: 32px;
+    .upload-icon-container i {
+        font-size: 26px;
         color: #38bdf8;
-        margin-bottom: 16px;
+        margin-bottom: 0 !important;
     }
     
     .upload-zone-title {
         font-size: 16px;
-        font-weight: 600;
+        font-weight: 700;
         color: #f8fafc;
         margin-bottom: 8px;
+        letter-spacing: 0.02em;
     }
     
     .upload-zone-desc {
         font-size: 13px;
         color: #64748b;
+        max-width: 600px;
+        line-height: 1.5;
+    }
+
+    /* Selected file card styling */
+    .selected-file-card {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        background: rgba(15, 23, 42, 0.65);
+        border: 1px solid rgba(56, 189, 248, 0.22);
+        border-radius: 14px;
+        padding: 16px 20px;
+        text-align: left;
+        width: 100%;
+        max-width: 480px;
+        margin: 0 auto 28px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px rgba(56, 189, 248, 0.03);
+        transition: all 0.25s ease;
+    }
+
+    .file-icon-box {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        background: rgba(56, 189, 248, 0.1);
+        border: 1px solid rgba(56, 189, 248, 0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #38bdf8;
+        font-size: 22px;
+        flex-shrink: 0;
+    }
+
+    .file-details {
+        flex-grow: 1;
+        min-width: 0;
+    }
+
+    .file-name {
+        font-size: 15px;
+        font-weight: 700;
+        color: #f8fafc;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .file-status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: #94a3b8;
+        margin-top: 4px;
+    }
+
+    .pulse-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background-color: #10b981;
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        animation: pulse-green 1.6s infinite;
+        display: inline-block;
+    }
+
+    @keyframes pulse-green {
+        0% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        }
+        70% {
+            transform: scale(1);
+            box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+        }
+        100% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+        }
+    }
+
+    /* Buttons row design */
+    .upload-actions-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .btn-preview-upload {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #38bdf8;
+        color: #0f172a;
+        font-weight: 700;
+        font-size: 14px;
+        padding: 10px 24px;
+        border-radius: 10px;
+        border: 1px solid #7dd3fc;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
+    }
+
+    .btn-preview-upload:hover {
+        background: #0ea5e9;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(56, 189, 248, 0.4);
+    }
+
+    .btn-cancel-upload {
+        display: inline-flex;
+        align-items: center;
+        background: rgba(148, 163, 184, 0.08);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        color: #94a3b8;
+        font-weight: 600;
+        font-size: 13px;
+        padding: 10px 20px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-cancel-upload:hover {
+        background: rgba(148, 163, 184, 0.15);
+        color: #cbd5e1;
+        border-color: rgba(148, 163, 184, 0.3);
     }
 
     .card {
@@ -85,6 +251,69 @@
     .status-create { background: rgba(56, 189, 248, 0.15); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.3); }
     .status-update { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
     .status-skipped { background: rgba(148, 163, 184, 0.12); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.24); }
+
+    /* Premium Upload Preview Redesigns */
+    .preview-card-wrapper {
+        margin-bottom: 28px;
+        border: 1px solid rgba(56, 189, 248, 0.25) !important;
+        background: linear-gradient(180deg, rgba(14, 165, 233, 0.08) 0%, rgba(9, 13, 22, 0.5) 100%) !important;
+        border-radius: 16px;
+        padding: 30px;
+        box-shadow: 0 12px 40px rgba(14, 165, 233, 0.05);
+    }
+    
+    .btn-confirm-save {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 14px;
+        padding: 10px 24px;
+        border-radius: 10px;
+        border: 1px solid #34d399;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25);
+    }
+    
+    .btn-confirm-save:hover {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-cancel-preview {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(15, 23, 42, 0.72);
+        color: #cbd5e1;
+        font-weight: 700;
+        font-size: 14px;
+        padding: 10px 18px;
+        border-radius: 10px;
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-cancel-preview:hover {
+        background: rgba(239, 68, 68, 0.12);
+        color: #fecaca;
+        border-color: rgba(248, 113, 113, 0.36);
+        transform: translateY(-1px);
+    }
+    
+    .preview-file-block {
+        padding: 24px;
+        border: 1px solid rgba(148, 163, 184, 0.1) !important;
+        border-radius: 14px;
+        background: rgba(15, 23, 42, 0.45) !important;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
 </style>
 
 <div class="page-header">
@@ -96,23 +325,24 @@
     @csrf
     
     <label class="upload-zone" for="upload_file" id="dropZone">
-        <div id="uploadPlaceholder">
-            <i class="fa-solid fa-arrow-up-from-bracket"></i>
+        <div id="uploadPlaceholder" class="upload-placeholder">
+            <div class="upload-icon-container">
+                <i class="fa-solid fa-arrow-up-from-bracket"></i>
+            </div>
             <div class="upload-zone-title">Drag and drop your file(s) here</div>
             <div class="upload-zone-desc">Supports: .geojson, .json, or .zip containing .shp and .dbf files. Multi-select enabled, max 50MB per file.</div>
         </div>
         
-        <div id="fileInfo" style="display: none; width: 100%; max-width: 500px; margin-left: auto; margin-right: auto; text-align: center;">
-            <div style="font-size: 40px; color: #38bdf8; margin-bottom: 16px;">
-                <i class="fa-solid fa-file-circle-check"></i>
-            </div>
-            <div id="fileNameDisplay" style="margin-bottom: 24px;"></div>
+        <div id="fileInfo" style="display: none; width: 100%; text-align: center;">
+            <div id="fileNameDisplay"></div>
             
-            <button type="submit" class="btn btn-primary" style="padding: 10px 24px; font-size: 15px; font-weight: 600;" onclick="event.stopPropagation()">
-                <i class="fa-solid fa-eye"></i> Preview Upload
-            </button>
-            <div style="margin-top: 12px; font-size: 12px; color: #94a3b8; text-decoration: underline; cursor: pointer;" onclick="event.preventDefault(); document.getElementById('upload_file').value = ''; document.getElementById('upload_file').dispatchEvent(new Event('change'));">
-                Cancel / Select Different Files
+            <div class="upload-actions-container">
+                <button type="submit" class="btn-preview-upload" onclick="event.stopPropagation()">
+                    <i class="fa-solid fa-eye"></i> Preview Upload
+                </button>
+                <button type="button" class="btn-cancel-upload" onclick="event.preventDefault(); event.stopPropagation(); document.getElementById('upload_file').value = ''; document.getElementById('upload_file').dispatchEvent(new Event('change'));">
+                    Cancel / Select Different
+                </button>
             </div>
         </div>
     </label>
@@ -121,34 +351,53 @@
 
 @if(session('upload_preview'))
     @php($preview = session('upload_preview'))
-    <div class="card" style="margin-bottom: 24px; border-color: rgba(56, 189, 248, 0.28); background: rgba(14, 165, 233, 0.08);">
+    <div class="card preview-card-wrapper">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 18px; flex-wrap: wrap;">
             <div>
                 <div class="card-title" style="margin-bottom: 6px;">Upload Preview</div>
                 <div style="font-size: 13px; color: #94a3b8;">Review detected boundaries before saving them to the database.</div>
             </div>
-            <form action="{{ route('admin.uploads.store') }}" method="POST">
-                @csrf
-                <input type="hidden" name="preview_token" value="{{ $preview['token'] }}">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fa-solid fa-floppy-disk"></i> Confirm & Save
-                </button>
-            </form>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <form action="{{ route('admin.uploads.cancel-preview') }}" method="POST">
+                    @csrf
+                    @method('DELETE')
+                    <input type="hidden" name="preview_token" value="{{ $preview['token'] }}">
+                    <button type="submit" class="btn-cancel-preview">
+                        <i class="fa-solid fa-xmark"></i> Cancel Preview
+                    </button>
+                </form>
+
+                <form action="{{ route('admin.uploads.store') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="preview_token" value="{{ $preview['token'] }}">
+                    <button type="submit" class="btn-confirm-save">
+                        <i class="fa-solid fa-circle-check"></i> Confirm & Save
+                    </button>
+                </form>
+            </div>
         </div>
 
         @foreach($preview['files'] as $file)
-            <div style="padding: 16px; border: 1px solid rgba(148, 163, 184, 0.14); border-radius: 10px; background: rgba(15, 23, 42, 0.35); margin-bottom: 14px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px;">
+            <div class="preview-file-block">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
                     <div>
-                        <div style="color: #f8fafc; font-weight: 700;">{{ $file['file_name'] }}</div>
-                        <div style="color: #94a3b8; font-size: 12px; margin-top: 3px;">{{ $file['file_type'] }} · {{ $file['file_size'] }}</div>
+                        <div style="color: #f8fafc; font-weight: 700; font-size: 16px; display: flex; align-items: center;">
+                            <i class="fa-solid fa-file-shield" style="color: #38bdf8; font-size: 18px; margin-right: 10px;"></i>
+                            {{ $file['file_name'] }}
+                        </div>
+                        <div style="color: #94a3b8; font-size: 12px; margin-top: 4px; margin-left: 28px;">{{ $file['file_type'] }} · {{ $file['file_size'] }}</div>
                     </div>
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <span class="status-badge status-update">{{ $file['matched'] }} update</span>
-                        <span class="status-badge status-create">{{ $file['created'] }} create</span>
-                        <span class="status-badge status-pending">{{ $file['municipal'] }} municipal</span>
+                        <span class="status-badge status-update" style="padding: 6px 12px; border-radius: 20px;">
+                            <i class="fa-solid fa-pen" style="font-size: 9px; margin-right: 4px;"></i> Existing: {{ $file['matched'] }}
+                        </span>
+                        <span class="status-badge status-create" style="padding: 6px 12px; border-radius: 20px;">
+                            <i class="fa-solid fa-plus" style="font-size: 9px; margin-right: 4px;"></i> New: {{ $file['created'] }}
+                        </span>
                         @if($file['skipped'] > 0)
-                            <span class="status-badge status-skipped">{{ $file['skipped'] }} skipped</span>
+                            <span class="status-badge status-skipped" style="padding: 6px 12px; border-radius: 20px;">
+                                <i class="fa-solid fa-ban" style="font-size: 9px; margin-right: 4px;"></i> Skipped: {{ $file['skipped'] }}
+                            </span>
                         @endif
                     </div>
                 </div>
@@ -157,29 +406,34 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>BOUNDARY</th>
-                                <th>ACTION</th>
-                                <th>TYPE</th>
-                                <th>POINTS</th>
+                                <th>BARANGAY</th>
+                                <th>RESULT</th>
                                 <th>AREA</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse(array_slice($file['items'], 0, 12) as $item)
                                 <tr>
-                                    <td style="font-weight: 600; color: #f8fafc;">{{ $item['display_name'] }}</td>
+                                    <td style="font-weight: 600; color: #f8fafc; display: flex; align-items: center;">
+                                        <i class="fa-solid fa-map-pin" style="color: #64748b; font-size: 11px; margin-right: 8px;"></i>
+                                        {{ $item['display_name'] }}
+                                    </td>
                                     <td>
-                                        <span class="status-badge {{ $item['action'] === 'Create' ? 'status-create' : ($item['action'] === 'Update' ? 'status-update' : 'status-skipped') }}">
-                                            {{ $item['action'] }}
+                                        <span class="status-badge {{ $item['action'] === 'Create' ? 'status-create' : ($item['action'] === 'Update' ? 'status-update' : 'status-skipped') }}" style="padding: 5px 10px; border-radius: 20px; font-size: 10.5px;">
+                                            @if($item['action'] === 'Create')
+                                                <i class="fa-solid fa-circle-plus" style="font-size: 9px; margin-right: 4px;"></i> New barangay
+                                            @elseif($item['action'] === 'Update')
+                                                <i class="fa-solid fa-circle-check" style="font-size: 9px; margin-right: 4px;"></i> Update existing
+                                            @else
+                                                <i class="fa-solid fa-circle-minus" style="font-size: 9px; margin-right: 4px;"></i> Skipped
+                                            @endif
                                         </span>
                                     </td>
-                                    <td style="color: #94a3b8;">{{ $item['is_municipal_boundary'] ? 'Municipal Boundary' : 'Barangay Boundary' }}</td>
-                                    <td style="color: #94a3b8;">{{ number_format($item['points']) }}</td>
-                                    <td style="color: #94a3b8;">{{ $item['area'] ? number_format($item['area'], 2).' ha' : '—' }}</td>
+                                    <td style="color: #94a3b8; font-family: monospace; font-weight: 600;">{{ $item['area'] ? number_format($item['area'], 2).' ha' : '—' }}</td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" style="text-align: center; color: #64748b; padding: 22px;">
+                                    <td colspan="3" style="text-align: center; color: #64748b; padding: 22px;">
                                         No polygon boundaries were detected in this file.
                                     </td>
                                 </tr>
@@ -189,7 +443,7 @@
                 </div>
 
                 @if(count($file['items']) > 12)
-                    <div style="margin-top: 10px; color: #94a3b8; font-size: 12px;">Showing first 12 of {{ count($file['items']) }} detected boundaries.</div>
+                    <div style="margin-top: 12px; color: #94a3b8; font-size: 12px; margin-left: 4px;">Showing first 12 of {{ count($file['items']) }} detected boundaries.</div>
                 @endif
             </div>
         @endforeach
@@ -283,37 +537,78 @@
     const fileInfo = document.getElementById('fileInfo');
     const fileNameDisplay = document.getElementById('fileNameDisplay');
     const uploadPlaceholder = document.getElementById('uploadPlaceholder');
-    
-    fileInput.addEventListener('change', function() {
+      fileInput.addEventListener('change', function() {
         if (this.files && this.files.length > 0) {
             uploadPlaceholder.style.display = 'none';
             if (this.files.length === 1) {
-                fileNameDisplay.innerHTML = `<div style="font-size: 18px; color: #f8fafc; font-weight: 600;">${escapeHtml(this.files[0].name)}</div><div style="font-size: 13px; color: #94a3b8; margin-top: 4px;">Ready to process</div>`;
+                const sizeKB = (this.files[0].name.toLowerCase().endsWith('.zip')) ? 'Zipped Archive' : `${(this.files[0].size / 1024).toFixed(1)} KB`;
+                const isZip = this.files[0].name.toLowerCase().endsWith('.zip');
+                fileNameDisplay.innerHTML = `
+                    <div class="selected-file-card">
+                        <div class="file-icon-box">
+                            <i class="fa-solid ${isZip ? 'fa-file-zipper' : 'fa-file-code'}"></i>
+                        </div>
+                        <div class="file-details">
+                            <div class="file-name" title="${escapeHtml(this.files[0].name)}">${escapeHtml(this.files[0].name)}</div>
+                            <div class="file-status">
+                                <span class="pulse-dot"></span>
+                                <span>Ready to process · ${sizeKB}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
             } else {
-                let fileListHtml = `<div style="font-size: 16px; color: #f8fafc; font-weight: 600; margin-bottom: 12px;">${this.files.length} Files Selected</div>`;
-                fileListHtml += `<div style="max-height: 120px; overflow-y: auto; text-align: left; padding: 12px; background: rgba(15, 23, 42, 0.4); border-radius: 8px; border: 1px solid rgba(148, 163, 184, 0.1);"><ul style="list-style: none; padding: 0; margin: 0;">`;
+                let fileListHtml = `
+                    <div class="selected-file-card" style="flex-direction: column; align-items: stretch; max-width: 520px; gap: 12px;">
+                        <div style="display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(148, 163, 184, 0.12); padding-bottom: 10px;">
+                            <div class="file-icon-box" style="width: 40px; height: 40px; font-size: 18px; background: rgba(56, 189, 248, 0.08);">
+                                <i class="fa-solid fa-files"></i>
+                            </div>
+                            <div>
+                                <div style="font-weight: 700; color: #f8fafc; font-size: 14px;">${this.files.length} Files Selected</div>
+                                <div class="file-status" style="margin-top: 2px;">
+                                    <span class="pulse-dot"></span>
+                                    <span>Ready to process</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="max-height: 140px; overflow-y: auto; padding-right: 4px;">
+                            <ul style="list-style: none; padding: 0; margin: 0;">
+                `;
                 for (let i = 0; i < this.files.length; i++) {
                     const sizeKB = (this.files[i].size / 1024).toFixed(1);
-                    fileListHtml += `<li style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; color: #cbd5e1; font-size: 13px;">
-                        <span><i class="fa-solid fa-file" style="color: #38bdf8; font-size: 11px; margin-right: 8px;"></i> ${escapeHtml(this.files[i].name)}</span>
-                        <span style="color: #64748b; font-family: monospace; font-size: 11px;">${sizeKB} KB</span>
-                    </li>`;
+                    const isZip = this.files[i].name.toLowerCase().endsWith('.zip');
+                    fileListHtml += `
+                        <li style="margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; color: #cbd5e1; font-size: 12.5px; padding: 6px 8px; background: rgba(15, 23, 42, 0.3); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.02);">
+                            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 12px; display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid ${isZip ? 'fa-file-zipper' : 'fa-file'}" style="color: #38bdf8; font-size: 11px;"></i>
+                                ${escapeHtml(this.files[i].name)}
+                            </span>
+                            <span style="color: #64748b; font-family: monospace; font-size: 10.5px; flex-shrink: 0;">${sizeKB} KB</span>
+                        </li>
+                    `;
                 }
-                fileListHtml += `</ul></div>`;
+                fileListHtml += `
+                            </ul>
+                        </div>
+                    </div>
+                `;
                 fileNameDisplay.innerHTML = fileListHtml;
             }
             fileInfo.style.display = 'block';
             
             // Highlight the drop zone
             dropZone.style.borderColor = '#38bdf8';
-            dropZone.style.background = 'rgba(56, 189, 248, 0.08)';
+            dropZone.style.background = 'linear-gradient(180deg, rgba(56, 189, 248, 0.06) 0%, rgba(56, 189, 248, 0.02) 100%)';
+            dropZone.style.boxShadow = '0 0 25px rgba(56, 189, 248, 0.08)';
         } else {
             uploadPlaceholder.style.display = 'block';
             fileInfo.style.display = 'none';
-            dropZone.style.borderColor = 'rgba(56, 189, 248, 0.4)';
-            dropZone.style.background = 'rgba(30, 41, 59, 0.45)';
+            dropZone.style.borderColor = 'rgba(56, 189, 248, 0.35)';
+            dropZone.style.background = 'linear-gradient(180deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.4) 100%)';
+            dropZone.style.boxShadow = 'none';
         }
-	    });
+    });
 
     function escapeHtml(value) {
         const div = document.createElement('div');

@@ -16,10 +16,13 @@ class AdminRoleAccessTest extends TestCase
         $staff = $this->userWithRole('staff');
 
         $this->actingAs($staff)->get(route('admin.map'))->assertOk();
+        $this->actingAs($staff)->get(route('admin.map-export.index'))->assertOk();
         $this->actingAs($staff)->get(route('admin.features.index'))->assertOk();
 
         $this->actingAs($staff)->get(route('admin.uploads.index'))->assertForbidden();
         $this->actingAs($staff)->get(route('admin.barangays.index'))->assertForbidden();
+        $this->actingAs($staff)->get(route('admin.data-completeness.index'))->assertForbidden();
+        $this->actingAs($staff)->get(route('admin.activity-logs.index'))->assertForbidden();
         $this->actingAs($staff)->get(route('admin.layer-types.index'))->assertForbidden();
         $this->actingAs($staff)->get(route('admin.users.index'))->assertForbidden();
     }
@@ -32,6 +35,8 @@ class AdminRoleAccessTest extends TestCase
         $this->actingAs($admin)->get(route('admin.features.index'))->assertOk();
         $this->actingAs($admin)->get(route('admin.uploads.index'))->assertOk();
         $this->actingAs($admin)->get(route('admin.barangays.index'))->assertOk();
+        $this->actingAs($admin)->get(route('admin.data-completeness.index'))->assertOk();
+        $this->actingAs($admin)->get(route('admin.activity-logs.index'))->assertOk();
         $this->actingAs($admin)->get(route('admin.layer-types.index'))->assertOk();
 
         $this->actingAs($admin)->get(route('admin.users.index'))->assertForbidden();

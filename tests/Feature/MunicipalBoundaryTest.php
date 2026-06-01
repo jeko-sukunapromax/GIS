@@ -33,8 +33,29 @@ class MunicipalBoundaryTest extends TestCase
             ->actingAs($admin)
             ->get(route('admin.barangays.index'))
             ->assertOk()
-            ->assertDontSee('Bayambang')
+            ->assertDontSee('<strong>Bayambang</strong>', false)
             ->assertSee('Bical Norte');
+    }
+
+    public function test_municipal_boundary_manager_shows_current_outline_preview(): void
+    {
+        $admin = User::factory()->create();
+        Role::findOrCreate('admin', 'web');
+        $admin->assignRole('admin');
+
+        Barangay::create([
+            'name' => 'Bayambang',
+            'is_visible' => true,
+            'is_municipal_boundary' => true,
+            'boundary' => [[15.80, 120.40], [15.81, 120.40], [15.81, 120.41]],
+        ]);
+
+        $this
+            ->actingAs($admin)
+            ->get(route('admin.municipal-boundary.index'))
+            ->assertOk()
+            ->assertSee('Current Outline Preview')
+            ->assertSee('Download Current GeoJSON');
     }
 
     public function test_barangay_api_excludes_municipal_boundary(): void

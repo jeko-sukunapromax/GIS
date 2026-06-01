@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use App\Services\IhrisAuthenticator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,6 +32,8 @@ class UserController extends Controller
         return view('admin.users.index', [
             'users' => $users,
             'bdrrmcUsers' => $bdrrmcUsers,
+            'activeUsers' => $users->whereNull('deactivated_at'),
+            'deactivatedUsers' => $users->whereNotNull('deactivated_at'),
             'assignableRoles' => $this->assignableRoles(),
         ]);
     }
@@ -52,7 +55,61 @@ class UserController extends Controller
 
         $user->syncRoles([$validated['role']]);
 
+        app(ActivityLogger::class)->log('user.role_updated', "Updated {$user->name}'s role to {$validated['role']}.", $user, [
+            'role' => $validated['role'],
+        ], $request);
+
         return back()->with('success', "{$user->name}'s role was updated to {$validated['role']}.");
+    }
+
+    public function removeAdmin(Request $request, User $user): RedirectResponse
+    {
+        abort_unless($request->user()?->hasRole('super-admin'), 403);
+
+        if ($request->user()->is($user)) {
+            return back()->with('error', 'You cannot remove your own admin access.');
+        }
+
+        if ($user->hasRole('super-admin')) {
+            return back()->with('error', 'Use the role selector to change a super-admin account.');
+        }
+
+        Role::findOrCreate('staff', 'web');
+        $user->syncRoles(['staff']);
+
+        app(ActivityLogger::class)->log('user.admin_removed', "Removed admin access from {$user->name}.", $user, [], $request);
+
+        return back()->with('success', "{$user->name}'s admin access was removed. The account is now staff.");
+    }
+
+    public function deactivate(Request $request, User $user): RedirectResponse
+    {
+        abort_unless($request->user()?->hasRole('super-admin'), 403);
+
+        if ($request->user()->is($user)) {
+            return back()->with('error', 'You cannot deactivate your own account.');
+        }
+
+        $user->forceFill([
+            'deactivated_at' => now(),
+        ])->save();
+
+        app(ActivityLogger::class)->log('user.deactivated', "Deactivated {$user->name}.", $user, [], $request);
+
+        return back()->with('success', "{$user->name} was deactivated.");
+    }
+
+    public function reactivate(Request $request, User $user): RedirectResponse
+    {
+        abort_unless($request->user()?->hasRole('super-admin'), 403);
+
+        $user->forceFill([
+            'deactivated_at' => null,
+        ])->save();
+
+        app(ActivityLogger::class)->log('user.reactivated', "Reactivated {$user->name}.", $user, [], $request);
+
+        return back()->with('success', "{$user->name} was reactivated.");
     }
 
     public function sync(IhrisAuthenticator $ihris): RedirectResponse
@@ -109,6 +166,11 @@ class UserController extends Controller
             $user->assignRole('admin');
             $synced++;
         }
+
+        app(ActivityLogger::class)->log('users.synced', 'Synced BDRRMC iHRIS users.', null, [
+            'synced' => $synced,
+            'skipped' => $skipped,
+        ], request());
 
         return back()->with('success', "BDRRMC users synced successfully. Synced: {$synced}. Skipped missing email/UUID: {$skipped}.");
     }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\MapUpload;
+use App\Services\ActivityLogger;
 use App\Traits\ParsesBoundaryFiles;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -67,6 +68,11 @@ class UploadController extends Controller
             'created_at' => now()->toISOString(),
         ]);
 
+        app(ActivityLogger::class)->log('upload.previewed', 'Previewed '.count($files).' upload file(s).', null, [
+            'files' => collect($files)->pluck('name')->values()->all(),
+            'token' => $token,
+        ], $request);
+
         return back()->with('upload_preview', [
             'token' => $token,
             'files' => $summaries,
@@ -106,7 +112,7 @@ class UploadController extends Controller
                     throw new \Exception('Please upload a GeoJSON file or a ZIP containing Shapefile files (.shp + .dbf).');
                 }
 
-                MapUpload::create([
+                $upload = MapUpload::create([
                     'file_name' => $fileName,
                     'file_type' => $type,
                     'file_size' => $sizeFormatted,
@@ -114,18 +120,31 @@ class UploadController extends Controller
                     'status' => $status
                 ]);
 
+                app(ActivityLogger::class)->log('upload.processed', "Processed upload {$fileName}.", $upload, [
+                    'file_type' => $type,
+                    'file_size' => $sizeFormatted,
+                    'matched' => $result['matched'],
+                    'created' => count($result['unmatched']),
+                ], $request);
+
                 $successMessages[] = $this->formatResultMessage($fileName, $result);
 
             } catch (\Exception $e) {
                 Log::error('Upload error for ' . $fileName . ': ' . $e->getMessage());
                 
-                MapUpload::create([
+                $upload = MapUpload::create([
                     'file_name' => $fileName,
                     'file_type' => $type,
                     'file_size' => $sizeFormatted,
                     'uploaded_by' => $this->uploadedBy(),
                     'status' => 'Failed'
                 ]);
+
+                app(ActivityLogger::class)->log('upload.failed', "Upload failed for {$fileName}.", $upload, [
+                    'file_type' => $type,
+                    'file_size' => $sizeFormatted,
+                    'error' => $e->getMessage(),
+                ], $request);
                 
                 $errorMessages[] = "{$fileName}: ".$e->getMessage();
             }
@@ -140,6 +159,24 @@ class UploadController extends Controller
         }
 
         return $response;
+    }
+
+    public function cancelPreview(Request $request)
+    {
+        $validated = $request->validate([
+            'preview_token' => 'required|string',
+        ]);
+
+        $token = $validated['preview_token'];
+
+        $request->session()->forget("upload_previews.{$token}");
+        $this->cleanupPreviewToken($token);
+
+        app(ActivityLogger::class)->log('upload.preview_canceled', 'Canceled upload preview before saving.', null, [
+            'token' => $token,
+        ], $request);
+
+        return back()->with('success', 'Upload preview canceled. No changes were saved.');
     }
 
     private function storePreviewedUpload(Request $request)
@@ -167,7 +204,7 @@ class UploadController extends Controller
             try {
                 $result = $this->processStoredFile($file['path'], $extension, $fileName);
 
-                MapUpload::create([
+                $upload = MapUpload::create([
                     'file_name' => $fileName,
                     'file_type' => $type,
                     'file_size' => $sizeFormatted,
@@ -175,17 +212,30 @@ class UploadController extends Controller
                     'status' => 'Processed'
                 ]);
 
+                app(ActivityLogger::class)->log('upload.confirmed', "Confirmed and processed upload {$fileName}.", $upload, [
+                    'file_type' => $type,
+                    'file_size' => $sizeFormatted,
+                    'matched' => $result['matched'],
+                    'created' => count($result['unmatched']),
+                ], $request);
+
                 $successMessages[] = $this->formatResultMessage($fileName, $result);
             } catch (\Exception $e) {
                 Log::error('Confirmed upload error for '.$fileName.': '.$e->getMessage());
 
-                MapUpload::create([
+                $upload = MapUpload::create([
                     'file_name' => $fileName,
                     'file_type' => $type,
                     'file_size' => $sizeFormatted,
                     'uploaded_by' => $this->uploadedBy(),
                     'status' => 'Failed'
                 ]);
+
+                app(ActivityLogger::class)->log('upload.failed', "Confirmed upload failed for {$fileName}.", $upload, [
+                    'file_type' => $type,
+                    'file_size' => $sizeFormatted,
+                    'error' => $e->getMessage(),
+                ], $request);
 
                 $errorMessages[] = "{$fileName}: ".$e->getMessage();
             }
@@ -205,9 +255,16 @@ class UploadController extends Controller
         return $response;
     }
 
-    public function destroy(MapUpload $upload)
+    public function destroy(Request $request, MapUpload $upload)
     {
+        app(ActivityLogger::class)->log('upload.deleted', "Deleted upload history {$upload->file_name}.", $upload, [
+            'status' => $upload->status,
+            'file_type' => $upload->file_type,
+            'file_size' => $upload->file_size,
+        ], $request);
+
         $upload->delete();
+
         return back()->with('success', 'Upload history record deleted successfully.');
     }
 
@@ -285,7 +342,6 @@ class UploadController extends Controller
                     'display_name' => $item['display_name'],
                     'action' => $item['action'],
                     'is_municipal_boundary' => $item['is_municipal_boundary'],
-                    'points' => $item['points'],
                     'area' => $item['area'],
                 ])
                 ->values()

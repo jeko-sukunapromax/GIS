@@ -93,6 +93,12 @@ class MapLayerTypeSeeder extends Seeder
         ];
 
         foreach ($types as $type) {
+            $type = array_merge([
+                'is_public' => true,
+                'is_active' => true,
+                'sort_order' => 0,
+            ], $type);
+
             MapLayerType::updateOrCreate(['code' => $type['code']], $type);
         }
     }

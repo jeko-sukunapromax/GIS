@@ -34,6 +34,35 @@
         svg:focus {
             outline: none !important;
         }
+
+        /* Keep plugin-generated map vectors in the GIS blue theme.
+           Leaflet Measure/Geoman otherwise inject default black/red SVG strokes. */
+        #map .layer-measurearea,
+        #map .layer-measureboundary,
+        #map .layer-measure-resultarea,
+        #map .layer-measure-resultline,
+        #map .leaflet-pm-temp-layer,
+        #map .leaflet-pm-hint-line {
+            stroke: #0099ff !important;
+            stroke-opacity: 0.95 !important;
+            stroke-width: 3px !important;
+        }
+
+        #map .layer-measurearea,
+        #map .layer-measure-resultarea,
+        #map .leaflet-pm-temp-layer {
+            fill: #0099ff !important;
+            fill-opacity: 0.12 !important;
+        }
+
+        #map .layer-measuredrag,
+        #map .layer-measurevertex,
+        #map .layer-measure-resultpoint {
+            stroke: #07111f !important;
+            fill: #0099ff !important;
+            stroke-width: 2px !important;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-dark);
@@ -159,6 +188,15 @@
             justify-content: center;
         }
         .toolbar-btn:hover, .toolbar-btn.active { background: var(--accent-blue); color: white; }
+        .toolbar-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            color: var(--text-muted);
+        }
+        .toolbar-btn:disabled:hover {
+            background: var(--bg-card) !important;
+            color: var(--text-muted) !important;
+        }
 
         /* Sidebar Right: Data Viz */
         .sidebar-right {
@@ -184,6 +222,45 @@
 
         .viz-section { padding: 24px; background: rgba(15, 23, 42, 0.4); border-top: 1px solid var(--border-color); }
         .chart-placeholder { height: 160px; border-radius: 12px; background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 153, 255, 0.05) 10px, rgba(0, 153, 255, 0.05) 20px); border: 1px dashed var(--border-color); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px; }
+        .population-insight {
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.42);
+            border: 1px solid var(--border-color);
+            padding: 14px;
+        }
+        .insight-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .insight-row strong {
+            color: var(--text-heading);
+            font-weight: 800;
+            text-align: right;
+        }
+        .insight-bar {
+            height: 8px;
+            border-radius: 999px;
+            background: rgba(148, 163, 184, 0.18);
+            overflow: hidden;
+            margin: 12px 0 8px;
+        }
+        .insight-bar-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #10b981, #38bdf8);
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.28);
+            transition: width 0.25s ease;
+        }
+        .insight-caption {
+            color: var(--text-muted);
+            font-size: 11px;
+            line-height: 1.45;
+        }
         
         .distribution-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 16px; }
         .dist-item { display: flex; align-items: center; gap: 12px; }
@@ -207,6 +284,7 @@
         }
         .legend-item { display: flex; align-items: center; gap: 10px; font-size: 12px; margin-bottom: 8px; }
         .legend-color { width: 12px; height: 12px; border-radius: 3px; }
+        .legend-empty { color: var(--text-muted); font-size: 12px; line-height: 1.4; }
 
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
@@ -370,6 +448,15 @@
             transform: scale(1.08);
             text-shadow: 0 2px 6px rgba(0, 0, 0, 1.0), 0 0 12px rgba(0, 153, 255, 0.7);
         }
+        .map-labels-muted .brgy-map-label {
+            opacity: 0;
+            transform: translateY(-3px) scale(0.92);
+            pointer-events: none;
+        }
+        .map-labels-muted .brgy-centroid-icon-container:hover .brgy-map-label,
+        .map-labels-muted .brgy-centroid-icon-container.selected .brgy-map-label {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -440,12 +527,9 @@
 
                 <!-- DYNAMIC SECTIONS LOADED FROM DATABASE -->
                 @php
-                    $categories = [
-                        'critical_facilities' => 'Critical Facilities',
-                        'drrm' => 'DRRM Group',
-                        'population' => 'Population Data',
-                        'infrastructure' => 'Infrastructure'
-                    ];
+                    $categories = $layerTypes
+                        ->groupBy('category')
+                        ->map(fn ($items, $category) => ucwords(str_replace('_', ' ', $category)));
                 @endphp
 
                 @foreach($categories as $catCode => $catName)
@@ -505,7 +589,10 @@
                 <div class="section-title">Analysis Tools</div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                     <button class="toolbar-btn" onclick="startMeasure()" style="width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 12px; gap: 8px;"><i class="fa-solid fa-ruler"></i> Measure</button>
-                    <button class="toolbar-btn" onclick="startMeasure()" style="width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 12px; gap: 8px;"><i class="fa-solid fa-draw-polygon"></i> Area</button>
+                    <button class="toolbar-btn" onclick="clearMeasure()" style="width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 12px; gap: 8px;"><i class="fa-solid fa-eraser"></i> Clear</button>
+                    @hasanyrole('admin|super-admin')
+                        <button id="editModeBtn" type="button" class="toolbar-btn" disabled title="Boundary editing is disabled until the save workflow is ready." style="grid-column: span 2; width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 12px; gap: 8px;"><i class="fa-solid fa-pen-ruler"></i> Edit Boundary Mode</button>
+                    @endhasanyrole
                 </div>
             </div>
         </aside>
@@ -534,17 +621,16 @@
                 <button class="toolbar-btn" onclick="map.zoomOut()" title="Zoom Out"><i class="fa-solid fa-minus"></i></button>
                 <div style="height: 1px; background: var(--border-color);"></div>
                 <button class="toolbar-btn" onclick="map.setView([15.8287, 120.4173], 14)" title="Default Extent"><i class="fa-solid fa-house"></i></button>
-                <button class="toolbar-btn" title="Find my location"><i class="fa-solid fa-crosshairs"></i></button>
+                <button class="toolbar-btn" onclick="findMyLocation()" title="Find my location"><i class="fa-solid fa-crosshairs"></i></button>
                 <div style="height: 1px; background: var(--border-color);"></div>
                 <button class="toolbar-btn" onclick="toggleIdentify(this)" title="Identify (Click map for coordinates)"><i class="fa-solid fa-arrow-pointer"></i></button>
             </div>
 
             <div class="legend-card">
                 <div class="section-title" style="margin-bottom: 12px; font-size: 10px;">Legend</div>
-                <div class="legend-item"><div class="legend-color" style="background: #10b981;"></div> Agricultural</div>
-                <div class="legend-item"><div class="legend-color" style="background: #ef4444;"></div> Residential</div>
-                <div class="legend-item"><div class="legend-color" style="background: #f59e0b;"></div> Commercial</div>
-                <div class="legend-item"><div class="legend-color" style="background: #3b82f6;"></div> Institutional</div>
+                <div id="dynamicLegend">
+                    <div class="legend-empty">Select a barangay and enable layers to view symbols.</div>
+                </div>
             </div>
         </main>
 
@@ -608,10 +694,26 @@
             </div>
 
             <div class="viz-section">
-                <div class="section-title">Population Trend</div>
-                <div class="chart-placeholder">
-                    <i class="fa-solid fa-chart-line" style="font-size: 24px; color: var(--accent-blue); opacity: 0.5;"></i>
-                    <span style="font-size: 11px; color: var(--text-muted);">Trend analysis incoming</span>
+                <div class="section-title">Population Insight</div>
+                <div class="population-insight">
+                    <div class="insight-row">
+                        <span>Density</span>
+                        <strong id="population-density-value">0 people/ha</strong>
+                    </div>
+                    <div class="insight-row">
+                        <span>Municipal avg.</span>
+                        <strong id="population-average-value">0 people/ha</strong>
+                    </div>
+                    <div class="insight-row">
+                        <span>Barangay rank</span>
+                        <strong id="population-rank-value">N/A</strong>
+                    </div>
+                    <div class="insight-bar" aria-hidden="true">
+                        <div class="insight-bar-fill" id="population-density-bar"></div>
+                    </div>
+                    <div class="insight-caption" id="population-insight-caption">
+                        Select a barangay to compare its population density against the rest of Bayambang.
+                    </div>
                 </div>
             </div>
         </aside>
@@ -640,7 +742,22 @@
         let selectedBarangayIds = new Set();
         let filteredBarangays = [];
         let identifyActive = false;
-        let measureControl = L.control.measure({ position: 'topright' });
+        let editModeActive = false;
+        const boundaryEditingEnabled = false;
+        function createMeasureControl() {
+            return L.control.measure({
+                position: 'topright',
+                activeColor: '#0099ff',
+                completedColor: '#0099ff',
+                primaryLengthUnit: 'meters',
+                secondaryLengthUnit: 'kilometers',
+                primaryAreaUnit: 'hectares',
+                secondaryAreaUnit: 'sqmeters'
+            });
+        }
+
+        let measureControl = createMeasureControl();
+        let measureControlAdded = false;
         const barangays = @json($barangays);
         const dbLayerTypes = @json($layerTypes);
         let allSelected = false;
@@ -652,11 +769,11 @@
 
         function drawMunicipalPolygon(boundaryCoords) {
             municipalPolygon = L.polygon(boundaryCoords, {
-                color: '#0099ff',
+                color: '#1d74c9',
                 fillColor: '#0099ff',
-                opacity: 1.0,
+                opacity: 0.58,
                 fillOpacity: 0.0,
-                weight: 4,
+                weight: 2.2,
                 dashArray: '',
                 className: 'municipal-polygon'
             }).addTo(featureLayers.boundary);
@@ -701,40 +818,39 @@
             });
 
             @hasanyrole('admin|super-admin')
-            // Initialize Geoman Drawing Tools
-            map.pm.addControls({
-                position: 'topleft',
-                drawMarker: false,
-                drawCircleMarker: false,
-                drawPolyline: false,
-                drawRectangle: true,
-                drawPolygon: true,
-                drawCircle: false,
-                editMode: true,
-                dragMode: true,
-                removalMode: true,
-            });
+            if (boundaryEditingEnabled && map.pm) {
+                map.pm.setGlobalOptions({
+                    pathOptions: {
+                        color: '#0099ff',
+                        fillColor: '#0099ff',
+                        fillOpacity: 0.12,
+                        weight: 3
+                    },
+                    templineStyle: { color: '#0099ff' },
+                    hintlineStyle: { color: '#0099ff', dashArray: [5, 5] }
+                });
 
-            // Handle Drawn Shapes (Admin digitized boundaries helper)
-            map.on('pm:create', function(e) {
-                const layer = e.layer;
-                const shape = e.shape;
-                
-                if (shape === 'Polygon' || shape === 'Rectangle') {
-                    const latlngs = layer.getLatLngs()[0];
-                    const formattedCoords = latlngs.map(ll => [ll.lat, ll.lng]);
-                    
-                    const popupContent = `
-                        <div style="padding:10px; min-width:200px; font-family: 'Inter', sans-serif;">
-                            <b style="color:var(--accent-blue); font-size: 13px;"><i class="fa-solid fa-draw-polygon"></i> Boundary Created!</b><br>
-                            <p style="font-size:11px; margin:5px 0; color:#ccc;">Copy the coordinates below to use in the Admin panel:</p>
-                            <textarea readonly style="width:100%; height:60px; font-size:10px; background:#1e293b; color:#fff; border:1px solid rgba(255,255,255,0.1); border-radius:4px; padding:5px; font-family: monospace;">${JSON.stringify(formattedCoords)}</textarea>
-                            <div style="font-size:10px; color:var(--text-muted); margin-top:5px;">Paste this in the "Boundary Data" field of the Barangay creation page.</div>
-                        </div>
-                    `;
-                    layer.bindPopup(popupContent).openPopup();
-                }
-            });
+                // Handle Drawn Shapes (Admin digitized boundaries helper)
+                map.on('pm:create', function(e) {
+                    const layer = e.layer;
+                    const shape = e.shape;
+
+                    if (shape === 'Polygon' || shape === 'Rectangle') {
+                        const latlngs = layer.getLatLngs()[0];
+                        const formattedCoords = latlngs.map(ll => [ll.lat, ll.lng]);
+
+                        const popupContent = `
+                            <div style="padding:10px; min-width:200px; font-family: 'Inter', sans-serif;">
+                                <b style="color:var(--accent-blue); font-size: 13px;"><i class="fa-solid fa-draw-polygon"></i> Boundary Created!</b><br>
+                                <p style="font-size:11px; margin:5px 0; color:#ccc;">Copy the coordinates below to use in the Admin panel:</p>
+                                <textarea readonly style="width:100%; height:60px; font-size:10px; background:#1e293b; color:#fff; border:1px solid rgba(255,255,255,0.1); border-radius:4px; padding:5px; font-family: monospace;">${JSON.stringify(formattedCoords)}</textarea>
+                                <div style="font-size:10px; color:var(--text-muted); margin-top:5px;">Paste this in the "Boundary Data" field of the Barangay creation page.</div>
+                            </div>
+                        `;
+                        layer.bindPopup(popupContent).openPopup();
+                    }
+                });
+            }
             @endhasanyrole
 
             // Draw boundaries and centroid markers for each barangay from the database
@@ -755,7 +871,7 @@
                                 fillColor: '#0099ff',
                                 opacity: 0.0, // Completely invisible initially
                                 fillOpacity: 0.0,
-                                weight: 2.0, // Retain interactive stroke area
+                                weight: 0,
                                 className: 'brgy-polygon'
                             }).addTo(featureLayers.boundary);
 
@@ -768,21 +884,22 @@
 
                              // Add interactive events
                              polygon.on('mouseover', function() {
-                                 if (activeBarangayId === brgy.id) return;
+                                 if (isBarangayCurrentlySelected(brgy.id)) return;
                                  polygon.setStyle({
-                                     opacity: 0.35, // Faint preview hover
-                                     fillOpacity: 0.03,
-                                     weight: 2.0
+                                     color: '#0099ff',
+                                     opacity: 0.0,
+                                     fillOpacity: 0.06,
+                                     weight: 0
                                  });
                              });
 
                              polygon.on('mouseout', function() {
-                                 if (activeBarangayId === brgy.id) return;
+                                 if (isBarangayCurrentlySelected(brgy.id)) return;
                                  // Return to completely invisible state
                                  polygon.setStyle({
                                      opacity: 0.0,
                                      fillOpacity: 0.0,
-                                     weight: 2.0
+                                     weight: 0
                                  });
                              });
 
@@ -847,6 +964,21 @@
             map.on('zoomend', function() {
                 const zoomVal = document.getElementById('zoom-val');
                 if (zoomVal) zoomVal.innerText = map.getZoom();
+                updateLabelVisibility();
+            });
+
+            map.on('locationfound', function(e) {
+                L.circleMarker(e.latlng, {
+                    radius: 7,
+                    color: '#0099ff',
+                    fillColor: '#0099ff',
+                    fillOpacity: 0.8,
+                    weight: 2
+                }).addTo(map).bindPopup('Current location').openPopup();
+            });
+
+            map.on('locationerror', function() {
+                alert('Unable to detect your location. Please allow location access in the browser.');
             });
 
             // Map Click (Identify Coordinate Tool)
@@ -878,11 +1010,7 @@
             });
 
             // Hook up switch toggles dynamically
-            const layerTypes = [
-                'boundary', 'barangay_hall', 'health_center', 'multipurpose_bldg', 
-                'covered_court', 'police_post', 'evac_center', 'bert_member', 
-                'population_density', 'household_distribution', 'road_network'
-            ];
+            const layerTypes = ['boundary', ...dbLayerTypes.map(type => type.code)];
 
             layerTypes.forEach(type => {
                 const checkbox = document.getElementById(`layer-${type}`);
@@ -895,6 +1023,12 @@
 
             filteredBarangays = barangays.filter(b => !isMunicipalBoundary(b));
             renderBarangayList();
+            updateLabelVisibility();
+
+            const defaultBarangay = filteredBarangays.find(brgy => brgy.name.toLowerCase() === 'tococ east') || filteredBarangays[0];
+            if (defaultBarangay) {
+                selectBarangay(defaultBarangay.id);
+            }
         }
 
         function createCustomIcon(iconClass, color) {
@@ -903,6 +1037,56 @@
                 className: 'custom-map-icon',
                 iconSize: [28, 28],
                 iconAnchor: [14, 14]
+            });
+        }
+
+        function updateLabelVisibility() {
+            const mapEl = document.getElementById('map');
+            if (!map || !mapEl) return;
+
+            mapEl.classList.toggle('map-labels-muted', map.getZoom() < 14);
+        }
+
+        function updateSelectedMarkerState() {
+            Object.entries(markers).forEach(([id, marker]) => {
+                const markerEl = marker.getElement();
+                if (!markerEl) return;
+
+                markerEl.classList.toggle('selected', selectedBarangayIds.has(parseInt(id)));
+            });
+        }
+
+        function updateDynamicLegend(counts = {}) {
+            const legend = document.getElementById('dynamicLegend');
+            if (!legend) return;
+
+            const visibleLayers = dbLayerTypes.filter(type => {
+                const checkbox = document.getElementById(`layer-${type.code}`);
+                return checkbox?.checked && (counts[type.code] || 0) > 0;
+            });
+
+            if (visibleLayers.length === 0) {
+                legend.innerHTML = '<div class="legend-empty">Select a barangay and enable layers to view symbols.</div>';
+                return;
+            }
+
+            legend.innerHTML = visibleLayers.map(type => `
+                <div class="legend-item">
+                    <div class="legend-color" style="background:${type.color};"></div>
+                    <span>${type.name}</span>
+                    <span style="margin-left:auto; color:var(--text-muted); font-size:11px;">${counts[type.code] || 0}</span>
+                </div>
+            `).join('');
+        }
+
+        function resetLayerBadges() {
+            dbLayerTypes.forEach(t => {
+                const badge = document.getElementById(`badge-${t.code}`);
+                if (badge) {
+                    badge.innerText = '0';
+                    badge.style.background = 'rgba(255, 255, 255, 0.05)';
+                    badge.style.color = 'var(--text-muted)';
+                }
             });
         }
 
@@ -917,6 +1101,13 @@
                     map.removeLayer(featureLayers[type]);
                 }
             }
+
+            const counts = {};
+            dbLayerTypes.forEach(layer => {
+                const badge = document.getElementById(`badge-${layer.code}`);
+                counts[layer.code] = badge ? parseInt(badge.innerText || '0') : 0;
+            });
+            updateDynamicLegend(counts);
         }
 
         // Fetches operational layers/features from database for the active Barangay
@@ -931,12 +1122,14 @@
                     featureLayers[type].clearLayers();
                 }
             });
+            resetLayerBadges();
+            updateDynamicLegend();
 
             // 1. Clear previous operational markers/vectors (boundaries are preloaded globally and persistent)
             // (No need to redraw boundary here since we handle active styles in selectBarangay)
 
             // 2. Fetch facilities, DRRM, infrastructure, and population data from Laravel API
-            fetch(`/api/barangays/${id}/features`)
+            fetch(`/admin/barangays/${id}/features`)
                 .then(res => res.json())
                 .then(features => {
                     // Reset counts dynamically for badges
@@ -947,6 +1140,8 @@
 
                     features.forEach(feat => {
                         const type = feat.feature_type;
+                        if (!featureLayers[type]) return;
+
                         if (counts[type] !== undefined) {
                             counts[type]++;
                         }
@@ -981,41 +1176,30 @@
                             
                             const markerIcon = createCustomIcon(iconClass, color);
                             
-                            if (featureLayers[type] !== undefined) {
-                                L.marker([lat, lng], { icon: markerIcon })
-                                    .bindPopup(popupHtml)
-                                    .addTo(featureLayers[type]);
-                            }
+                            L.marker([lat, lng], { icon: markerIcon })
+                                .bindPopup(popupHtml)
+                                .addTo(featureLayers[type]);
                         } else if (feat.coordinates) {
                             // Render polyline or polygon vectors dynamically
                             let coords = typeof feat.coordinates === 'string' ? JSON.parse(feat.coordinates) : feat.coordinates;
                             const config = dbLayerTypes.find(t => t.code === type) || {};
                             const color = config.color || '#8b5cf6';
+                            const geomType = config.geom_type || 'polyline';
                             
-                            if (type === 'road_network') {
+                            if (geomType === 'polyline') {
                                 L.polyline(coords, {
                                     color: color,
                                     weight: 4,
                                     opacity: 0.8
-                                }).bindPopup(popupHtml).addTo(featureLayers.road_network);
-                            } else if (type === 'population_density') {
+                                }).bindPopup(popupHtml).addTo(featureLayers[type]);
+                            } else {
                                 L.polygon(coords, {
                                     color: color,
                                     fillColor: color,
                                     fillOpacity: 0.15,
                                     weight: 1.5,
                                     dashArray: '5, 5'
-                                }).bindPopup(popupHtml).addTo(featureLayers.population_density);
-                            } else {
-                                // Fallback generic vector renderer
-                                const geomType = config.geom_type || 'polyline';
-                                if (geomType === 'polyline') {
-                                    L.polyline(coords, { color: color, weight: 4, opacity: 0.8 })
-                                        .bindPopup(popupHtml).addTo(featureLayers[type]);
-                                } else {
-                                    L.polygon(coords, { color: color, fillColor: color, fillOpacity: 0.15, weight: 1.5 })
-                                        .bindPopup(popupHtml).addTo(featureLayers[type]);
-                                }
+                                }).bindPopup(popupHtml).addTo(featureLayers[type]);
                             }
                         }
                     });
@@ -1037,6 +1221,7 @@
                             }
                         }
                     });
+                    updateDynamicLegend(counts);
                 })
                 .catch(err => console.error("Error loading features:", err));
         }
@@ -1089,6 +1274,10 @@
             });
         }
 
+        function isBarangayCurrentlySelected(id) {
+            return selectedBarangayIds.has(parseInt(id));
+        }
+
         function resetBarangaySelection() {
             activeBarangayId = null;
             selectedBarangayIds.clear();
@@ -1101,14 +1290,15 @@
                 poly.setStyle({
                     opacity: 0.0,
                     fillOpacity: 0.0,
-                    weight: 2.0
+                    weight: 0
                 });
             });
 
             if (municipalPolygon) {
                 municipalPolygon.setStyle({
-                    opacity: 0.8,
-                    weight: 3.0
+                    color: '#1d74c9',
+                    opacity: 0.58,
+                    weight: 2.2
                 });
             }
 
@@ -1117,6 +1307,9 @@
                     featureLayers[type].clearLayers();
                 }
             });
+            resetLayerBadges();
+            updateSelectedMarkerState();
+            updateDynamicLegend();
 
             map.setView([15.8287, 120.4173], 14);
         }
@@ -1159,6 +1352,7 @@
             }
  
             const selectedPolygons = [];
+            const selectedBoundsLayers = [];
  
             // Update all boundaries' styling dynamically (Glowing Active Highlight vs completely transparent inactives)
             Object.keys(barangayPolygons).forEach(brgyId => {
@@ -1168,20 +1362,26 @@
 	                        opacity: 1.0, // Fully visible border!
 	                        color: '#0099ff', // bright cyan
 	                        fillColor: '#0099ff',
-	                        fillOpacity: 0.16,
-	                        weight: 3.5,
+	                        fillOpacity: 0.10,
+	                        weight: 3.2,
 	                        dashArray: ''
-	                    });
+                    });
                     poly.bringToFront();
                     selectedPolygons.push(poly);
+                    selectedBoundsLayers.push(poly);
                 } else {
                     poly.setStyle({
                         opacity: 0.0, // Completely invisible!
                         fillOpacity: 0.0,
-                        weight: 2.0
+                        weight: 0
                     });
                 }
             });
+            updateSelectedMarkerState();
+
+            selectedIds
+                .filter(id => !barangayPolygons[id] && markers[id])
+                .forEach(id => selectedBoundsLayers.push(markers[id]));
 
             // Update HUD Scope Title exactly like the picture!
             const hudScope = document.getElementById('map-hud-scope');
@@ -1207,11 +1407,13 @@
                         featureLayers[type].clearLayers();
                     }
                 });
+                resetLayerBadges();
+                updateDynamicLegend();
             }
             
             // Premium smooth transition: fit map bounds strictly to the active boundary
-            if (selectedPolygons.length > 0) {
-                const group = L.featureGroup(selectedPolygons);
+            if (selectedBoundsLayers.length > 0) {
+                const group = L.featureGroup(selectedBoundsLayers);
                 fitSelectionBounds(group.getBounds());
             } else if (selectedIds.length === 1 && markers[selectedIds[0]]) {
                 const selectedBrgy = barangays.find(b => parseInt(b.id) === selectedIds[0]);
@@ -1264,10 +1466,72 @@
         }
 
         function startMeasure() {
-            if(!map.hasLayer(measureControl)) {
+            identifyActive = false;
+            document.querySelectorAll('.toolbar-btn.active').forEach(btn => btn.classList.remove('active'));
+            if(!measureControlAdded) {
                 map.addControl(measureControl);
+                measureControlAdded = true;
             }
             measureControl._startMeasure();
+        }
+
+        function clearMeasure() {
+            if (measureControl) {
+                try { map.removeControl(measureControl); } catch (e) {}
+            }
+
+            document.querySelectorAll('.layer-measurearea, .layer-measureboundary, .layer-measure-resultarea, .layer-measure-resultline, .layer-measuredrag, .layer-measurevertex, .layer-measure-resultpoint')
+                .forEach(el => el.remove());
+
+            measureControl = createMeasureControl();
+            measureControlAdded = false;
+        }
+
+        function toggleEditMode(btn) {
+            if (!boundaryEditingEnabled) {
+                editModeActive = false;
+                if (btn) btn.classList.remove('active');
+                if (map && map.pm) {
+                    map.pm.disableGlobalEditMode();
+                    map.pm.disableGlobalDragMode();
+                    map.pm.disableGlobalRemovalMode();
+                    map.pm.removeControls();
+                }
+                return;
+            }
+
+            editModeActive = !editModeActive;
+            btn.classList.toggle('active', editModeActive);
+
+            if (editModeActive) {
+                clearMeasure();
+                identifyActive = false;
+                document.getElementById('map').style.cursor = '';
+
+                map.pm.addControls({
+                    position: 'topleft',
+                    drawMarker: false,
+                    drawCircleMarker: false,
+                    drawPolyline: false,
+                    drawRectangle: true,
+                    drawPolygon: true,
+                    drawCircle: false,
+                    editMode: true,
+                    dragMode: true,
+                    removalMode: true,
+                    cutPolygon: false,
+                    rotateMode: false,
+                });
+            } else {
+                map.pm.disableGlobalEditMode();
+                map.pm.disableGlobalDragMode();
+                map.pm.disableGlobalRemovalMode();
+                map.pm.removeControls();
+            }
+        }
+
+        function findMyLocation() {
+            map.locate({ setView: true, maxZoom: 16 });
         }
 
         function updateSidebar(id) {
@@ -1299,6 +1563,59 @@
                     ? `${lat.toFixed(6)}, ${lng.toFixed(6)}` 
                     : 'N/A';
             }
+
+            updatePopulationInsight(brgy);
+        }
+
+        function numericValue(value) {
+            if (value === null || value === undefined || value === '') return 0;
+
+            const parsed = parseFloat(String(value).replace(/,/g, ''));
+            return Number.isFinite(parsed) ? parsed : 0;
+        }
+
+        function updatePopulationInsight(brgy) {
+            const population = numericValue(brgy.population);
+            const area = numericValue(brgy.total_area);
+            const density = area > 0 ? population / area : 0;
+
+            const densities = barangays
+                .filter(item => !isMunicipalBoundary(item))
+                .map(item => {
+                    const itemPopulation = numericValue(item.population);
+                    const itemArea = numericValue(item.total_area);
+
+                    return {
+                        id: item.id,
+                        density: itemArea > 0 ? itemPopulation / itemArea : 0,
+                    };
+                })
+                .filter(item => item.density > 0)
+                .sort((a, b) => b.density - a.density);
+
+            const averageDensity = densities.length
+                ? densities.reduce((sum, item) => sum + item.density, 0) / densities.length
+                : 0;
+            const maxDensity = densities.length ? densities[0].density : density;
+            const rankIndex = densities.findIndex(item => parseInt(item.id) === parseInt(brgy.id));
+            const rankText = rankIndex >= 0 ? `#${rankIndex + 1} of ${densities.length}` : 'N/A';
+            const percentage = maxDensity > 0 ? Math.min((density / maxDensity) * 100, 100) : 0;
+            const comparison = averageDensity > 0 ? ((density - averageDensity) / averageDensity) * 100 : 0;
+            const comparisonText = Math.abs(comparison) < 1
+                ? 'about equal to'
+                : `${Math.abs(comparison).toFixed(0)}% ${comparison > 0 ? 'above' : 'below'}`;
+
+            document.getElementById('population-density-value').innerText = density > 0
+                ? `${density.toFixed(1)} people/ha`
+                : 'N/A';
+            document.getElementById('population-average-value').innerText = averageDensity > 0
+                ? `${averageDensity.toFixed(1)} people/ha`
+                : 'N/A';
+            document.getElementById('population-rank-value').innerText = rankText;
+            document.getElementById('population-density-bar').style.width = `${percentage}%`;
+            document.getElementById('population-insight-caption').innerText = density > 0 && averageDensity > 0
+                ? `${brgy.name} is ${comparisonText} the barangay density average.`
+                : 'Population or land area is incomplete for this barangay.';
         }
 
         function setBasemap(type, element = null) {
@@ -1359,8 +1676,9 @@
                 // Keep municipal boundary visible until an individual barangay is selected.
                 if (municipalPolygon) {
                     municipalPolygon.setStyle({
-                        opacity: 0.8,
-                        weight: 3.0
+                        color: '#1d74c9',
+                        opacity: 0.48,
+                        weight: 1.8
                     });
                 }
                 
@@ -1369,9 +1687,9 @@
                     poly.setStyle({
                         color: '#0099ff',
                         fillColor: '#0099ff',
-                        opacity: 0.8,
-                        fillOpacity: 0.1,
-                        weight: 2.5,
+                        opacity: 0.55,
+                        fillOpacity: 0.06,
+                        weight: 1.6,
                         dashArray: ''
                     });
                 });
@@ -1391,6 +1709,8 @@
                         featureLayers[type].clearLayers();
                     }
                 });
+                updateSelectedMarkerState();
+                updateDynamicLegend();
             } else {
                 // Update button text
                 btn.innerHTML = '<i class="fa-solid fa-layer-group" style="font-size:8px;"></i> Select All';
@@ -1400,8 +1720,9 @@
                 // Show municipal boundary again
                 if (municipalPolygon) {
                     municipalPolygon.setStyle({
-                        opacity: 0.8,
-                        weight: 3.0
+                        color: '#1d74c9',
+                        opacity: 0.58,
+                        weight: 2.2
                     });
                 }
                 
@@ -1410,9 +1731,11 @@
                     poly.setStyle({
                         opacity: 0.0,
                         fillOpacity: 0.0,
-                        weight: 2.0
+                        weight: 0
                     });
                 });
+                updateSelectedMarkerState();
+                updateDynamicLegend();
                 
                 map.setView([15.8287, 120.4173], 14);
             }

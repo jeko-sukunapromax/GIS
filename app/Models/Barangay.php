@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Barangay extends Model
 {
@@ -44,5 +45,38 @@ class Barangay extends Model
     public function features()
     {
         return $this->hasMany(MapFeature::class);
+    }
+
+    public function boundaryVersions(): HasMany
+    {
+        return $this->hasMany(BoundaryVersion::class)->latest();
+    }
+
+    public function snapshotBoundary(?string $label = null, ?string $createdBy = null): ?BoundaryVersion
+    {
+        if (empty($this->boundary)) {
+            return null;
+        }
+
+        return $this->boundaryVersions()->create([
+            'label' => $label,
+            'boundary' => $this->boundary,
+            'latitude' => $this->latitude,
+            'longitude' => $this->longitude,
+            'total_area' => $this->total_area,
+            'boundary_source' => $this->boundary_source,
+            'boundary_updated_at' => $this->boundary_updated_at,
+            'attributes' => [
+                'population' => $this->population,
+                'land_use' => $this->land_use,
+                'hazard_level' => $this->hazard_level,
+                'agri_area' => $this->agri_area,
+                'residential_area' => $this->residential_area,
+                'commercial_area' => $this->commercial_area,
+                'unidentified_area' => $this->unidentified_area,
+                'description' => $this->description,
+            ],
+            'created_by' => $createdBy,
+        ]);
     }
 }

@@ -22,6 +22,7 @@
                     <th style="padding: 12px 16px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Layer Name</th>
                     <th style="padding: 12px 16px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Category Group</th>
                     <th style="padding: 12px 16px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Geometry</th>
+                    <th style="padding: 12px 16px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Publishing</th>
                     <th style="padding: 12px 16px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">System Code</th>
                     <th style="padding: 12px 16px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; text-align: right;">Action</th>
                 </tr>
@@ -64,6 +65,19 @@
                             <span style="display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; background: {{ $geomBg }}; color: {{ $geomColor }}; border: 1px solid {{ $geomColor }}20;">
                                 {{ $geomLabel }}
                             </span>
+                        </td>
+                        <td style="padding: 14px 16px;">
+                            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                                <span style="display:inline-block; padding:4px 9px; border-radius:12px; font-size:10px; font-weight:700; background: {{ $type->is_active ? 'rgba(16,185,129,0.12)' : 'rgba(148,163,184,0.12)' }}; color: {{ $type->is_active ? '#86efac' : '#cbd5e1' }}; border:1px solid {{ $type->is_active ? 'rgba(16,185,129,0.24)' : 'rgba(148,163,184,0.2)' }};">
+                                    {{ $type->is_active ? 'Active' : 'Inactive' }}
+                                </span>
+                                <span style="display:inline-block; padding:4px 9px; border-radius:12px; font-size:10px; font-weight:700; background: {{ $type->is_public ? 'rgba(56,189,248,0.12)' : 'rgba(148,163,184,0.12)' }}; color: {{ $type->is_public ? '#7dd3fc' : '#cbd5e1' }}; border:1px solid {{ $type->is_public ? 'rgba(56,189,248,0.24)' : 'rgba(148,163,184,0.2)' }};">
+                                    {{ $type->is_public ? 'Public' : 'Admin Only' }}
+                                </span>
+                                <span style="display:inline-block; padding:4px 9px; border-radius:12px; font-size:10px; font-weight:700; background:rgba(255,255,255,0.05); color:var(--text-muted); border:1px solid rgba(255,255,255,0.08);">
+                                    #{{ $type->sort_order }}
+                                </span>
+                            </div>
                         </td>
                         <td style="padding: 14px 16px; font-family: monospace; font-size: 12px; color: var(--text-muted);">
                             {{ $type->code }}
@@ -189,6 +203,21 @@
                 </div>
             </div>
 
+            <div class="grid-2" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+                <div class="form-group" style="margin:0;">
+                    <label for="sort_order" style="display:block; margin-bottom:6px; font-weight:600; color:var(--text-main); font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">Sort Order</label>
+                    <input type="number" id="sort_order" name="sort_order" value="0" min="0" style="width:100%; padding:10px 12px; background:rgba(15,23,42,0.4); border:1px solid var(--border-color); border-radius:8px; font-size:13px; color:var(--text-heading); outline:none;">
+                </div>
+                <div class="form-group" style="margin:0; display:flex; flex-direction:column; justify-content:center; gap:8px; padding-top:18px;">
+                    <label style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-main); text-transform:none; letter-spacing:0;">
+                        <input type="checkbox" id="is_active" name="is_active" value="1" checked style="width:auto;"> Active layer
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-main); text-transform:none; letter-spacing:0;">
+                        <input type="checkbox" id="is_public" name="is_public" value="1" checked style="width:auto;"> Visible on public map
+                    </label>
+                </div>
+            </div>
+
             <button type="submit" id="modal-submit-btn" class="btn btn-primary" style="width: 100%; padding: 10px; background: var(--accent-blue); color: #090d16; border: none; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 0 15px rgba(56, 189, 248, 0.2); transition: all 0.2s ease; outline: none;">
                 <i class="fa-solid fa-plus"></i> Create Layer Type
             </button>
@@ -240,6 +269,9 @@
             document.getElementById('icon').value = 'fa-solid fa-location-dot';
             document.getElementById('live-marker-icon').className = 'fa-solid fa-location-dot';
             document.getElementById('live-marker-preview').style.backgroundColor = '#3b82f6';
+            document.getElementById('sort_order').value = 0;
+            document.getElementById('is_active').checked = true;
+            document.getElementById('is_public').checked = true;
             
             document.getElementById('modal-submit-btn').innerHTML = '<i class="fa-solid fa-plus"></i> Create Layer Type';
         }
@@ -276,6 +308,9 @@
         document.getElementById('geom_type').value = type.geom_type;
         document.getElementById('icon').value = type.icon;
         document.getElementById('color').value = type.color;
+        document.getElementById('sort_order').value = type.sort_order || 0;
+        document.getElementById('is_active').checked = Boolean(type.is_active);
+        document.getElementById('is_public').checked = Boolean(type.is_public);
         
         // 3. Mark the active icon option in visual grid
         const iconOptions = document.querySelectorAll('.icon-option');

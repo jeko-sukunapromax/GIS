@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Barangay;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -108,6 +109,50 @@ class AdminUploadTest extends TestCase
             'file_name' => 'bayambang-boundary.geojson',
             'status' => 'Processed',
         ]);
+    }
+
+    public function test_upload_preview_can_be_canceled_without_saving(): void
+    {
+        $admin = User::factory()->create();
+        Role::findOrCreate('admin', 'web');
+        $admin->assignRole('admin');
+
+        $geoJson = [
+            'type' => 'Feature',
+            'properties' => ['NAME' => 'Alinggan'],
+            'geometry' => [
+                'type' => 'Polygon',
+                'coordinates' => [[
+                    [120.40, 15.80],
+                    [120.45, 15.80],
+                    [120.45, 15.85],
+                    [120.40, 15.85],
+                    [120.40, 15.80],
+                ]],
+            ],
+        ];
+
+        $file = UploadedFile::fake()->createWithContent('alinggan.geojson', json_encode($geoJson));
+
+        $this
+            ->actingAs($admin)
+            ->post(route('admin.uploads.preview'), ['upload_files' => [$file]])
+            ->assertSessionHas('upload_preview');
+
+        $preview = session('upload_preview');
+        $previewPath = storage_path("app/upload-previews/{$preview['token']}");
+
+        $this->assertTrue(File::isDirectory($previewPath));
+
+        $this
+            ->actingAs($admin)
+            ->delete(route('admin.uploads.cancel-preview'), ['preview_token' => $preview['token']])
+            ->assertSessionHas('success');
+
+        $this->assertFalse(File::isDirectory($previewPath));
+        $this->assertFalse(session()->has("upload_previews.{$preview['token']}"));
+        $this->assertDatabaseCount('barangays', 0);
+        $this->assertDatabaseCount('map_uploads', 0);
     }
 
     public function test_boundary_upload_does_not_match_partial_barangay_names(): void

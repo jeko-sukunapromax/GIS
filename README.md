@@ -1,58 +1,262 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Bayambang GIS Mapping System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel-based GIS management system for barangay boundaries, municipal boundary data, map layers, critical facilities, DRRM assets, and user access control.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Public interactive map with barangay search, selection, profiles, layer toggles, and municipal boundary display.
+- Admin map for staff/admin users with barangay selection, feature overlays, basemaps, identify tools, and measurement tools.
+- Barangay CRUD with boundary drawing/editing, visibility controls, demographic fields, land-use fields, and hazard metadata.
+- Bulk boundary upload with preview/confirm flow for GeoJSON/JSON and Shapefile ZIP files.
+- Map feature management for points, polylines, and polygons by layer type.
+- Layer type management for icons, colors, categories, and geometry types.
+- Jetstream/Fortify authentication with iHRIS login integration.
+- Role-based access using Spatie Permission.
+- API token scaffolding through Laravel Sanctum/Jetstream.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.3+
+- Laravel 13
+- Laravel Jetstream, Fortify, Livewire, Sanctum
+- Spatie Laravel Permission
+- Spatie Laravel Activitylog
+- Vite 8
+- Tailwind CSS 4
+- Leaflet-based map views
 
-## Learning Laravel
+## Requirements
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- PHP 8.3 or newer
+- Composer
+- Node.js and npm
+- SQLite for local development, or another Laravel-supported database
+- PHP extensions commonly required by Laravel, plus `zip` for Shapefile ZIP processing
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Setup
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+npm install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+npm run build
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+For local development, use:
 
-## Contributing
+```bash
+composer run dev
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+That starts the Laravel server, queue listener, log tail, and Vite dev server together.
 
-## Code of Conduct
+You can also run the services separately:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+php artisan serve
+npm run dev
+```
 
-## Security Vulnerabilities
+## Environment
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+The default `.env.example` uses SQLite:
 
-## License
+```env
+DB_CONNECTION=sqlite
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+If using SQLite, create the database file before migrating if it does not exist:
+
+```bash
+touch database/database.sqlite
+php artisan migrate --seed
+```
+
+Important iHRIS settings:
+
+```env
+IHRIS_API_BASE_URL=https://testihris.bayambang.gov.ph/api
+IHRIS_LOGIN_ENDPOINT=login
+IHRIS_USERNAME_FIELD=email
+IHRIS_ALLOWED_OFFICES="BDRRMC|MDRRMO|Municipal Disaster Risk Reduction Management Office"
+IHRIS_ADMIN_OVERRIDE_EMAILS=
+IHRIS_SUPER_ADMIN_EMAILS=
+IHRIS_OFFICE_UUID=
+IHRIS_TIMEOUT=10
+```
+
+For local testing without a live iHRIS account, enable the configured test login:
+
+```env
+IHRIS_TEST_LOGIN_ENABLED=true
+IHRIS_TEST_LOGIN_EMAIL=test@bdrrmc.local
+IHRIS_TEST_LOGIN_PASSWORD=password
+IHRIS_TEST_LOGIN_NAME="BDRRMC Test Admin"
+```
+
+Set `IHRIS_SUPER_ADMIN_EMAILS` to the email that should receive `super-admin` access on login.
+
+Activity logging is handled by `spatie/laravel-activitylog`. The package writes audit records to the `activity_log` table by default.
+
+```env
+ACTIVITY_LOGGER_ENABLED=true
+ACTIVITY_LOGGER_TABLE_NAME=activity_log
+```
+
+## Roles And Access
+
+The application uses three roles:
+
+- `staff`: can access the admin map and feature management.
+- `admin`: can manage map data, uploads, barangays, and layer types.
+- `super-admin`: can manage users and roles in addition to admin capabilities.
+
+Access summary:
+
+| Area | Staff | Admin | Super Admin |
+| --- | --- | --- | --- |
+| `/admin/map` | Yes | Yes | Yes |
+| `/admin/features` | Yes | Yes | Yes |
+| `/admin/uploads` | No | Yes | Yes |
+| `/admin/barangays` | No | Yes | Yes |
+| `/admin/layer-types` | No | Yes | Yes |
+| `/admin/users` | No | No | Yes |
+
+During iHRIS login, allowed office users are created or updated locally. Emails in `IHRIS_SUPER_ADMIN_EMAILS` receive the `super-admin` role. Other allowed users receive `admin` unless they already have `staff` or `admin`.
+
+## Seed Data
+
+`php artisan migrate --seed` creates:
+
+- Sample user: `test@example.com`
+- Default map layer types:
+  - Barangay Hall
+  - Health Center
+  - Multi-purpose Bldg
+  - Covered Court
+  - Police/Tanod Post
+  - Evacuation Center
+  - BERT Responder
+  - Road Network
+  - Density Zone
+  - Household
+- Sample barangays:
+  - Tococ East
+  - Talibaew
+- Sample map features for the seeded barangays
+
+## Upload Formats
+
+Admin uploads accept files up to 50 MB each.
+
+Supported formats:
+
+- `.geojson`
+- `.json`
+- `.zip` containing Shapefile files
+
+For Shapefile ZIP uploads, the archive must contain at least:
+
+- `.shp`
+- `.dbf`
+
+GeoJSON uploads may be a `FeatureCollection` or a single `Feature`.
+
+The importer tries to match barangay names using common fields:
+
+```text
+NAME_3, NAME_4, BGY_NAME, BRGY_NAME, BARANGAY, NAME, BRGY, ADM4_EN
+```
+
+The importer can also extract common attributes:
+
+```text
+population, total_area, hazard_level, land_use,
+agri_area, residential_area, commercial_area,
+unidentified_area, description
+```
+
+Municipal boundary records are detected when the feature name is `Bayambang` or contains text like `Bayambang boundary`, `Bayambang municipal`, or `municipal boundary`.
+
+## Main Routes
+
+Public:
+
+- `/`
+- `/api/barangays`
+- `/api/barangays/{barangay}/features`
+
+Authenticated:
+
+- `/dashboard`
+- `/admin/map`
+- `/admin/features`
+- `/admin/uploads`
+- `/admin/barangays`
+- `/admin/layer-types`
+- `/admin/users`
+
+Sanctum API:
+
+- `/api/user`
+
+## Testing
+
+Run the PHP test suite:
+
+```bash
+php artisan test
+```
+
+Or through Composer:
+
+```bash
+composer test
+```
+
+Build frontend assets:
+
+```bash
+npm run build
+```
+
+Current verified baseline:
+
+- `php artisan test` passes
+- `npm run build` passes
+
+## Deployment Checklist
+
+- Set production `.env` values.
+- Set `APP_ENV=production` and `APP_DEBUG=false`.
+- Configure the production database.
+- Configure iHRIS API URL, office UUID, allowed offices, and super-admin emails.
+- Run `composer install --no-dev --optimize-autoloader`.
+- Run `npm ci` and `npm run build`.
+- Run `php artisan migrate --force`.
+- Run `php artisan config:cache`.
+- Run `php artisan route:cache`.
+- Run `php artisan view:cache`.
+- Configure queue worker if background jobs are enabled.
+- Configure web server document root to `public/`.
+
+## Useful Commands
+
+```bash
+php artisan migrate:fresh --seed
+php artisan test
+npm run build
+composer run dev
+php artisan route:list
+```
+
+## Notes For Developers
+
+- Boundary coordinates are stored as latitude/longitude arrays for Leaflet rendering.
+- Upload preview files are stored temporarily under `storage/app/upload-previews`.
+- Bulk imports update matched barangays and create records for unmatched named features.
+- Municipal boundary records are stored in the `barangays` table with `is_municipal_boundary=true`.
+- Role-protected admin routes are defined in `routes/web.php`.
+- Audit trail records use Spatie Activitylog's `activity_log` table and are displayed at `/admin/activity-logs`.

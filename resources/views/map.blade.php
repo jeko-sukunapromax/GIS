@@ -62,6 +62,102 @@
             min-height: 0;
         }
 
+        .layers-panel-clean {
+            background: rgba(6, 12, 20, 0.74);
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            border-radius: 8px;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+            backdrop-filter: blur(10px);
+            padding: 14px;
+        }
+
+        .layers-panel-title {
+            color: #f8fafc;
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 10px;
+        }
+
+        .layer-category-group + .layer-category-group {
+            margin-top: 12px;
+        }
+
+        .layer-category-heading {
+            color: rgba(148, 163, 184, 0.88);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0;
+            line-height: 1.2;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .layer-toggle-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            align-items: center;
+            gap: 10px;
+            min-height: 32px;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+        }
+
+        .layer-toggle-row:last-child {
+            border-bottom: 0;
+        }
+
+        .layer-toggle-label {
+            min-width: 0;
+            color: #dbeafe;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.25;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: color 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .layer-toggle-label:hover {
+            color: #ffffff;
+        }
+
+        .layer-count-badge {
+            min-width: 24px;
+            padding: 1px 6px;
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.64);
+            color: rgba(203, 213, 225, 0.86);
+            font-size: 11px;
+            line-height: 18px;
+            text-align: center;
+        }
+
+        .layer-checkbox {
+            width: 15px;
+            height: 15px;
+            accent-color: #38bdf8;
+            cursor: pointer;
+        }
+
+        .layer-feature-marker {
+            background: transparent;
+            border: 0;
+        }
+
+        .layer-feature-dot {
+            display: block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.92);
+            border-radius: 999px;
+            background: var(--marker-color, #38bdf8);
+            box-shadow: 0 0 0 2px rgba(7, 17, 31, 0.86), 0 8px 18px rgba(0, 0, 0, 0.35);
+        }
+
         .sidebar-resize-handle {
             height: 18px;
             flex: 0 0 18px;
@@ -168,9 +264,9 @@
                 <div id="panelResizeHandle" class="sidebar-resize-handle" title="Resize sidebar sections"></div>
 
                 <!-- Layers Section -->
-                <div id="layersPanel" class="bg-cyber-dark/60 border border-cyber-primary/20 p-4 flex flex-col overflow-hidden">
-                    <div class="font-orbitron text-[12px] font-bold text-cyber-primary tracking-[2px] mb-3 uppercase flex-shrink-0">Map Layers</div>
-                    <div class="flex-1 space-y-2 overflow-y-auto pr-2 scrollbar-cyber" id="layerToggles">
+                <div id="layersPanel" class="layers-panel-clean flex flex-col overflow-hidden">
+                    <div class="layers-panel-title flex-shrink-0">Map Layers</div>
+                    <div class="flex-1 overflow-y-auto pr-2 scrollbar-cyber" id="layerToggles">
                         <!-- Loaded dynamically via JS -->
                     </div>
                 </div>
@@ -207,6 +303,13 @@
         let municipalPolygon = null;
         let layerGroups = {};
         let activeLayerTypes = new Set();
+        let selectedFallbackMarkers = null;
+
+        function escapeHtml(value) {
+            const div = document.createElement('div');
+            div.textContent = value ?? '';
+            return div.innerHTML;
+        }
 
         function isMunicipalBoundary(brgy) {
             return brgy.is_municipal_boundary || brgy.name.toLowerCase() === 'bayambang';
@@ -247,6 +350,7 @@
                 attribution: 'Tiles &copy; Esri'
             }).addTo(map);
 
+            selectedFallbackMarkers = L.layerGroup().addTo(map);
             renderBarangayList(barangays);
             drawBoundaries();
             renderLayerToggles();
@@ -317,19 +421,38 @@
             const container = document.getElementById('layerToggles');
             container.innerHTML = '';
 
-            layerTypes.forEach(layer => {
-                const div = document.createElement('div');
-                div.className = 'flex items-center justify-between text-[12px] py-1';
-                div.innerHTML = `
-                    <label for="layer-${layer.id}" class="text-cyber-text cursor-pointer hover:text-cyber-primary transition-colors flex-1">
-                        ${layer.name}
-                    </label>
-                    <input type="checkbox" id="layer-${layer.id}" onchange="toggleLayer(${layer.id})" class="w-4 h-4 accent-cyber-primary cursor-pointer">
-                `;
-                container.appendChild(div);
+            const groupedLayers = layerTypes.reduce((groups, layer) => {
+                const category = layer.category || 'other';
+                groups[category] ||= [];
+                groups[category].push(layer);
+                return groups;
+            }, {});
 
-                // Initialize layer group
-                layerGroups[layer.id] = L.layerGroup();
+            Object.entries(groupedLayers).forEach(([category, layers]) => {
+                const section = document.createElement('div');
+                section.className = 'layer-category-group';
+                section.innerHTML = `
+                    <div class="layer-category-heading">
+                        ${escapeHtml(category.replaceAll('_', ' '))}
+                    </div>
+                `;
+
+                layers.forEach(layer => {
+                    const div = document.createElement('div');
+                    div.className = 'layer-toggle-row';
+                    div.innerHTML = `
+                        <label for="layer-${layer.id}" class="layer-toggle-label">
+                            ${escapeHtml(layer.name)}
+                        </label>
+                        <span id="layer-count-${layer.id}" class="layer-count-badge">0</span>
+                        <input type="checkbox" id="layer-${layer.id}" onchange="toggleLayer(${layer.id})" class="layer-checkbox" aria-label="${escapeHtml(layer.name)}">
+                    `;
+                    section.appendChild(div);
+
+                    layerGroups[layer.id] = L.layerGroup();
+                });
+
+                container.appendChild(section);
             });
         }
 
@@ -354,33 +477,52 @@
         function loadBarangayFeatures(barangayId) {
             // Clear all layer groups first
             Object.values(layerGroups).forEach(group => group.clearLayers());
+            layerTypes.forEach(layer => {
+                const badge = document.getElementById(`layer-count-${layer.id}`);
+                if (badge) badge.textContent = '0';
+            });
 
             if (activeLayerTypes.size === 0) return;
 
             fetch(`/api/barangays/${barangayId}/features`)
                 .then(res => res.json())
                 .then(features => {
+                    const counts = {};
+                    layerTypes.forEach(layer => counts[layer.id] = 0);
+
                     features.forEach(feature => {
                         const layerType = layerTypes.find(l => l.code === feature.feature_type);
                         if (!layerType || !activeLayerTypes.has(layerType.id)) return;
+                        counts[layerType.id]++;
 
                         const coords = typeof feature.coordinates === 'string'
                             ? JSON.parse(feature.coordinates)
                             : feature.coordinates;
+                        const metadata = feature.metadata || {};
+                        const metadataHtml = Object.entries(metadata)
+                            .slice(0, 6)
+                            .map(([key, value]) => `<div style="display:flex; justify-content:space-between; gap:10px; font-size:11px; margin-top:4px;"><span style="color:#94a3b8;">${key.replaceAll('_', ' ')}</span><strong>${value}</strong></div>`)
+                            .join('');
+                        const popup = `
+                            <div style="min-width:180px;">
+                                <strong style="color:${layerType.color};">${feature.name}</strong>
+                                <div style="font-size:11px; color:#94a3b8; margin-top:2px;">${layerType.name}</div>
+                                ${metadataHtml ? `<div style="margin-top:8px;">${metadataHtml}</div>` : ''}
+                            </div>
+                        `;
 
                         if (layerType.geom_type === 'point' && feature.latitude && feature.longitude) {
                             const marker = L.marker([feature.latitude, feature.longitude], {
                                 icon: L.divIcon({
-                                    html: `<i class="${layerType.icon}" style="color: ${layerType.color}; font-size: 20px;"></i>`,
-                                    className: 'custom-marker',
-                                    iconSize: [20, 20]
+                                    html: `<span class="layer-feature-dot" style="--marker-color: ${layerType.color};"></span>`,
+                                    className: 'layer-feature-marker',
+                                    iconSize: [18, 18],
+                                    iconAnchor: [9, 9]
                                 })
                             });
-                            marker.bindPopup(`<strong>${feature.name}</strong>`);
+                            marker.bindPopup(popup);
                             layerGroups[layerType.id].addLayer(marker);
                         } else if (Array.isArray(coords) && coords.length > 0) {
-                            const popup = `<strong>${feature.name}</strong>`;
-
                             if (layerType.geom_type === 'polygon') {
                                 const polygon = L.polygon(coords, {
                                     color: layerType.color,
@@ -400,6 +542,11 @@
                                 layerGroups[layerType.id].addLayer(polyline);
                             }
                         }
+                    });
+
+                    Object.entries(counts).forEach(([layerId, count]) => {
+                        const badge = document.getElementById(`layer-count-${layerId}`);
+                        if (badge) badge.textContent = count;
                     });
                 });
         }
@@ -432,12 +579,12 @@
                             
                             // Hover effects - only apply if not active or all selected
                             polygon.on('mouseover', () => {
-                                if (activeBarangayId !== brgy.id && !allSelected) {
+                                if (!isBarangayCurrentlySelected(brgy.id) && !allSelected) {
                                     polygon.setStyle({ opacity: 0.6, fillOpacity: 0.05, dashArray: '' });
                                 }
                             });
                             polygon.on('mouseout', () => {
-                                if (activeBarangayId !== brgy.id && !allSelected) {
+                                if (!isBarangayCurrentlySelected(brgy.id) && !allSelected) {
                                     polygon.setStyle({ opacity: 0.15, fillOpacity: 0.0, dashArray: '4 6' });
                                 }
                             });
@@ -518,6 +665,10 @@
             selectedBarangayIds.forEach(id => setItemActiveState(id));
         }
 
+        function isBarangayCurrentlySelected(id) {
+            return selectedBarangayIds.has(parseInt(id));
+        }
+
         function selectBarangay(id) {
             const brgy = barangays.find(b => b.id == id);
             if (!brgy) return;
@@ -567,6 +718,7 @@
 
             document.getElementById('barangayProfile').classList.add('hidden');
             Object.values(layerGroups).forEach(group => group.clearLayers());
+            selectedFallbackMarkers?.clearLayers();
         }
 
         function closeHudScope(event) {
@@ -598,6 +750,8 @@
             }
 
             const selectedPolygons = [];
+            const selectedBoundsLayers = [];
+            selectedFallbackMarkers?.clearLayers();
             Object.keys(barangayPolygons).forEach(polyId => {
                 const poly = barangayPolygons[polyId];
                 if (selectedBarangayIds.has(parseInt(polyId))) {
@@ -611,6 +765,7 @@
                     });
                     poly.bringToFront();
                     selectedPolygons.push(poly);
+                    selectedBoundsLayers.push(poly);
                 } else {
                     poly.setStyle({
                         opacity: 0.0,  // Hide other barangay outlines completely
@@ -621,13 +776,39 @@
                 }
             });
 
-            if (selectedPolygons.length > 0) {
-                const group = L.featureGroup(selectedPolygons);
+            selectedIds
+                .filter(id => !barangayPolygons[id])
+                .forEach(id => {
+                    const brgy = barangays.find(b => parseInt(b.id) === parseInt(id));
+                    const lat = parseFloat(brgy?.latitude);
+                    const lng = parseFloat(brgy?.longitude);
+
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        const marker = L.marker([lat, lng], {
+                            icon: L.divIcon({
+                                html: `
+                                    <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+                                        <div style="width:14px; height:14px; border-radius:999px; background:#0099ff; border:2px solid #07111f; box-shadow:0 0 10px rgba(0,153,255,0.75);"></div>
+                                        <div style="font-family:Orbitron, sans-serif; font-size:10px; color:#ffffff; text-shadow:0 2px 6px #000; white-space:nowrap;">${escapeHtml(brgy.name)}</div>
+                                    </div>
+                                `,
+                                className: 'selected-brgy-marker',
+                                iconSize: [120, 42],
+                                iconAnchor: [60, 7]
+                            })
+                        }).addTo(selectedFallbackMarkers);
+
+                        selectedBoundsLayers.push(marker);
+                    }
+                });
+
+            if (selectedBoundsLayers.length > 0) {
+                const group = L.featureGroup(selectedBoundsLayers);
                 flyToSelectionBounds(group.getBounds());
 
                 if (selectedIds.length === 1) {
                     const selectedBrgy = barangays.find(b => parseInt(b.id) === selectedIds[0]);
-                    const center = selectedPolygons[0].getBounds().getCenter();
+                    const center = group.getBounds().getCenter();
                     showHudScope(selectedBrgy.name, center);
                     showBarangayProfile(selectedBrgy);
                     loadBarangayFeatures(selectedBrgy.id);

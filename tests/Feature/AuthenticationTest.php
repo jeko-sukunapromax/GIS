@@ -171,4 +171,31 @@ class AuthenticationTest extends TestCase
         $this->assertTrue($user->hasRole('staff'));
         $this->assertFalse($user->hasRole('admin'));
     }
+
+    public function test_deactivated_user_can_not_authenticate(): void
+    {
+        User::factory()->create([
+            'name' => 'Deactivated User',
+            'email' => 'inactive@example.com',
+            'deactivated_at' => now(),
+        ]);
+
+        Http::fake([
+            'https://testihris.bayambang.gov.ph/api/login' => Http::response([
+                'user' => [
+                    'name' => 'Deactivated User',
+                    'email' => 'inactive@example.com',
+                    'office' => 'BDRRMC Office',
+                ],
+                'token' => 'test-token',
+            ]),
+        ]);
+
+        $this->post('/login', [
+            'email' => 'inactive@example.com',
+            'password' => 'password',
+        ]);
+
+        $this->assertGuest();
+    }
 }

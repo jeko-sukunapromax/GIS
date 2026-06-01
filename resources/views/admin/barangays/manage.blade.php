@@ -163,18 +163,6 @@
     }
 </style>
 
-@if(session('success'))
-    <div class="alert alert-success">
-        <i class="fa-solid fa-circle-check"></i> {{ session('success') }}
-    </div>
-@endif
-
-@if(session('error'))
-    <div class="alert alert-error">
-        <i class="fa-solid fa-circle-exclamation"></i> {{ session('error') }}
-    </div>
-@endif
-
 <div class="manage-header">
     <div>
         <div class="manage-title">
@@ -226,6 +214,55 @@
             <a href="{{ route('admin.uploads.index') }}" class="btn btn-secondary" style="width: 100%;">
                 <i class="fa-solid fa-arrow-up-from-bracket"></i> Go to Upload Data
             </a>
+
+            @if($barangay->boundary)
+                <a href="{{ route('admin.barangays.boundary.download', $barangay) }}" class="btn btn-secondary" style="width: 100%; margin-top: 10px;">
+                    <i class="fa-solid fa-download"></i> Download Current GeoJSON
+                </a>
+            @endif
+        </div>
+
+        <div class="card" style="margin-bottom: 24px;">
+            <div class="card-title">
+                <i class="fa-solid fa-clock-rotate-left"></i> Boundary Versions
+            </div>
+
+            @forelse($boundaryVersions as $version)
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px; background: rgba(15,23,42,0.35); border: 1px solid rgba(148,163,184,0.12); border-radius: 8px; margin-bottom: 10px;">
+                    <div>
+                        <div style="color: #f8fafc; font-size: 13px; font-weight: 700;">Version #{{ $version->id }}</div>
+                        <div style="color: #94a3b8; font-size: 11px; margin-top: 3px;">{{ $version->label ?? 'Boundary snapshot' }}</div>
+                        <div style="color: #64748b; font-size: 11px; margin-top: 3px;">
+                            {{ $version->created_at?->format('M d, Y h:i A') }}
+                            @if($version->created_by)
+                                · {{ $version->created_by }}
+                            @endif
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
+                        <a href="{{ route('admin.barangays.boundary-versions.download', [$barangay, $version]) }}" class="btn btn-secondary" style="padding: 7px 10px; font-size: 12px;">
+                            <i class="fa-solid fa-download"></i>
+                        </a>
+                        <form method="POST" action="{{ route('admin.barangays.boundary-versions.restore', [$barangay, $version]) }}" onsubmit="return confirm('Restore this boundary version? Current boundary will be saved as a new version first.')">
+                            @csrf
+                            <button type="submit" class="btn btn-secondary" style="padding: 7px 10px; font-size: 12px;">
+                                <i class="fa-solid fa-rotate-left"></i> Restore
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ route('admin.barangays.boundary-versions.destroy', [$barangay, $version]) }}" onsubmit="return confirm('Delete this saved boundary version?')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-danger" style="padding: 7px 10px; font-size: 12px;">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            @empty
+                <div style="color: #94a3b8; font-size: 13px; padding: 14px; background: rgba(15,23,42,0.35); border-radius: 8px;">
+                    No saved boundary versions yet. A version is saved automatically before a boundary is replaced.
+                </div>
+            @endforelse
         </div>
         
         <div class="card">

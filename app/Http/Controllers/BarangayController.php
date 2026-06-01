@@ -3,13 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\Barangay;
+use App\Models\MapLayerType;
 
 class BarangayController extends Controller
 {
     public function index()
     {
         $barangays = Barangay::where('is_visible', true)->get();
-        $layerTypes = \App\Models\MapLayerType::all();
+        $layerTypes = MapLayerType::query()
+            ->where('is_active', true)
+            ->where('is_public', true)
+            ->orderBy('sort_order')
+            ->orderBy('category')
+            ->orderBy('name')
+            ->get();
+
         return view('map', compact('barangays', 'layerTypes'));
     }
 
@@ -24,6 +32,17 @@ class BarangayController extends Controller
 
     public function getFeatures(Barangay $barangay)
     {
-        return response()->json($barangay->features);
+        $publicLayerCodes = MapLayerType::query()
+            ->where('is_active', true)
+            ->where('is_public', true)
+            ->pluck('code');
+
+        return response()->json(
+            $barangay->features()
+                ->where('is_public', true)
+                ->where('status', 'active')
+                ->whereIn('feature_type', $publicLayerCodes)
+                ->get()
+        );
     }
 }

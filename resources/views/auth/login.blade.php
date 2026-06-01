@@ -69,11 +69,11 @@
         <div class="absolute inset-x-0 top-0 z-20 h-[3px] bg-gradient-to-r from-transparent via-yellow-400/50 to-transparent"></div>
 
         <!-- Content Area -->
-        <div class="relative z-10 mx-auto w-full max-w-7xl px-6 py-12 lg:px-10">
+        <div class="relative z-10 mx-auto w-full max-w-7xl lg:max-w-[1360px] px-6 py-12 lg:px-10">
             <div class="grid items-center gap-12 lg:grid-cols-2">
                 
-                <!-- Left Column: Large Official Bayambang Seal -->
-                <div class="animate-slide flex justify-center items-center" style="animation-delay: 100ms;">
+                <!-- Left Column: Large Official Bayambang Seal (Pushed to the left on large screens) -->
+                <div class="animate-slide flex justify-center lg:justify-start items-center" style="animation-delay: 100ms;">
                     <div class="relative">
                         <!-- Subtle ambient backglow for the seal -->
                         <div class="absolute -inset-4 rounded-full bg-blue-500/10 blur-2xl"></div>
@@ -82,21 +82,22 @@
                     </div>
                 </div>
 
-                <!-- Right Column: Brand titles and Glassmorphic Input Box -->
-                <div class="animate-slide flex flex-col items-center lg:items-start justify-center" style="animation-delay: 200ms;">
-                    
-                    <!-- Brand title GeoBayambang -->
-                    <div class="mb-7 text-center lg:text-left">
-                        <h1 class="gis-title-font text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white drop-shadow">
-                            Geo<span class="text-yellow-400">Bayambang</span>
-                        </h1>
-                        <p class="text-slate-400 text-xs md:text-sm tracking-[0.15em] uppercase font-semibold mt-1">
-                            Geographic Information System
-                        </p>
-                    </div>
+                <!-- Right Column: Brand titles and Glassmorphic Input Box (Pushed to the right on large screens) -->
+                <div class="animate-slide w-full flex justify-center lg:justify-end" style="animation-delay: 200ms;">
+                    <div class="w-full max-w-lg flex flex-col items-center lg:items-start justify-center">
+                        
+                        <!-- Brand title GeoBayambang -->
+                        <div class="mb-7 text-center lg:text-left w-full">
+                            <h1 class="gis-title-font text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white drop-shadow">
+                                Geo<span class="text-yellow-400">Bayambang</span>
+                            </h1>
+                            <p class="text-slate-400 text-xs md:text-sm tracking-[0.15em] uppercase font-semibold mt-1">
+                                Geographic Information System
+                            </p>
+                        </div>
 
-                    <!-- Glassmorphic Login Form Container -->
-                    <div class="w-full max-w-lg rounded-[24px] border border-white/20 bg-white/[0.04] p-8 md:p-10 shadow-2xl shadow-black/50 backdrop-blur-md">
+                        <!-- Glassmorphic Login Form Container -->
+                        <div class="w-full rounded-[28px] border border-white/15 bg-white/[0.03] p-8 md:p-10 shadow-2xl shadow-black/40 backdrop-blur-md">
 
 
                         <!-- Laravel Validation Errors -->
@@ -115,18 +116,18 @@
 
                             <!-- Email Field -->
                             <div>
-                                <label for="email" class="mb-2 block text-xs font-bold text-white uppercase tracking-wider">Email Address</label>
+                                <label for="email" class="mb-2 block text-sm font-semibold text-white">Email</label>
                                 <input id="email" name="email" type="email" value="{{ old('email') }}" required autofocus autocomplete="username"
-                                    class="block w-full rounded-xl border border-white/20 bg-white/[0.06] px-4 py-3 text-sm text-white placeholder-white/35 outline-none transition duration-200 focus:border-white/50 focus:bg-white/[0.12] focus:ring-2 focus:ring-white/10"
+                                    class="block w-full rounded-xl border border-white/30 bg-white/[0.08] px-4 py-3.5 text-sm text-white placeholder-white/40 outline-none transition duration-200 focus:border-white/60 focus:bg-white/[0.12]"
                                     placeholder="your@email.com">
                             </div>
 
                             <!-- Password Field with visibility toggle -->
                             <div>
-                                <label for="password" class="mb-2 block text-xs font-bold text-white uppercase tracking-wider">Password</label>
+                                <label for="password" class="mb-2 block text-sm font-semibold text-white">Password</label>
                                 <div class="password-container">
                                     <input id="password" name="password" type="password" required autocomplete="current-password"
-                                        class="block w-full rounded-xl border border-white/20 bg-white/[0.06] pl-4 pr-12 py-3 text-sm text-white placeholder-white/35 outline-none transition duration-200 focus:border-white/50 focus:bg-white/[0.12] focus:ring-2 focus:ring-white/10"
+                                        class="block w-full rounded-xl border border-white/30 bg-white/[0.08] pl-4 pr-12 py-3.5 text-sm text-white placeholder-white/40 outline-none transition duration-200 focus:border-white/60 focus:bg-white/[0.12]"
                                         placeholder="••••••••">
                                     
                                     <!-- Simple Native show/hide password toggle button -->
@@ -143,7 +144,7 @@
                             <div class="flex items-center">
                                 <label for="remember_me" class="inline-flex items-center gap-2.5 text-xs text-white/90 cursor-pointer select-none">
                                     <input id="remember_me" name="remember" type="checkbox"
-                                        class="h-4.5 w-4.5 rounded border-white/20 bg-white/[0.06] text-yellow-400 focus:ring-yellow-400/20 focus:ring-offset-0">
+                                        class="h-4 w-4 rounded border-white/30 bg-white/[0.08] text-yellow-400 focus:ring-yellow-400/20 focus:ring-offset-0">
                                     <span>Remember me</span>
                                 </label>
                             </div>
@@ -152,23 +153,18 @@
                             <div class="flex items-center justify-between pt-2">
                                 <div>
                                     @if (Route::has('password.request'))
-                                        <a href="{{ route('password.request') }}" class="text-xs text-white/70 hover:text-white hover:underline transition duration-200">
+                                        <a href="{{ route('password.request') }}" class="text-xs text-white/90 hover:text-white underline transition duration-200">
                                             Forgot Password?
                                         </a>
                                     @endif
                                 </div>
 
-                                <button type="submit" class="yellow-glow-btn rounded-[10px] px-8 py-3 text-xs font-bold uppercase tracking-wider">
+                                <button type="submit" class="yellow-glow-btn rounded-xl px-7 py-2.5 text-xs font-bold uppercase tracking-wider">
                                     LOG IN
                                 </button>
                             </div>
                         </form>
                     </div>
-
-                    <!-- Security Alert footer note -->
-                    <p class="mt-6 text-center lg:text-left text-[11px] leading-relaxed text-white/40 max-w-lg">
-                        Notice: Access is audited. IP addresses and account activities are logged in compliance with BDRRMC command console security policies.
-                    </p>
                 </div>
             </div>
         </div>

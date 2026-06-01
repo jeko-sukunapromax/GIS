@@ -166,6 +166,14 @@
             background: rgba(239, 68, 68, 0.35);
             color: white;
         }
+
+        .btn-mini {
+            width: auto;
+            margin: 0;
+            padding: 4px 8px;
+            font-size: 11px;
+            border-radius: 6px;
+        }
         
         h3 {
             color: var(--text-heading);
@@ -272,13 +280,6 @@
     
     <div class="container">
         <div class="form-panel">
-            @if(session('success'))
-                <div class="alert-success">
-                    <i class="fa-solid fa-circle-check"></i>
-                    {{ session('success') }}
-                </div>
-            @endif
-
             <!-- BARANGAY SELECTOR -->
             <div class="form-group">
                 <label for="barangay-select">Active Barangay</label>
@@ -307,10 +308,9 @@
                     <div class="form-group">
                         <label for="layer_type">Category</label>
                         <select id="layer_type" name="layer_type" onchange="updateFeatureTypes(this.value)">
-                            <option value="critical_facilities">Critical Facilities</option>
-                            <option value="drrm">DRRM Group</option>
-                            <option value="infrastructure">Infrastructure</option>
-                            <option value="population">Population Data</option>
+                            @foreach($layerTypes->groupBy('category') as $category => $items)
+                                <option value="{{ $category }}">{{ ucwords(str_replace('_', ' ', $category)) }}</option>
+                            @endforeach
                         </select>
                     </div>
 
@@ -337,6 +337,24 @@
                 
                 <!-- JSON String container for road/zone boundaries -->
                 <input type="hidden" id="coordinates" name="coordinates">
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="status">Publishing Status</label>
+                        <select id="status" name="status">
+                            <option value="active">Active</option>
+                            <option value="draft">Draft</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Public Map</label>
+                        <label style="display:flex; align-items:center; gap:8px; text-transform:none; letter-spacing:0; font-size:13px; color:var(--text-main); padding:10px 0;">
+                            <input type="checkbox" name="is_public" value="1" checked style="width:auto;">
+                            Visible to public
+                        </label>
+                    </div>
+                </div>
 
                 <!-- DYNAMIC METADATA FORM -->
                 <h3>3. Asset Metadata Details</h3>
@@ -366,15 +384,33 @@
                                 <span class="badge" style="background: {{ $color }}15; color: {{ $color }}; border: 1px solid {{ $color }}35;">
                                     <i class="{{ $icon }}"></i> {{ $typeName }}
                                 </span>
+                                <span class="badge" style="background: {{ $feat->is_public ? 'rgba(16,185,129,0.12)' : 'rgba(148,163,184,0.12)' }}; color: {{ $feat->is_public ? '#86efac' : '#cbd5e1' }}; border: 1px solid {{ $feat->is_public ? 'rgba(16,185,129,0.25)' : 'rgba(148,163,184,0.2)' }};">
+                                    {{ $feat->is_public ? 'Public' : 'Hidden' }}
+                                </span>
+                                <span class="badge" style="background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.08);">
+                                    {{ ucfirst($feat->status ?? 'active') }}
+                                </span>
                             </div>
                         </div>
-                        <form action="{{ route('admin.features.destroy', $feat) }}" method="POST" onsubmit="return confirm('Delete this asset from map?')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-danger">
-                                <i class="fa-solid fa-trash-can"></i>
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            <button type="button" class="btn btn-secondary btn-mini" onclick='openFeatureEditModal(@json($feat))'>
+                                <i class="fa-solid fa-pen"></i>
                             </button>
-                        </form>
+                            <form action="{{ route('admin.features.toggle-public', $feat) }}" method="POST">
+                                @csrf
+                                @method('PATCH')
+                                <button type="submit" class="btn btn-secondary btn-mini" title="{{ $feat->is_public ? 'Hide from public' : 'Publish to public' }}">
+                                    <i class="fa-solid {{ $feat->is_public ? 'fa-eye-slash' : 'fa-eye' }}"></i>
+                                </button>
+                            </form>
+                            <form action="{{ route('admin.features.destroy', $feat) }}" method="POST" onsubmit="return confirm('Delete this asset from map?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 @empty
                     <div style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px;">
@@ -391,7 +427,36 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        @if(session('success'))
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: @json(session('success')),
+                showConfirmButton: false,
+                timer: 2800,
+                timerProgressBar: true,
+                background: '#0f172a',
+                color: '#f8fafc'
+            });
+        @endif
+
+        @if(session('error'))
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: @json(session('error')),
+                showConfirmButton: false,
+                timer: 3600,
+                timerProgressBar: true,
+                background: '#0f172a',
+                color: '#f8fafc'
+            });
+        @endif
+
         const activeBarangay = @json($selectedBarangay);
         const activeFeatures = @json($features);
         const dbLayerTypes = @json($layerTypes);
@@ -579,24 +644,19 @@
         }
 
         // GENERATE DYNAMIC FEATURE TYPES DICTIONARY FROM DATABASE
-        const featureTypes = {
-            critical_facilities: [],
-            drrm: [],
-            infrastructure: [],
-            population: []
-        };
+        const featureTypes = {};
 
         dbLayerTypes.forEach(type => {
-            if (featureTypes[type.category] !== undefined) {
-                let suffix = '';
-                if (type.geom_type === 'polyline') suffix = ' (Polyline)';
-                else if (type.geom_type === 'polygon') suffix = ' (Polygon)';
+            if (!featureTypes[type.category]) featureTypes[type.category] = [];
 
-                featureTypes[type.category].push({
-                    value: type.code,
-                    label: type.name + suffix
-                });
-            }
+            let suffix = '';
+            if (type.geom_type === 'polyline') suffix = ' (Polyline)';
+            else if (type.geom_type === 'polygon') suffix = ' (Polygon)';
+
+            featureTypes[type.category].push({
+                value: type.code,
+                label: type.name + suffix
+            });
         });
 
         function updateFeatureTypes(category) {
@@ -846,6 +906,38 @@
             }, 300);
         }
 
+        function openFeatureEditModal(feature) {
+            const modal = document.getElementById('feature-edit-modal');
+            const form = document.getElementById('feature-edit-form');
+            const layerType = dbLayerTypes.find(type => type.code === feature.feature_type) || dbLayerTypes[0] || {};
+
+            form.action = `/admin/features/${feature.id}`;
+            document.getElementById('edit-feature-name').value = feature.name || '';
+            document.getElementById('edit-feature-type').value = feature.feature_type || '';
+            document.getElementById('edit-feature-status').value = feature.status || 'active';
+            document.getElementById('edit-feature-public').checked = Boolean(feature.is_public);
+            document.getElementById('edit-feature-latitude').value = feature.latitude || '';
+            document.getElementById('edit-feature-longitude').value = feature.longitude || '';
+            document.getElementById('edit-feature-coordinates').value = feature.coordinates ? JSON.stringify(feature.coordinates, null, 2) : '';
+            document.getElementById('edit-feature-metadata').value = feature.metadata ? JSON.stringify(feature.metadata, null, 2) : '{}';
+            document.getElementById('edit-feature-geom-note').textContent = `Expected geometry: ${layerType.geom_type || 'point'}`;
+
+            modal.style.display = 'flex';
+            setTimeout(() => {
+                modal.style.opacity = '1';
+                modal.querySelector('.modal-content-card').style.transform = 'scale(1)';
+            }, 50);
+        }
+
+        function closeFeatureEditModal() {
+            const modal = document.getElementById('feature-edit-modal');
+            modal.style.opacity = '0';
+            modal.querySelector('.modal-content-card').style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 250);
+        }
+
         // HANDLE MODAL VISUAL ICON PICKER & COLOR LIVE PREVIEW
         document.addEventListener('DOMContentLoaded', function() {
             const modalIconInput = document.getElementById('modal-layer-icon');
@@ -944,6 +1036,67 @@
         // Initialize Form triggers
         updateFeatureTypes(document.getElementById('layer_type').value);
     </script>
+
+    <div id="feature-edit-modal" style="display: none; position: fixed; inset: 0; background: rgba(9, 13, 22, 0.86); backdrop-filter: blur(8px); z-index: 9998; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.25s ease; padding: 20px;">
+        <div class="modal-content-card" style="background: #0f172a; border: 1px solid var(--border-color); border-radius: 16px; width: 100%; max-width: 620px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); transform: scale(0.95); transition: transform 0.25s ease;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid var(--border-color);">
+                <h3 style="margin:0; border:0; padding:0; font-size:16px;"><i class="fa-solid fa-pen-to-square" style="color:var(--accent-blue);"></i> Edit Map Feature</h3>
+                <button type="button" onclick="closeFeatureEditModal()" style="background:none; border:0; color:var(--text-muted); cursor:pointer; font-size:18px;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="feature-edit-form" method="POST" style="padding:20px; margin:0;">
+                @csrf
+                @method('PUT')
+                <div class="form-group">
+                    <label for="edit-feature-name">Feature Name</label>
+                    <input id="edit-feature-name" name="name" required>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="edit-feature-type">Layer Type</label>
+                        <select id="edit-feature-type" name="feature_type" required>
+                            @foreach($layerTypes as $type)
+                                <option value="{{ $type->code }}">{{ $type->name }} ({{ $type->geom_type }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-feature-status">Status</label>
+                        <select id="edit-feature-status" name="status" required>
+                            <option value="active">Active</option>
+                            <option value="draft">Draft</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label style="display:flex; align-items:center; gap:8px; text-transform:none; letter-spacing:0;">
+                        <input id="edit-feature-public" type="checkbox" name="is_public" value="1" style="width:auto;">
+                        Visible on public map
+                    </label>
+                </div>
+                <div id="edit-feature-geom-note" class="section-desc"></div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="edit-feature-latitude">Latitude</label>
+                        <input id="edit-feature-latitude" name="latitude" type="number" step="0.0000001">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-feature-longitude">Longitude</label>
+                        <input id="edit-feature-longitude" name="longitude" type="number" step="0.0000001">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="edit-feature-coordinates">Line/Polygon Coordinates JSON</label>
+                    <textarea id="edit-feature-coordinates" name="coordinates" rows="5" placeholder="[[15.8,120.4],[15.81,120.41]]"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="edit-feature-metadata">Metadata JSON</label>
+                    <textarea id="edit-feature-metadata" name="metadata_json" rows="6" placeholder='{"status":"Operational"}'></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Save Feature Changes</button>
+            </form>
+        </div>
+    </div>
 
     <!-- Premium Modal for Adding Layer Types directly inside Map Editor -->
     <div id="layer-modal" style="display: none; position: fixed; inset: 0; background: rgba(9, 13, 22, 0.85); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; padding: 20px;">

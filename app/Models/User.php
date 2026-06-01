@@ -37,6 +37,7 @@ class User extends Authenticatable
         'office',
         'ihris_payload',
         'last_ihris_login_at',
+        'deactivated_at',
         'password',
     ];
 
@@ -72,6 +73,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'ihris_payload' => 'array',
             'last_ihris_login_at' => 'datetime',
+            'deactivated_at' => 'datetime',
             'password' => 'hashed',
         ];
     }

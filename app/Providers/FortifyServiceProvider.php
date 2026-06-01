@@ -7,6 +7,7 @@ use App\Actions\Fortify\ResetUserPassword;
 use App\Actions\Fortify\UpdateUserPassword;
 use App\Actions\Fortify\UpdateUserProfileInformation;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use App\Services\IhrisAuthenticator;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -54,6 +55,10 @@ class FortifyServiceProvider extends ServiceProvider
                 ->orWhere('email', Str::lower($ihrisUser['email']))
                 ->first() ?? new User;
 
+            if ($user->exists && $user->deactivated_at) {
+                return null;
+            }
+
             $user->fill([
                 'ihris_id' => $ihrisUser['ihris_id'],
                 'name' => $ihrisUser['name'],
@@ -68,11 +73,18 @@ class FortifyServiceProvider extends ServiceProvider
             collect(['super-admin', 'admin', 'staff'])
                 ->each(fn (string $role) => Role::findOrCreate($role, 'web'));
 
-            $user->syncRoles([$this->roleForIhrisUser($user, $ihrisUser['email'])]);
+            $assignedRole = $this->roleForIhrisUser($user, $ihrisUser['email']);
+            $user->syncRoles([$assignedRole]);
 
             if ($ihrisUser['token']) {
                 $request->session()->put('ihris_access_token', $ihrisUser['token']);
             }
+
+            app(ActivityLogger::class)->log('user.logged_in', "{$user->name} logged in through iHRIS.", $user, [
+                'email' => $user->email,
+                'office' => $user->office,
+                'role' => $assignedRole,
+            ], $request);
 
             return $user;
         });

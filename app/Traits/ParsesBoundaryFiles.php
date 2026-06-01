@@ -171,6 +171,8 @@ trait ParsesBoundaryFiles
             $barangay = $item['barangay_id'] ? Barangay::find($item['barangay_id']) : null;
 
             if ($barangay) {
+                $barangay->snapshotBoundary('Before '.$source, auth()->user()?->name);
+
                 $barangay->update(array_merge([
                     'boundary' => $boundary,
                     'latitude' => $centroid['lat'],
@@ -218,7 +220,6 @@ trait ParsesBoundaryFiles
                 'boundary' => $boundary,
                 'centroid' => $centroid,
                 'attributes' => $attributes,
-                'points' => count($boundary),
                 'area' => $attributes['total_area'] ?? null,
             ];
         }
@@ -236,7 +237,6 @@ trait ParsesBoundaryFiles
             'boundary' => $boundary,
             'centroid' => $centroid,
             'attributes' => $attributes,
-            'points' => count($boundary),
             'area' => $attributes['total_area'] ?? null,
         ];
     }
@@ -294,6 +294,10 @@ trait ParsesBoundaryFiles
     protected function saveMunicipalBoundary($name, $boundary, $centroid, $attributes, $source): void
     {
         $municipalBoundary = $this->findMunicipalBoundary() ?? new Barangay;
+
+        if ($municipalBoundary->exists) {
+            $municipalBoundary->snapshotBoundary('Before '.$source, auth()->user()?->name);
+        }
 
         $municipalBoundary->fill(array_merge([
             'name' => $name,

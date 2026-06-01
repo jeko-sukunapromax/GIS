@@ -15,12 +15,15 @@ class MapFeature extends Model
         'latitude',
         'longitude',
         'coordinates',
-        'metadata'
+        'metadata',
+        'is_public',
+        'status',
     ];
 
     protected $casts = [
         'coordinates' => 'array',
-        'metadata' => 'array'
+        'metadata' => 'array',
+        'is_public' => 'boolean',
     ];
 
     /**

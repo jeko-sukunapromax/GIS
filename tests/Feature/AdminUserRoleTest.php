@@ -69,4 +69,63 @@ class AdminUserRoleTest extends TestCase
         $this->assertTrue($superAdmin->fresh()->hasRole('super-admin'));
         $this->assertFalse($superAdmin->fresh()->hasRole('staff'));
     }
+
+    public function test_super_admin_can_remove_admin_access(): void
+    {
+        $superAdmin = User::factory()->create();
+        $admin = User::factory()->create();
+
+        Role::findOrCreate('super-admin', 'web');
+        Role::findOrCreate('admin', 'web');
+        Role::findOrCreate('staff', 'web');
+
+        $superAdmin->assignRole('super-admin');
+        $admin->assignRole('admin');
+
+        $this
+            ->actingAs($superAdmin)
+            ->patch(route('admin.users.remove-admin', $admin))
+            ->assertSessionHas('success');
+
+        $this->assertFalse($admin->fresh()->hasRole('admin'));
+        $this->assertTrue($admin->fresh()->hasRole('staff'));
+    }
+
+    public function test_super_admin_can_deactivate_and_reactivate_user(): void
+    {
+        $superAdmin = User::factory()->create();
+        $user = User::factory()->create();
+
+        Role::findOrCreate('super-admin', 'web');
+        $superAdmin->assignRole('super-admin');
+
+        $this
+            ->actingAs($superAdmin)
+            ->patch(route('admin.users.deactivate', $user))
+            ->assertSessionHas('success');
+
+        $this->assertNotNull($user->fresh()->deactivated_at);
+
+        $this
+            ->actingAs($superAdmin)
+            ->patch(route('admin.users.reactivate', $user))
+            ->assertSessionHas('success');
+
+        $this->assertNull($user->fresh()->deactivated_at);
+    }
+
+    public function test_super_admin_cannot_deactivate_self(): void
+    {
+        $superAdmin = User::factory()->create();
+
+        Role::findOrCreate('super-admin', 'web');
+        $superAdmin->assignRole('super-admin');
+
+        $this
+            ->actingAs($superAdmin)
+            ->patch(route('admin.users.deactivate', $superAdmin))
+            ->assertSessionHas('error');
+
+        $this->assertNull($superAdmin->fresh()->deactivated_at);
+    }
 }

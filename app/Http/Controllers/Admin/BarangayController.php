@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Barangay;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -18,8 +19,55 @@ class BarangayController extends Controller
     public function map()
     {
         $barangays = Barangay::where('is_visible', true)->get();
-        $layerTypes = \App\Models\MapLayerType::all();
+        $layerTypes = \App\Models\MapLayerType::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('category')
+            ->orderBy('name')
+            ->get();
+
         return view('admin.map', compact('barangays', 'layerTypes'));
+    }
+
+    public function features(Barangay $barangay)
+    {
+        return response()->json($barangay->features()->get());
+    }
+
+    public function municipalBoundary()
+    {
+        $municipalBoundary = $this->municipalBoundaryRecord();
+        $boundaryVersions = $municipalBoundary->boundaryVersions()->take(12)->get();
+
+        return view('admin.municipal_boundary.index', compact('municipalBoundary', 'boundaryVersions'));
+    }
+
+    public function uploadMunicipalBoundary(Request $request)
+    {
+        $municipalBoundary = $this->municipalBoundaryRecord();
+
+        return $this->replaceBoundaryFromUpload($request, $municipalBoundary, true);
+    }
+
+    public function resetMunicipalBoundary(Request $request)
+    {
+        $municipalBoundary = $this->municipalBoundaryRecord();
+        $municipalBoundary->snapshotBoundary('Before municipal boundary reset', $request->user()?->name);
+
+        $municipalBoundary->update([
+            'boundary' => null,
+            'latitude' => null,
+            'longitude' => null,
+            'total_area' => null,
+            'boundary_source' => null,
+            'boundary_updated_at' => null,
+            'is_municipal_boundary' => true,
+            'is_visible' => true,
+        ]);
+
+        app(ActivityLogger::class)->log('municipal_boundary.reset', 'Reset the current Bayambang municipal boundary.', $municipalBoundary, [], $request);
+
+        return back()->with('success', 'Bayambang municipal boundary was reset.');
     }
 
     public function create()
@@ -52,7 +100,10 @@ class BarangayController extends Controller
             $validated['boundary'] = json_decode($validated['boundary'], true);
         }
 
-        Barangay::create($validated);
+        $barangay = Barangay::create($validated);
+
+        app(ActivityLogger::class)->log('barangay.created', "Created barangay {$barangay->name}.", $barangay, [], $request);
+
         return redirect()->route('admin.barangays.index')->with('success', 'Barangay created successfully!');
     }
 
@@ -83,16 +134,25 @@ class BarangayController extends Controller
         ]);
 
         if (!empty($validated['boundary'])) {
+            $barangay->snapshotBoundary('Before manual barangay edit', $request->user()?->name);
             $validated['boundary'] = json_decode($validated['boundary'], true);
         }
 
         $barangay->update($validated);
+
+        app(ActivityLogger::class)->log('barangay.updated', "Updated barangay {$barangay->name}.", $barangay, [
+            'fields' => array_keys($validated),
+        ], $request);
+
         return redirect()->route('admin.barangays.index')->with('success', 'Barangay updated successfully!');
     }
 
-    public function destroy(Barangay $barangay)
+    public function destroy(Request $request, Barangay $barangay)
     {
+        app(ActivityLogger::class)->log('barangay.deleted', "Deleted barangay {$barangay->name}.", $barangay, [], $request);
+
         $barangay->delete();
+
         return redirect()->route('admin.barangays.index')->with('success', 'Barangay deleted successfully!');
     }
 
@@ -101,13 +161,20 @@ class BarangayController extends Controller
      */
     public function manage(Barangay $barangay)
     {
-        return view('admin.barangays.manage', compact('barangay'));
+        $boundaryVersions = $barangay->boundaryVersions()->take(12)->get();
+
+        return view('admin.barangays.manage', compact('barangay', 'boundaryVersions'));
     }
 
     /**
      * Upload GeoJSON or Shapefile to replace the barangay boundary.
      */
     public function uploadBoundary(Request $request, Barangay $barangay)
+    {
+        return $this->replaceBoundaryFromUpload($request, $barangay);
+    }
+
+    private function replaceBoundaryFromUpload(Request $request, Barangay $barangay, bool $municipal = false)
     {
         $request->validate([
             'boundary_file' => 'required|file|max:10240', // Max 10MB
@@ -151,14 +218,25 @@ class BarangayController extends Controller
                 return back()->with('error', 'Could not extract a valid polygon boundary from the uploaded file. Ensure it contains at least one polygon geometry.');
             }
 
+            $source = $request->input('boundary_source', $file->getClientOriginalName());
+            $barangay->snapshotBoundary('Before '.$source, $request->user()?->name);
+
             // Update the barangay boundary
             $barangay->update([
+                'name' => $municipal ? 'Bayambang' : $barangay->name,
                 'boundary' => $boundary,
                 'latitude' => $centroid['lat'],
                 'longitude' => $centroid['lng'],
-                'boundary_source' => $request->input('boundary_source', $file->getClientOriginalName()),
+                'boundary_source' => $source,
                 'boundary_updated_at' => now(),
+                'is_municipal_boundary' => $municipal ? true : $barangay->is_municipal_boundary,
+                'is_visible' => true,
             ]);
+
+            app(ActivityLogger::class)->log($municipal ? 'municipal_boundary.replaced' : 'barangay.boundary_replaced', ($municipal ? 'Replaced Bayambang municipal boundary' : "Replaced {$barangay->name} boundary")." from {$file->getClientOriginalName()}.", $barangay, [
+                'source' => $source,
+                'file_name' => $file->getClientOriginalName(),
+            ], $request);
 
             return back()->with('success', 'Boundary updated successfully from ' . $file->getClientOriginalName() . '! (' . count($boundary) . ' vertices loaded)');
 
@@ -166,6 +244,20 @@ class BarangayController extends Controller
             Log::error('Boundary upload error: ' . $e->getMessage());
             return back()->with('error', 'Error processing file: ' . $e->getMessage());
         }
+    }
+
+    private function municipalBoundaryRecord(): Barangay
+    {
+        return Barangay::firstOrCreate(
+            ['is_municipal_boundary' => true],
+            [
+                'name' => 'Bayambang',
+                'status' => 'Active',
+                'is_visible' => true,
+                'municipality' => 'Bayambang',
+                'province' => 'Pangasinan',
+            ]
+        );
     }
 
     /**
@@ -178,6 +270,11 @@ class BarangayController extends Controller
         ]);
 
         $status = $barangay->is_visible ? 'visible' : 'hidden';
+
+        app(ActivityLogger::class)->log('barangay.visibility_changed', "{$barangay->name} is now {$status} on the public map.", $barangay, [
+            'is_visible' => $barangay->is_visible,
+        ], $request);
+
         return response()->json([
             'success' => true,
             'is_visible' => $barangay->is_visible,
@@ -203,6 +300,11 @@ class BarangayController extends Controller
         ]);
 
         $barangay->update($validated);
+
+        app(ActivityLogger::class)->log('barangay.attributes_updated', "Updated attributes for {$barangay->name}.", $barangay, [
+            'fields' => array_keys($validated),
+        ], $request);
+
         return back()->with('success', 'Attributes updated successfully for ' . $barangay->name . '!');
     }
 

@@ -6,6 +6,7 @@
     <title>GeoPortal Admin Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root {
             --bg-base: #090d16;
@@ -54,19 +55,12 @@
             align-items: center; 
             gap: 12px;
         }
-        .brand-mark {
+        .brand-logo {
             width: 48px;
             height: 48px;
-            border-radius: 16px;
-            display: grid;
-            place-items: center;
-            background: linear-gradient(135deg, #fbbf24, #84cc16 45%, #38bdf8);
-            color: #08111f;
-            box-shadow: 0 16px 40px rgba(14, 165, 233, 0.18), inset 0 0 0 1px rgba(255,255,255,0.45);
+            object-fit: contain;
             flex-shrink: 0;
-        }
-        .brand-mark i {
-            font-size: 22px;
+            filter: drop-shadow(0 4px 12px rgba(0, 153, 255, 0.25));
         }
         .brand-copy {
             min-width: 0;
@@ -86,23 +80,81 @@
             letter-spacing: 1.8px;
             text-transform: uppercase;
         }
-        .sidebar-menu { padding: 20px 0; flex: 1; overflow-y: auto; }
+        .sidebar-menu { padding: 16px 0 20px; flex: 1; overflow-y: auto; }
+        .nav-group {
+            margin: 0 10px 8px;
+        }
+        .nav-group summary {
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 11px 12px;
+            color: var(--sidebar-text);
+            border: 1px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            user-select: none;
+        }
+        .nav-group summary::-webkit-details-marker {
+            display: none;
+        }
+        .nav-group summary:hover,
+        .nav-group[open] summary {
+            color: var(--text-heading);
+            background: rgba(255, 255, 255, 0.04);
+            border-color: var(--border-color);
+        }
+        .nav-group summary .group-chevron {
+            margin-left: auto;
+            font-size: 10px;
+            transition: transform 0.2s ease;
+        }
+        .nav-group[open] summary .group-chevron {
+            transform: rotate(180deg);
+        }
+        .nav-group-items {
+            padding: 6px 0 4px;
+        }
         .menu-item { 
             display: flex; 
             align-items: center; 
             gap: 12px; 
-            padding: 12px 24px; 
+            padding: 11px 14px 11px 18px; 
+            border-left: 3px solid transparent;
             color: var(--sidebar-text); 
             text-decoration: none; 
             transition: all 0.2s ease; 
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
+            border-radius: 8px;
+            margin: 2px 0;
         }
-        .menu-item:hover, .menu-item.active { 
+        .menu-item:hover, .menu-item.active, .menu-item:active, .menu-item:focus { 
             background-color: var(--sidebar-active); 
             color: white; 
             border-left: 3px solid var(--accent-blue); 
             text-shadow: 0 0 5px rgba(255,255,255,0.2);
+        }
+        .menu-item:visited {
+            color: var(--sidebar-text);
+        }
+        .menu-item.active:visited,
+        .menu-item:hover:visited,
+        .menu-item:active:visited,
+        .menu-item:focus:visited {
+            color: white;
+        }
+        .menu-item:focus {
+            outline: none;
+        }
+        .menu-item:focus-visible {
+            box-shadow: inset 0 0 0 2px rgba(0, 153, 255, 0.35);
         }
 
         /* Main Content Wrapper */
@@ -366,26 +418,81 @@
 
     <div class="sidebar">
         <div class="sidebar-header">
-            <div class="brand-mark" aria-hidden="true">
-                <i class="fa-solid fa-shield-halved"></i>
-            </div>
+            <img src="/images/logo.png" alt="Bayambang Logo" class="brand-logo">
             <div class="brand-copy">
                 <div class="brand-title">BDRRMC GIS</div>
                 <div class="brand-kicker">Admin Console</div>
             </div>
         </div>
         <div class="sidebar-menu">
-            <a href="/" class="menu-item"><i class="fa-solid fa-map"></i> Public Map</a>
-            <a href="{{ route('admin.map') }}" class="menu-item {{ Request::routeIs('admin.map') ? 'active' : '' }}"><i class="fa-solid fa-location-dot"></i> Admin Map</a>
-            <a href="{{ route('admin.features.index') }}" class="menu-item {{ Request::routeIs('admin.features.*') ? 'active' : '' }}"><i class="fa-solid fa-draw-polygon"></i> Map Features</a>
+            @php
+                $mapGroupOpen = Request::routeIs('admin.map') || Request::routeIs('admin.map-export.*');
+                $layersGroupOpen = Request::routeIs('admin.features.*') || Request::routeIs('admin.layer-types.*');
+                $dataGroupOpen = Request::routeIs('admin.uploads.*')
+                    || Request::routeIs('admin.municipal-boundary.*')
+                    || Request::routeIs('admin.barangays.*')
+                    || Request::routeIs('admin.data-completeness.*');
+                $systemGroupOpen = Request::routeIs('admin.activity-logs.*') || Request::routeIs('admin.users.*');
+            @endphp
+
+            <details class="nav-group" {{ $mapGroupOpen ? 'open' : '' }}>
+                <summary>
+                    <i class="fa-solid fa-map-location-dot"></i>
+                    Map Workspace
+                    <i class="fa-solid fa-chevron-down group-chevron"></i>
+                </summary>
+                <div class="nav-group-items">
+                    <a href="/" class="menu-item"><i class="fa-solid fa-map"></i> Public Map</a>
+                    <a href="{{ route('admin.map') }}" class="menu-item {{ Request::routeIs('admin.map') ? 'active' : '' }}"><i class="fa-solid fa-location-dot"></i> Admin Map</a>
+                    <a href="{{ route('admin.map-export.index') }}" class="menu-item {{ Request::routeIs('admin.map-export.*') ? 'active' : '' }}"><i class="fa-solid fa-file-export"></i> Map Export</a>
+                </div>
+            </details>
+
+            <details class="nav-group" {{ $layersGroupOpen ? 'open' : '' }}>
+                <summary>
+                    <i class="fa-solid fa-layer-group"></i>
+                    Layers & Features
+                    <i class="fa-solid fa-chevron-down group-chevron"></i>
+                </summary>
+                <div class="nav-group-items">
+                    <a href="{{ route('admin.features.index') }}" class="menu-item {{ Request::routeIs('admin.features.*') ? 'active' : '' }}"><i class="fa-solid fa-draw-polygon"></i> Map Features</a>
+                    @hasanyrole('admin|super-admin')
+                        <a href="{{ route('admin.layer-types.index') }}" class="menu-item {{ Request::routeIs('admin.layer-types.*') ? 'active' : '' }}"><i class="fa-solid fa-layer-group"></i> Layer Types</a>
+                    @endhasanyrole
+                </div>
+            </details>
+
             @hasanyrole('admin|super-admin')
-                <a href="{{ route('admin.uploads.index') }}" class="menu-item {{ Request::routeIs('admin.uploads.*') ? 'active' : '' }}"><i class="fa-solid fa-arrow-up-from-bracket"></i> Upload Data</a>
-                <a href="{{ route('admin.barangays.index') }}" class="menu-item {{ Request::routeIs('admin.barangays.*') ? 'active' : '' }}"><i class="fa-solid fa-mountain-city"></i> Barangay Management</a>
-                <a href="{{ route('admin.layer-types.index') }}" class="menu-item {{ Request::routeIs('admin.layer-types.*') ? 'active' : '' }}"><i class="fa-solid fa-layer-group"></i> Layer Types</a>
+                <details class="nav-group" {{ $dataGroupOpen ? 'open' : '' }}>
+                    <summary>
+                        <i class="fa-solid fa-database"></i>
+                        Boundary & Data
+                        <i class="fa-solid fa-chevron-down group-chevron"></i>
+                    </summary>
+                    <div class="nav-group-items">
+                        <a href="{{ route('admin.uploads.index') }}" class="menu-item {{ Request::routeIs('admin.uploads.*') ? 'active' : '' }}"><i class="fa-solid fa-arrow-up-from-bracket"></i> Upload Data</a>
+                        <a href="{{ route('admin.municipal-boundary.index') }}" class="menu-item {{ Request::routeIs('admin.municipal-boundary.*') ? 'active' : '' }}"><i class="fa-solid fa-border-top-left"></i> Bayambang Boundary</a>
+                        <a href="{{ route('admin.barangays.index') }}" class="menu-item {{ Request::routeIs('admin.barangays.*') ? 'active' : '' }}"><i class="fa-solid fa-mountain-city"></i> Barangay Management</a>
+                        <a href="{{ route('admin.data-completeness.index') }}" class="menu-item {{ Request::routeIs('admin.data-completeness.*') ? 'active' : '' }}"><i class="fa-solid fa-list-check"></i> Data Completeness</a>
+                    </div>
+                </details>
             @endhasanyrole
-            @role('super-admin')
-                <a href="{{ route('admin.users.index') }}" class="menu-item {{ Request::routeIs('admin.users.*') ? 'active' : '' }}"><i class="fa-solid fa-users-gear"></i> Users</a>
-            @endrole
+
+            @hasanyrole('admin|super-admin')
+                <details class="nav-group" {{ $systemGroupOpen ? 'open' : '' }}>
+                    <summary>
+                        <i class="fa-solid fa-shield-halved"></i>
+                        System Admin
+                        <i class="fa-solid fa-chevron-down group-chevron"></i>
+                    </summary>
+                    <div class="nav-group-items">
+                        <a href="{{ route('admin.activity-logs.index') }}" class="menu-item {{ Request::routeIs('admin.activity-logs.*') ? 'active' : '' }}"><i class="fa-solid fa-clock-rotate-left"></i> Activity Logs</a>
+                        @role('super-admin')
+                            <a href="{{ route('admin.users.index') }}" class="menu-item {{ Request::routeIs('admin.users.*') ? 'active' : '' }}"><i class="fa-solid fa-users-gear"></i> Users</a>
+                        @endrole
+                    </div>
+                </details>
+            @endhasanyrole
         </div>
     </div>
 
@@ -420,23 +527,28 @@
         </div>
         
         <div class="content">
-	            @if(session('success'))
-	                <div class="alert-success">
-	                    <i class="fa-solid fa-circle-check"></i>
-	                    <div>{!! nl2br(e(session('success'))) !!}</div>
-	                </div>
-	            @endif
-
-	            @if(session('error'))
-	                <div class="alert-danger">
-	                    <i class="fa-solid fa-circle-xmark"></i>
-	                    <div>{!! nl2br(e(session('error'))) !!}</div>
-	                </div>
-	            @endif
-            
             @yield('content')
         </div>
     </div>
+
+    @if(session('success') || session('error'))
+        <script>
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: @json(session('success') ? 'success' : 'error'),
+                title: @json(session('success') ?: session('error')),
+                showConfirmButton: false,
+                timer: @json(session('success') ? 2800 : 3800),
+                timerProgressBar: true,
+                background: '#0f172a',
+                color: '#f8fafc',
+                customClass: {
+                    popup: 'admin-toast'
+                }
+            });
+        </script>
+    @endif
 
 </body>
 </html>
