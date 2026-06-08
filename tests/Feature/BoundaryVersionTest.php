@@ -101,6 +101,7 @@ class BoundaryVersionTest extends TestCase
         $this->assertStringContainsString('application/geo+json', $response->headers->get('content-type'));
         $this->assertStringContainsString('attachment; filename="bayambang-current-boundary.geojson"', $response->headers->get('content-disposition'));
         $this->assertSame('FeatureCollection', $geoJson['type']);
+        $this->assertSame([120.40, 15.80, 120.41, 15.81], $geoJson['bbox']);
         $this->assertSame([120.40, 15.80], $geoJson['features'][0]['geometry']['coordinates'][0][0]);
         $this->assertSame([120.40, 15.80], $geoJson['features'][0]['geometry']['coordinates'][0][3]);
         $this->assertSame('municipal', $geoJson['features'][0]['properties']['boundary_type']);

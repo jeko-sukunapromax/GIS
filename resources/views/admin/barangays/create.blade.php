@@ -222,6 +222,26 @@
                     </div>
                 </div>
 
+                <div class="form-group">
+                    <label for="district">District</label>
+                    <select id="district" name="district">
+                        <option value="">Select District</option>
+                        @for($i = 1; $i <= 9; $i++)
+                            <option value="District {{ $i }}">District {{ $i }}</option>
+                        @endfor
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="barangay_chairman">Barangay Chairman</label>
+                    <input type="text" id="barangay_chairman" name="barangay_chairman" placeholder="e.g. Mr. John Doe">
+                </div>
+
+                <div class="form-group">
+                    <label for="sk_chairman">SK Chairman</label>
+                    <input type="text" id="sk_chairman" name="sk_chairman" placeholder="e.g. Jane Smith">
+                </div>
+
                 <div class="grid-2">
                     <div class="form-group">
                         <label for="population">Population</label>

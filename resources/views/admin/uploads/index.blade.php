@@ -305,6 +305,27 @@
         border-color: rgba(248, 113, 113, 0.36);
         transform: translateY(-1px);
     }
+
+    .btn-download-converted {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: rgba(56, 189, 248, 0.1);
+        color: #7dd3fc;
+        font-weight: 700;
+        font-size: 12px;
+        padding: 8px 12px;
+        border-radius: 9px;
+        border: 1px solid rgba(56, 189, 248, 0.28);
+        text-decoration: none;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-download-converted:hover {
+        background: rgba(56, 189, 248, 0.18);
+        color: #e0f2fe;
+        transform: translateY(-1px);
+    }
     
     .preview-file-block {
         padding: 24px;
@@ -314,15 +335,97 @@
         margin-bottom: 20px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     }
+    .upload-settings {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin-bottom: 18px;
+    }
+    .upload-settings .form-field {
+        display: grid;
+        gap: 7px;
+    }
+    .upload-settings label {
+        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+    .upload-settings select {
+        width: 100%;
+        min-height: 42px;
+        border-radius: 10px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        background: rgba(15, 23, 42, 0.72);
+        color: #f8fafc;
+        padding: 0 12px;
+        font-weight: 700;
+    }
+    .feature-import-options {
+        display: contents;
+    }
+    .upload-settings-note {
+        grid-column: 1 / -1;
+        color: #94a3b8;
+        font-size: 12px;
+        line-height: 1.5;
+        padding: 10px 12px;
+        border: 1px solid rgba(56, 189, 248, 0.16);
+        border-radius: 10px;
+        background: rgba(56, 189, 248, 0.06);
+    }
 </style>
 
 <div class="page-header">
     <div class="page-title">Upload Data</div>
-    <div class="page-subtitle">Upload GeoJSON files or zipped shapefiles for barangay boundary mapping</div>
+    <div class="page-subtitle">Upload GeoJSON, KML, or zipped shapefiles and preview them as converted GeoJSON before saving.</div>
 </div>
 
 <form action="{{ route('admin.uploads.preview') }}" method="POST" enctype="multipart/form-data" id="uploadForm">
     @csrf
+
+    <div class="upload-settings">
+        <div class="form-field">
+            <label for="import_mode">Import Mode</label>
+            <select id="import_mode" name="import_mode">
+                <option value="boundaries" @selected(old('import_mode', 'boundaries') === 'boundaries')>Barangay Boundaries</option>
+                <option value="features" @selected(old('import_mode') === 'features')>Map Features</option>
+            </select>
+        </div>
+
+        <div class="feature-import-options">
+            <div class="form-field">
+                <label for="feature_barangay_id">Default Barangay</label>
+                <select id="feature_barangay_id" name="feature_barangay_id">
+                    <option value="">Use file property</option>
+                    @foreach($barangays as $barangay)
+                        <option value="{{ $barangay->id }}" @selected((string) old('feature_barangay_id') === (string) $barangay->id)>{{ $barangay->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="form-field">
+                <label for="feature_type">Default Layer Type</label>
+                <select id="feature_type" name="feature_type">
+                    <option value="">Auto-detect from file properties</option>
+                    @foreach($layerTypes->groupBy('category') as $category => $types)
+                        <optgroup label="{{ ucwords(str_replace('_', ' ', $category)) }}">
+                            @foreach($types as $type)
+                                <option value="{{ $type->code }}" data-geom-type="{{ $type->geom_type }}" @selected(old('feature_type') === $type->code)>
+                                    {{ $type->name }} · {{ ucfirst($type->geom_type) }}
+                                </option>
+                            @endforeach
+                        </optgroup>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+
+        <div class="upload-settings-note" id="uploadModeNote">
+            Boundary mode imports Polygon/MultiPolygon GeoJSON, KML, or zipped shapefiles into barangay boundary records.
+        </div>
+    </div>
     
     <label class="upload-zone" for="upload_file" id="dropZone">
         <div id="uploadPlaceholder" class="upload-placeholder">
@@ -330,7 +433,7 @@
                 <i class="fa-solid fa-arrow-up-from-bracket"></i>
             </div>
             <div class="upload-zone-title">Drag and drop your file(s) here</div>
-            <div class="upload-zone-desc">Supports: .geojson, .json, or .zip containing .shp and .dbf files. Multi-select enabled, max 50MB per file.</div>
+            <div class="upload-zone-desc" id="uploadZoneDesc">Supports: .geojson, .json, .kml, or .zip containing shapefile parts. Multi-select enabled, max 50MB per file.</div>
         </div>
         
         <div id="fileInfo" style="display: none; width: 100%; text-align: center;">
@@ -346,7 +449,7 @@
             </div>
         </div>
     </label>
-    <input type="file" id="upload_file" name="upload_files[]" style="display: none;" accept=".geojson,.json,.zip" multiple>
+    <input type="file" id="upload_file" name="upload_files[]" style="display: none;" accept=".geojson,.json,.kml,.zip" multiple>
 </form>
 
 @if(session('upload_preview'))
@@ -355,7 +458,7 @@
         <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 18px; flex-wrap: wrap;">
             <div>
                 <div class="card-title" style="margin-bottom: 6px;">Upload Preview</div>
-                <div style="font-size: 13px; color: #94a3b8;">Review detected boundaries before saving them to the database.</div>
+                <div style="font-size: 13px; color: #94a3b8;">Review detected {{ ($preview['files'][0]['mode'] ?? 'boundaries') === 'features' ? 'map features' : 'boundaries' }} before saving them to the database.</div>
             </div>
             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                 <form action="{{ route('admin.uploads.cancel-preview') }}" method="POST">
@@ -385,9 +488,22 @@
                             <i class="fa-solid fa-file-shield" style="color: #38bdf8; font-size: 18px; margin-right: 10px;"></i>
                             {{ $file['file_name'] }}
                         </div>
-                        <div style="color: #94a3b8; font-size: 12px; margin-top: 4px; margin-left: 28px;">{{ $file['file_type'] }} · {{ $file['file_size'] }}</div>
+                        <div style="color: #94a3b8; font-size: 12px; margin-top: 4px; margin-left: 28px;">
+                            {{ $file['file_type'] }} · {{ $file['file_size'] }}
+                            @if(!empty($file['source_format']))
+                                · Source: {{ $file['source_format'] }}
+                            @endif
+                            @if(!empty($file['feature_count']))
+                                · {{ $file['feature_count'] }} converted feature(s)
+                            @endif
+                        </div>
                     </div>
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        @if(!empty($file['converted_download_url']))
+                            <a href="{{ $file['converted_download_url'] }}" class="btn-download-converted">
+                                <i class="fa-solid fa-file-arrow-down"></i> Converted GeoJSON
+                            </a>
+                        @endif
                         <span class="status-badge status-update" style="padding: 6px 12px; border-radius: 20px;">
                             <i class="fa-solid fa-pen" style="font-size: 9px; margin-right: 4px;"></i> Existing: {{ $file['matched'] }}
                         </span>
@@ -405,11 +521,20 @@
                 <div class="table-responsive">
                     <table>
                         <thead>
-                            <tr>
-                                <th>BARANGAY</th>
-                                <th>RESULT</th>
-                                <th>AREA</th>
-                            </tr>
+                            @if(($file['mode'] ?? 'boundaries') === 'features')
+                                <tr>
+                                    <th>FEATURE</th>
+                                    <th>BARANGAY / LAYER</th>
+                                    <th>RESULT</th>
+                                    <th>GEOMETRY</th>
+                                </tr>
+                            @else
+                                <tr>
+                                    <th>BARANGAY</th>
+                                    <th>RESULT</th>
+                                    <th>AREA</th>
+                                </tr>
+                            @endif
                         </thead>
                         <tbody>
                             @forelse(array_slice($file['items'], 0, 12) as $item)
@@ -418,23 +543,43 @@
                                         <i class="fa-solid fa-map-pin" style="color: #64748b; font-size: 11px; margin-right: 8px;"></i>
                                         {{ $item['display_name'] }}
                                     </td>
+                                    @if(($file['mode'] ?? 'boundaries') === 'features')
+                                        <td style="color: #94a3b8; font-size: 12px; line-height: 1.45;">
+                                            <div style="color: #f8fafc; font-weight: 700;">{{ $item['barangay_name'] ?? 'No barangay' }}</div>
+                                            <div>{{ $item['feature_type_name'] ?? 'No layer type' }}</div>
+                                        </td>
+                                    @endif
                                     <td>
                                         <span class="status-badge {{ $item['action'] === 'Create' ? 'status-create' : ($item['action'] === 'Update' ? 'status-update' : 'status-skipped') }}" style="padding: 5px 10px; border-radius: 20px; font-size: 10.5px;">
                                             @if($item['action'] === 'Create')
-                                                <i class="fa-solid fa-circle-plus" style="font-size: 9px; margin-right: 4px;"></i> New barangay
+                                                <i class="fa-solid fa-circle-plus" style="font-size: 9px; margin-right: 4px;"></i> {{ ($file['mode'] ?? 'boundaries') === 'features' ? 'New feature' : 'New barangay' }}
                                             @elseif($item['action'] === 'Update')
                                                 <i class="fa-solid fa-circle-check" style="font-size: 9px; margin-right: 4px;"></i> Update existing
                                             @else
                                                 <i class="fa-solid fa-circle-minus" style="font-size: 9px; margin-right: 4px;"></i> Skipped
                                             @endif
                                         </span>
+                                        @if(!empty($item['reason']))
+                                            <div style="margin-top: 6px; color: #fca5a5; font-size: 11px; line-height: 1.35;">
+                                                {{ $item['reason'] }}
+                                            </div>
+                                        @endif
                                     </td>
-                                    <td style="color: #94a3b8; font-family: monospace; font-weight: 600;">{{ $item['area'] ? number_format($item['area'], 2).' ha' : '—' }}</td>
+                                    @if(($file['mode'] ?? 'boundaries') === 'features')
+                                        <td style="color: #94a3b8; font-family: monospace; font-weight: 600;">
+                                            {{ $item['geometry_type'] ?? '—' }}
+                                            @if(($item['metadata_count'] ?? 0) > 0)
+                                                <div style="font-family: Inter, sans-serif; font-size: 11px; color: #64748b; margin-top: 4px;">{{ $item['metadata_count'] }} metadata field(s)</div>
+                                            @endif
+                                        </td>
+                                    @else
+                                        <td style="color: #94a3b8; font-family: monospace; font-weight: 600;">{{ $item['area'] ? number_format($item['area'], 2).' ha' : '—' }}</td>
+                                    @endif
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="3" style="text-align: center; color: #64748b; padding: 22px;">
-                                        No polygon boundaries were detected in this file.
+                                    <td colspan="{{ ($file['mode'] ?? 'boundaries') === 'features' ? 4 : 3 }}" style="text-align: center; color: #64748b; padding: 22px;">
+                                        No importable records were detected in this file.
                                     </td>
                                 </tr>
                             @endforelse
@@ -443,7 +588,7 @@
                 </div>
 
                 @if(count($file['items']) > 12)
-                    <div style="margin-top: 12px; color: #94a3b8; font-size: 12px; margin-left: 4px;">Showing first 12 of {{ count($file['items']) }} detected boundaries.</div>
+                    <div style="margin-top: 12px; color: #94a3b8; font-size: 12px; margin-left: 4px;">Showing first 12 of {{ count($file['items']) }} detected {{ ($file['mode'] ?? 'boundaries') === 'features' ? 'map features' : 'boundaries' }}.</div>
                 @endif
             </div>
         @endforeach
@@ -537,6 +682,29 @@
     const fileInfo = document.getElementById('fileInfo');
     const fileNameDisplay = document.getElementById('fileNameDisplay');
     const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+    const importMode = document.getElementById('import_mode');
+    const featureOptions = document.querySelectorAll('.feature-import-options .form-field');
+    const uploadModeNote = document.getElementById('uploadModeNote');
+    const uploadZoneDesc = document.getElementById('uploadZoneDesc');
+
+    function syncImportModeUi() {
+        const isFeatureMode = importMode.value === 'features';
+
+        featureOptions.forEach(option => {
+            option.style.display = isFeatureMode ? 'grid' : 'none';
+        });
+
+        uploadModeNote.textContent = isFeatureMode
+            ? 'Map Feature mode converts GeoJSON, KML, or zipped shapefiles into GeoJSON features, then saves Point, LineString, or Polygon records into the selected layer.'
+            : 'Boundary mode converts Polygon/MultiPolygon GeoJSON, KML, or zipped shapefiles into barangay boundary records.';
+        uploadZoneDesc.textContent = isFeatureMode
+            ? 'Supports: .geojson, .json, .kml, or .zip shapefiles with Point, LineString, or Polygon geometry. Converted GeoJSON is available during preview.'
+            : 'Supports: .geojson, .json, .kml, or .zip containing shapefile parts. Multi-select enabled, max 50MB per file.';
+    }
+
+    importMode.addEventListener('change', syncImportModeUi);
+    syncImportModeUi();
+
       fileInput.addEventListener('change', function() {
         if (this.files && this.files.length > 0) {
             uploadPlaceholder.style.display = 'none';

@@ -201,6 +201,26 @@
                     </div>
                 </div>
 
+                <div class="form-group">
+                    <label for="district">District</label>
+                    <select id="district" name="district" style="background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border-color); color: var(--text-heading); border-radius: 8px; padding: 12px 16px; width: 100%; outline: none;">
+                        <option value="">Select District</option>
+                        @for($i = 1; $i <= 9; $i++)
+                            <option value="District {{ $i }}" {{ $barangay->district == "District $i" ? 'selected' : '' }}>District {{ $i }}</option>
+                        @endfor
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="barangay_chairman">Barangay Chairman</label>
+                    <input type="text" id="barangay_chairman" name="barangay_chairman" value="{{ $barangay->barangay_chairman }}" placeholder="e.g. Mr. John Doe">
+                </div>
+
+                <div class="form-group">
+                    <label for="sk_chairman">SK Chairman</label>
+                    <input type="text" id="sk_chairman" name="sk_chairman" value="{{ $barangay->sk_chairman }}" placeholder="e.g. Jane Smith">
+                </div>
+
                 <div class="grid-2">
                     <div class="form-group">
                         <label for="population">Population</label>

@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class IhrisAuthenticator
@@ -18,13 +20,23 @@ class IhrisAuthenticator
             return $testUser;
         }
 
-        $response = Http::acceptJson()
-            ->asJson()
-            ->timeout((int) config('services.ihris.timeout', 10))
-            ->post($this->loginUrl(), [
-                config('services.ihris.username_field', 'email') => $email,
-                'password' => $password,
+        try {
+            $response = Http::acceptJson()
+                ->asJson()
+                ->connectTimeout((int) config('services.ihris.connect_timeout', 5))
+                ->timeout((int) config('services.ihris.timeout', 10))
+                ->post($this->loginUrl(), [
+                    config('services.ihris.username_field', 'email') => $email,
+                    'password' => $password,
+                ]);
+        } catch (ConnectionException $e) {
+            Log::warning('iHRIS login API connection failed.', [
+                'url' => $this->loginUrl(),
+                'message' => $e->getMessage(),
             ]);
+
+            return null;
+        }
 
         if (! $response->successful()) {
             return null;
@@ -93,6 +105,7 @@ class IhrisAuthenticator
     {
         $response = Http::acceptJson()
             ->withToken($token)
+            ->connectTimeout((int) config('services.ihris.connect_timeout', 5))
             ->timeout((int) config('services.ihris.timeout', 10))
             ->get($this->officeEmployeesUrl());
 

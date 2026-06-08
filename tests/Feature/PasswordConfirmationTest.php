@@ -25,7 +25,7 @@ class PasswordConfirmationTest extends TestCase
         $user = User::factory()->create();
 
         Http::fake([
-            'https://testihris.bayambang.gov.ph/api/login' => Http::response([
+            $this->ihrisLoginUrl() => Http::response([
                 'user' => [
                     'name' => $user->name,
                     'email' => $user->email,
@@ -47,7 +47,7 @@ class PasswordConfirmationTest extends TestCase
         $user = User::factory()->create();
 
         Http::fake([
-            'https://testihris.bayambang.gov.ph/api/login' => Http::response([], 401),
+            $this->ihrisLoginUrl() => Http::response([], 401),
         ]);
 
         $response = $this->actingAs($user)->post('/user/confirm-password', [

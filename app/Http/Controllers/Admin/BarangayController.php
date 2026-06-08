@@ -5,11 +5,15 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Barangay;
 use App\Services\ActivityLogger;
+use App\Services\PostgisSpatialAnalysis;
+use App\Traits\RefreshesPostgisGeometry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class BarangayController extends Controller
 {
+    use RefreshesPostgisGeometry;
+
     public function index()
     {
         $barangays = Barangay::where('is_municipal_boundary', false)->get();
@@ -32,6 +36,11 @@ class BarangayController extends Controller
     public function features(Barangay $barangay)
     {
         return response()->json($barangay->features()->get());
+    }
+
+    public function spatialAnalysis(Barangay $barangay, PostgisSpatialAnalysis $analysis)
+    {
+        return response()->json($analysis->summary($barangay));
     }
 
     public function municipalBoundary()
@@ -67,6 +76,8 @@ class BarangayController extends Controller
 
         app(ActivityLogger::class)->log('municipal_boundary.reset', 'Reset the current Bayambang municipal boundary.', $municipalBoundary, [], $request);
 
+        $this->refreshPostgisGeometry('municipal_boundary.reset');
+
         return back()->with('success', 'Bayambang municipal boundary was reset.');
     }
 
@@ -81,6 +92,9 @@ class BarangayController extends Controller
             'name' => 'required|string|max:255',
             'municipality' => 'nullable|string|max:255',
             'province' => 'nullable|string|max:255',
+            'district' => 'nullable|string|max:255',
+            'barangay_chairman' => 'nullable|string|max:255',
+            'sk_chairman' => 'nullable|string|max:255',
             'total_area' => 'nullable|numeric',
             'population' => 'nullable|string|max:255',
             'land_use' => 'nullable|string|max:255',
@@ -104,6 +118,8 @@ class BarangayController extends Controller
 
         app(ActivityLogger::class)->log('barangay.created', "Created barangay {$barangay->name}.", $barangay, [], $request);
 
+        $this->refreshPostgisGeometry('barangay.created');
+
         return redirect()->route('admin.barangays.index')->with('success', 'Barangay created successfully!');
     }
 
@@ -118,6 +134,9 @@ class BarangayController extends Controller
             'name' => 'required|string|max:255',
             'municipality' => 'nullable|string|max:255',
             'province' => 'nullable|string|max:255',
+            'district' => 'nullable|string|max:255',
+            'barangay_chairman' => 'nullable|string|max:255',
+            'sk_chairman' => 'nullable|string|max:255',
             'total_area' => 'nullable|numeric',
             'population' => 'nullable|string|max:255',
             'land_use' => 'nullable|string|max:255',
@@ -144,6 +163,8 @@ class BarangayController extends Controller
             'fields' => array_keys($validated),
         ], $request);
 
+        $this->refreshPostgisGeometry('barangay.updated');
+
         return redirect()->route('admin.barangays.index')->with('success', 'Barangay updated successfully!');
     }
 
@@ -152,6 +173,8 @@ class BarangayController extends Controller
         app(ActivityLogger::class)->log('barangay.deleted', "Deleted barangay {$barangay->name}.", $barangay, [], $request);
 
         $barangay->delete();
+
+        $this->refreshPostgisGeometry('barangay.deleted');
 
         return redirect()->route('admin.barangays.index')->with('success', 'Barangay deleted successfully!');
     }
@@ -218,11 +241,11 @@ class BarangayController extends Controller
                 return back()->with('error', 'Could not extract a valid polygon boundary from the uploaded file. Ensure it contains at least one polygon geometry.');
             }
 
+            $computedArea = round($this->calculatePolygonArea($boundary), 4);
             $source = $request->input('boundary_source', $file->getClientOriginalName());
             $barangay->snapshotBoundary('Before '.$source, $request->user()?->name);
 
-            // Update the barangay boundary
-            $barangay->update([
+            $updates = [
                 'name' => $municipal ? 'Bayambang' : $barangay->name,
                 'boundary' => $boundary,
                 'latitude' => $centroid['lat'],
@@ -231,14 +254,25 @@ class BarangayController extends Controller
                 'boundary_updated_at' => now(),
                 'is_municipal_boundary' => $municipal ? true : $barangay->is_municipal_boundary,
                 'is_visible' => true,
-            ]);
+            ];
+
+            if ($computedArea > 0) {
+                $updates['total_area'] = $computedArea;
+            }
+
+            $barangay->update($updates);
 
             app(ActivityLogger::class)->log($municipal ? 'municipal_boundary.replaced' : 'barangay.boundary_replaced', ($municipal ? 'Replaced Bayambang municipal boundary' : "Replaced {$barangay->name} boundary")." from {$file->getClientOriginalName()}.", $barangay, [
                 'source' => $source,
                 'file_name' => $file->getClientOriginalName(),
+                'computed_area_hectares' => $computedArea > 0 ? $computedArea : null,
             ], $request);
 
-            return back()->with('success', 'Boundary updated successfully from ' . $file->getClientOriginalName() . '! (' . count($boundary) . ' vertices loaded)');
+            $this->refreshPostgisGeometry($municipal ? 'municipal_boundary.replaced' : 'barangay.boundary_replaced');
+
+            $areaMessage = $computedArea > 0 ? ' Area: ' . number_format($computedArea, 2) . ' ha.' : '';
+
+            return back()->with('success', 'Boundary updated successfully from ' . $file->getClientOriginalName() . '! (' . count($boundary) . ' vertices loaded).' . $areaMessage);
 
         } catch (\Exception $e) {
             Log::error('Boundary upload error: ' . $e->getMessage());
@@ -275,6 +309,8 @@ class BarangayController extends Controller
             'is_visible' => $barangay->is_visible,
         ], $request);
 
+        $this->refreshPostgisGeometry('barangay.visibility_changed');
+
         return response()->json([
             'success' => true,
             'is_visible' => $barangay->is_visible,
@@ -288,6 +324,9 @@ class BarangayController extends Controller
     public function updateAttributes(Request $request, Barangay $barangay)
     {
         $validated = $request->validate([
+            'district' => 'nullable|string|max:255',
+            'barangay_chairman' => 'nullable|string|max:255',
+            'sk_chairman' => 'nullable|string|max:255',
             'population' => 'nullable|string|max:255',
             'land_use' => 'nullable|string|max:255',
             'hazard_level' => 'nullable|string|max:255',
@@ -305,6 +344,8 @@ class BarangayController extends Controller
             'fields' => array_keys($validated),
         ], $request);
 
+        $this->refreshPostgisGeometry('barangay.attributes_updated');
+
         return back()->with('success', 'Attributes updated successfully for ' . $barangay->name . '!');
     }
 
@@ -321,27 +362,16 @@ class BarangayController extends Controller
 
         $coordinates = null;
 
-        // Handle FeatureCollection
-        if (isset($geojson['type']) && $geojson['type'] === 'FeatureCollection') {
-            foreach ($geojson['features'] as $feature) {
-                $coords = $this->extractPolygonFromGeometry($feature['geometry'] ?? null);
-                if ($coords) {
-                    $coordinates = $coords;
-                    break; // Use the first polygon found
-                }
+        foreach ($this->geoJsonFeatures($geojson) as $feature) {
+            $coords = $this->extractPolygonFromGeometry($feature['geometry'] ?? null);
+            if ($coords) {
+                $coordinates = $coords;
+                break;
             }
-        }
-        // Handle single Feature
-        elseif (isset($geojson['type']) && $geojson['type'] === 'Feature') {
-            $coordinates = $this->extractPolygonFromGeometry($geojson['geometry'] ?? null);
-        }
-        // Handle raw Geometry
-        elseif (isset($geojson['type']) && in_array($geojson['type'], ['Polygon', 'MultiPolygon'])) {
-            $coordinates = $this->extractPolygonFromGeometry($geojson);
         }
 
         if (!$coordinates) {
-            throw new \Exception('No polygon geometry found in the GeoJSON file.');
+            throw new \Exception('No valid polygon geometry found in the GeoJSON file.');
         }
 
         // GeoJSON uses [lng, lat] — convert to [lat, lng] for Leaflet
@@ -359,14 +389,85 @@ class BarangayController extends Controller
         if (!$geometry || !isset($geometry['type'])) return null;
 
         if ($geometry['type'] === 'Polygon') {
-            return $geometry['coordinates'][0]; // Outer ring
+            return $this->validOuterRing($geometry['coordinates'][0] ?? null);
         }
 
         if ($geometry['type'] === 'MultiPolygon') {
-            return $geometry['coordinates'][0][0]; // First polygon, outer ring
+            return $this->validOuterRing($geometry['coordinates'][0][0] ?? null);
         }
 
         return null;
+    }
+
+    private function geoJsonFeatures(array $geojson): array
+    {
+        $type = $geojson['type'] ?? null;
+
+        if ($type === 'FeatureCollection') {
+            $features = $geojson['features'] ?? null;
+
+            if (! is_array($features)) {
+                throw new \Exception('Invalid GeoJSON FeatureCollection — features must be an array.');
+            }
+
+            return $features;
+        }
+
+        if ($type === 'Feature') {
+            return [$geojson];
+        }
+
+        if (in_array($type, ['Polygon', 'MultiPolygon'], true)) {
+            return [[
+                'type' => 'Feature',
+                'properties' => [],
+                'geometry' => $geojson,
+            ]];
+        }
+
+        throw new \Exception('GeoJSON must be a FeatureCollection, Feature, Polygon, or MultiPolygon.');
+    }
+
+    private function validOuterRing($ring): ?array
+    {
+        if (! is_array($ring) || count($ring) < 4) {
+            return null;
+        }
+
+        $coordinates = [];
+
+        foreach ($ring as $position) {
+            if (! is_array($position) || count($position) < 2) {
+                return null;
+            }
+
+            $lng = $position[0];
+            $lat = $position[1];
+
+            if (! is_numeric($lng) || ! is_numeric($lat)) {
+                return null;
+            }
+
+            $lng = (float) $lng;
+            $lat = (float) $lat;
+
+            if ($lng < -180 || $lng > 180 || $lat < -90 || $lat > 90) {
+                return null;
+            }
+
+            $coordinates[] = [$lng, $lat];
+        }
+
+        if ($coordinates[0] !== $coordinates[count($coordinates) - 1]) {
+            $coordinates[] = $coordinates[0];
+        }
+
+        $uniquePoints = collect($coordinates)
+            ->map(fn (array $point) => $point[0].','.$point[1])
+            ->unique()
+            ->count();
+
+        return $uniquePoints >= 3 ? $coordinates : null;
     }
 
     // ─── Shapefile ZIP Parser ───────────────────────────────────────────
@@ -623,6 +724,38 @@ class BarangayController extends Controller
             'lat' => $count > 0 ? $latSum / $count : 0,
             'lng' => $count > 0 ? $lngSum / $count : 0,
         ];
+    }
+
+    private function calculatePolygonArea($points)
+    {
+        $count = count($points);
+        if ($count < 3) return 0.0;
+
+        $earthRadius = 6378137.0;
+        $latSum = 0.0;
+
+        foreach ($points as $point) {
+            $latSum += $point[0];
+        }
+
+        $averageLatitude = ($latSum / $count) * M_PI / 180.0;
+        $cosLatitude = cos($averageLatitude);
+        $x = [];
+        $y = [];
+
+        foreach ($points as $point) {
+            $x[] = $point[1] * (M_PI / 180.0) * $earthRadius * $cosLatitude;
+            $y[] = $point[0] * (M_PI / 180.0) * $earthRadius;
+        }
+
+        $area = 0.0;
+        for ($i = 0; $i < $count; $i++) {
+            $j = ($i + 1) % $count;
+            $area += $x[$i] * $y[$j];
+            $area -= $y[$i] * $x[$j];
+        }
+
+        return abs($area) / 20000.0;
     }
 
     private function cleanupDir($dir)

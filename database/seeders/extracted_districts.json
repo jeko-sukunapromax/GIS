@@ -1,0 +1,405 @@
+{
+  "District 1": [
+    {
+      "barangay": "Ambayat 1st",
+      "chairman": "Mr. Genaro M. Lamo",
+      "sk": "Renz P. Lucero"
+    },
+    {
+      "barangay": "Ambayat 2nd",
+      "chairman": "Mr. Maximiano H. Basilio Jr.",
+      "sk": "Rodelyn Mae D. Bibanco"
+    },
+    {
+      "barangay": "Managos",
+      "chairman": "Mr. Onofre P. Manuel",
+      "sk": "Mara Judife P. Lopezmarit"
+    },
+    {
+      "barangay": "Pugo",
+      "chairman": "Mr. Leo M. Junio",
+      "sk": "Jonalyn D. Odon"
+    },
+    {
+      "barangay": "San Vicente",
+      "chairman": "Mr. Crisostomo M. Bato",
+      "sk": "Trenz Jaye A. Trinidad"
+    },
+    {
+      "barangay": "Tampog",
+      "chairman": "Mr. Roldandino F. Agabao",
+      "sk": "Randy C. Idos"
+    },
+    {
+      "barangay": "Warding",
+      "chairman": "Mr. Fernando E. Dela Cruz",
+      "sk": "Aljon A. Aglosolos"
+    },
+    {
+      "barangay": "Wawa",
+      "chairman": "Mr. Pepito D. Mejia",
+      "sk": "John Patrick A. Odon"
+    }
+  ],
+  "District 2": [
+    {
+      "barangay": "Bongato East",
+      "chairman": "Mr. Rolando G. Manlongat",
+      "sk": "Kate Diane R. Alvarez"
+    },
+    {
+      "barangay": "Bongato West",
+      "chairman": "Mr. Alfonso S. Bernardo",
+      "sk": "Arjay Alvarez"
+    },
+    {
+      "barangay": "Iton",
+      "chairman": "Mr. Roderick T. Casingal",
+      "sk": "Joseph E. Junio"
+    },
+    {
+      "barangay": "Manambong Sur",
+      "chairman": "Mr. Alain N. Lacerna",
+      "sk": "RV Lanorio"
+    },
+    {
+      "barangay": "Manambong Norte",
+      "chairman": "Mr. Freddie R. Junio",
+      "sk": "Alyssa J. De Vera"
+    },
+    {
+      "barangay": "Manambong Parte",
+      "chairman": "Mr. Romeo F. Macaraeg",
+      "sk": "Daisy Joy M. Dulay"
+    },
+    {
+      "barangay": "Pantol",
+      "chairman": "Mr. Jose G. Perez",
+      "sk": "Mercy Angel O. Lobiano"
+    },
+    {
+      "barangay": "Paragos",
+      "chairman": "Mr. Manuel R. Ragos",
+      "sk": "Juan Carlos M. Gabriel"
+    },
+    {
+      "barangay": "San Gabriel 2nd",
+      "chairman": "Mr. Gildo A. Madronio",
+      "sk": "Albert Moises G. Daligdig"
+    }
+  ],
+  "District 3": [
+    {
+      "barangay": "Amancosiling Norte",
+      "chairman": "Mr. Almario D. Ventura",
+      "sk": "Liezl S. Lavariaz"
+    },
+    {
+      "barangay": "Amancosiling Sur",
+      "chairman": "Mr. Alexander J. Favi",
+      "sk": "Mc Kimson A. Pinto"
+    },
+    {
+      "barangay": "Bical Norte",
+      "chairman": "Mr. Jessie S. Abalos",
+      "sk": "Rosil L. Cayabyab"
+    },
+    {
+      "barangay": "Bical Sur",
+      "chairman": "Mr. Noli G. Matabang",
+      "sk": "Reymundo C. Jimenez"
+    },
+    {
+      "barangay": "Buayaen",
+      "chairman": "Mr. Alexander V. Barrogo",
+      "sk": "John Rey A. Dela Cruz"
+    },
+    {
+      "barangay": "Sancagulis",
+      "chairman": "Mr. Marcelo C. Caniezo",
+      "sk": "Zyrine C. Sabio"
+    },
+    {
+      "barangay": "San Gabriel 1st",
+      "chairman": "Mr. Bonifacio G. Laza",
+      "sk": "Arvin V. Lorenzana"
+    },
+    {
+      "barangay": "Telbang",
+      "chairman": "Mr. Carlos Sta. Teresa",
+      "sk": "Pearlene Joy S. Surait"
+    }
+  ],
+  "District 4": [
+    {
+      "barangay": "Apalen",
+      "chairman": "Mr. Renante A. Agustin",
+      "sk": "Alaiza Mae F. Alonzo"
+    },
+    {
+      "barangay": "Carungay",
+      "chairman": "Mr. Virgilio T. Romano",
+      "sk": "Christian Joy R. Quijalvo"
+    },
+    {
+      "barangay": "Darawey",
+      "chairman": "Mr. Fidel F. Pardales",
+      "sk": "Aira M. Zacarias"
+    },
+    {
+      "barangay": "Dusoc",
+      "chairman": "Mr. Ricky P. Penullar",
+      "sk": "Jenelyn L. Iquin"
+    },
+    {
+      "barangay": "Hermoza",
+      "chairman": "Mr. Frankie D. Catalan",
+      "sk": "Mariane Joshia O. Ercilla"
+    },
+    {
+      "barangay": "Malioer",
+      "chairman": "Mr. Oscar A. Padua",
+      "sk": "Nelgin M. Balansay"
+    },
+    {
+      "barangay": "Pangdel",
+      "chairman": "Mr. Onofre P. Romano",
+      "sk": "Jake A. Labrador"
+    },
+    {
+      "barangay": "Tatarac",
+      "chairman": "Mr. Guillermo M. Gabriel",
+      "sk": "Cindy R. Grospe"
+    }
+  ],
+  "District 5": [
+    {
+      "barangay": "Caturay",
+      "chairman": "Mr. Virgilio T. Romano",
+      "sk": "Christian joy R. Quijalvo"
+    },
+    {
+      "barangay": "Idong",
+      "chairman": "Mr. Romeo A. Andalis",
+      "sk": "Sharmaine F. Rega"
+    },
+    {
+      "barangay": "Inanlorenza",
+      "chairman": "Mr. Orlando C. Yome",
+      "sk": "Edric G. Lacsamana"
+    },
+    {
+      "barangay": "Inirangan",
+      "chairman": "Mr. Jonathan S. Espejo",
+      "sk": "Orlan Kyle C. Dela Cruz"
+    },
+    {
+      "barangay": "Maigpa",
+      "chairman": "Mr. Leodovico M. Soriano",
+      "sk": "Gerald B. Jimemez"
+    },
+    {
+      "barangay": "Reynado",
+      "chairman": "Mr. Joselito S. Sabangan",
+      "sk": "Jose Mari M. Arcinas"
+    },
+    {
+      "barangay": "Sanlibo",
+      "chairman": "Mr. Luzviminda V. Tamondong",
+      "sk": "Carla M. Macaraeg"
+    },
+    {
+      "barangay": "Tanolong",
+      "chairman": "Ms. Gloria C. Solomon",
+      "sk": "Kenly c. frias"
+    }
+  ],
+  "District 6": [
+    {
+      "barangay": "Balaybuaya",
+      "chairman": "Mr. Ronelio F. Garcia",
+      "sk": "Allan Paul G. Lavarias"
+    },
+    {
+      "barangay": "Batangcaoa",
+      "chairman": "Mr. Ricardo S. Doria",
+      "sk": "Jack M. Lavarias"
+    },
+    {
+      "barangay": "Beleng",
+      "chairman": "Mr. Leopoldo J. Ocampo",
+      "sk": "Denver M. Ocampo"
+    },
+    {
+      "barangay": "Langiran",
+      "chairman": "Mr. Gerard S. Carungay",
+      "sk": "Rongie S. Panoncio"
+    },
+    {
+      "barangay": "Macayocayo",
+      "chairman": "Mr. Mario G. Cari\u00f1o",
+      "sk": "Maricel B. Rosario"
+    },
+    {
+      "barangay": "Malimpec",
+      "chairman": "Mr. Richard S. Pulhin",
+      "sk": "Evander G. Cayabyab"
+    },
+    {
+      "barangay": "Tococ East",
+      "chairman": "Mr. Roy V. Camacho",
+      "sk": "Kevin D.C. Alarin"
+    },
+    {
+      "barangay": "Tococ West",
+      "chairman": "Mr. Elpidio U. Doloque",
+      "sk": "Mark V. De Vera"
+    }
+  ],
+  "District 7": [
+    {
+      "barangay": "Alinggan",
+      "chairman": "Mr. John Benedict A. Junio",
+      "sk": "Liezl I. Mendoza"
+    },
+    {
+      "barangay": "Amanperez",
+      "chairman": "Ms. Gina P. Bautista",
+      "sk": "Marycar Jane P. Asuncion"
+    },
+    {
+      "barangay": "Asin",
+      "chairman": "Mr. Claro A. Taguiang",
+      "sk": "Russel A. Aquino"
+    },
+    {
+      "barangay": "Banaban",
+      "chairman": "Mr. Romeo S. Caranto",
+      "sk": "Christian C. Bustarde"
+    },
+    {
+      "barangay": "Bani",
+      "chairman": "Mr. Rodelito F. Baustista",
+      "sk": "Reynante T. Ramos"
+    },
+    {
+      "barangay": "Duera",
+      "chairman": "Mr. Carlito E. Soriano",
+      "sk": "Reychel T. Galolo"
+    },
+    {
+      "barangay": "Ligue",
+      "chairman": "Mr. Luis S. Castro",
+      "sk": "Melody T. Calugay"
+    },
+    {
+      "barangay": "Sapang",
+      "chairman": "Mr. Vicente C. De Leon",
+      "sk": "Jempol A. Agas"
+    }
+  ],
+  "District 8": [
+    {
+      "barangay": "Ataynan",
+      "chairman": "Mr. Alejandro A. Legaspi",
+      "sk": "Wowwie D. Apilado"
+    },
+    {
+      "barangay": "Bacnono",
+      "chairman": "Mr. Lito F. Lopez",
+      "sk": "John Francis A. Ferrer"
+    },
+    {
+      "barangay": "Buenlag 1st",
+      "chairman": "Mr. Rufo R. Junio",
+      "sk": "Alejandre T. Junio"
+    },
+    {
+      "barangay": "Buenlag 2nd",
+      "chairman": "Mr. Eligio L. Calimlim, Jr.",
+      "sk": "Jovanie A. Santos"
+    },
+    {
+      "barangay": "Mangayao",
+      "chairman": "Mr. Romeo D. Junio",
+      "sk": "Govani Cando"
+    },
+    {
+      "barangay": "Nalsian Norte",
+      "chairman": "Mr. Victorino S. Payomo",
+      "sk": "Kaye Ann L. Garcia"
+    },
+    {
+      "barangay": "Nalsian Sur",
+      "chairman": "Mr. George E. Balbin",
+      "sk": "Khing-Ruel R. Lucido"
+    },
+    {
+      "barangay": "Tambac",
+      "chairman": "Mr. Bienvinido B. Junio",
+      "sk": "Calvin Joshua J. Macaso"
+    },
+    {
+      "barangay": "Tamaro",
+      "chairman": "Mr. Renato S. Soriano",
+      "sk": "Gabriel Tristan P. Fernandez"
+    }
+  ],
+  "District 9": [
+    {
+      "barangay": "Cadre Site",
+      "chairman": "Mr. Roberto E. Soriano",
+      "sk": "Erica Joy B. Odon"
+    },
+    {
+      "barangay": "Magsaysay",
+      "chairman": "Ms. George D. Friaz",
+      "sk": "Mendel D. Reloza"
+    },
+    {
+      "barangay": "MH Del Pilar",
+      "chairman": "Mr. Salvador B. Estrada",
+      "sk": "Aldron L. Rives"
+    },
+    {
+      "barangay": "Poblacion Sur",
+      "chairman": "Mr. Manolito G. Salazar",
+      "sk": "Jomarie P. Palaming"
+    },
+    {
+      "barangay": "Zone I",
+      "chairman": "Mr. Judith E. Ramos",
+      "sk": "Ranijane R. Cayabyab"
+    },
+    {
+      "barangay": "Zone II",
+      "chairman": "Mr. Ruel L. Layacan",
+      "sk": "Jason King A. Malicdem"
+    },
+    {
+      "barangay": "Zone III",
+      "chairman": "Mr. Danilo J. Yauco",
+      "sk": "Butch Meljohn S. Cayabyab"
+    },
+    {
+      "barangay": "Zone IV",
+      "chairman": "Mr. Frederick F. Lomibao, Jr.",
+      "sk": "Crisanto M. Petonio"
+    },
+    {
+      "barangay": "Zone V",
+      "chairman": "Mr. Roberto S. Castillo",
+      "sk": "Gervin Karl M. Flores"
+    },
+    {
+      "barangay": "Zone VI",
+      "chairman": "Mr. Manny S. Lopez",
+      "sk": "Angel G. Soriano"
+    },
+    {
+      "barangay": "Zone VII",
+      "chairman": "Mr. Alfredo DG. Datuin",
+      "sk": "Joy M. Macaranas"
+    }
+  ]
+}

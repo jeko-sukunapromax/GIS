@@ -99,6 +99,21 @@ return [
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
+        'postgis' => [
+            'driver' => 'pgsql',
+            'url' => env('POSTGIS_URL'),
+            'host' => env('POSTGIS_HOST', '127.0.0.1'),
+            'port' => env('POSTGIS_PORT', '5432'),
+            'database' => env('POSTGIS_DATABASE', 'geobayambang_postgis'),
+            'username' => env('POSTGIS_USERNAME', 'geobayambang_app'),
+            'password' => env('POSTGIS_PASSWORD', ''),
+            'charset' => env('POSTGIS_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => env('POSTGIS_SEARCH_PATH', 'public'),
+            'sslmode' => env('POSTGIS_SSLMODE', 'prefer'),
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),

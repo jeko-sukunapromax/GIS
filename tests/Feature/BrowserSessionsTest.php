@@ -18,7 +18,7 @@ class BrowserSessionsTest extends TestCase
         $user = User::factory()->create();
 
         Http::fake([
-            'https://testihris.bayambang.gov.ph/api/login' => Http::response([
+            $this->ihrisLoginUrl() => Http::response([
                 'user' => [
                     'name' => $user->name,
                     'email' => $user->email,

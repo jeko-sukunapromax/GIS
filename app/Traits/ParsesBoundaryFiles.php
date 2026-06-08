@@ -26,20 +26,14 @@ trait ParsesBoundaryFiles
             throw new \Exception('Invalid GeoJSON format — could not parse JSON.');
         }
 
-        $features = [];
-        if (isset($geojson['type']) && $geojson['type'] === 'FeatureCollection') {
-            $features = $geojson['features'];
-        } elseif (isset($geojson['type']) && $geojson['type'] === 'Feature') {
-            $features = [$geojson];
-        }
+        $features = $this->geoJsonFeatures($geojson);
 
         $items = [];
 
         foreach ($features as $feature) {
-            $coords = $this->extractPolygonFromGeometry($feature['geometry'] ?? null);
-            if (!$coords) continue;
-
+            $geometry = $feature['geometry'] ?? null;
             $props = $feature['properties'] ?? [];
+            $geometryType = $geometry['type'] ?? 'Missing';
             
             // Try to find a barangay name in common property fields
             $name = $this->extractNameFromProperties($props);
@@ -49,6 +43,17 @@ trait ParsesBoundaryFiles
                 // Remove extension and typical suffix
                 $name = preg_replace('/\.(geojson|json|shp|kml|zip)$/i', '', $fallbackName);
                 $name = str_replace('_', ' ', $name);
+            }
+
+            $coords = $this->extractPolygonFromGeometry($geometry);
+
+            if (!$coords) {
+                $reason = in_array($geometryType, ['Polygon', 'MultiPolygon'], true)
+                    ? 'Invalid polygon coordinates. Check ring closure, coordinate order, and longitude/latitude ranges.'
+                    : "Unsupported geometry type {$geometryType}. Boundary uploads accept Polygon or MultiPolygon only.";
+
+                $items[] = $this->makeBoundaryPreviewItem($name, [], ['lat' => null, 'lng' => null], [], $reason, $geometryType);
+                continue;
             }
             
             $boundary = array_map(function ($coord) {
@@ -68,7 +73,11 @@ trait ParsesBoundaryFiles
                 }
             }
 
-            $items[] = $this->makeBoundaryPreviewItem($name, $boundary, $centroid, $extractedAttrs);
+            $items[] = $this->makeBoundaryPreviewItem($name, $boundary, $centroid, $extractedAttrs, null, $geometryType);
+        }
+
+        if (collect($items)->whereIn('action', ['Create', 'Update'])->isEmpty()) {
+            throw new \Exception('GeoJSON has no importable Polygon or MultiPolygon boundary features with valid coordinates. Use Map Features for Point or Line layers.');
         }
 
         return $this->summarizeBoundaryPreview($items);
@@ -143,7 +152,7 @@ trait ParsesBoundaryFiles
                     }
                 }
 
-                $items[] = $this->makeBoundaryPreviewItem($name, $boundary, $centroid, $extractedAttrs);
+                $items[] = $this->makeBoundaryPreviewItem($name, $boundary, $centroid, $extractedAttrs, null, 'Polygon');
             }
         } finally {
             $this->cleanupDir($extractPath);
@@ -208,13 +217,15 @@ trait ParsesBoundaryFiles
         ];
     }
 
-    protected function makeBoundaryPreviewItem($name, array $boundary, array $centroid, array $attributes): array
+    protected function makeBoundaryPreviewItem($name, array $boundary, array $centroid, array $attributes, ?string $reason = null, ?string $geometryType = null): array
     {
         if (!$name) {
             return [
                 'name' => null,
                 'display_name' => 'Unnamed Feature',
                 'action' => 'Skipped',
+                'reason' => $reason ?: 'No barangay name was found in the GeoJSON properties.',
+                'geometry_type' => $geometryType,
                 'is_municipal_boundary' => false,
                 'barangay_id' => null,
                 'boundary' => $boundary,
@@ -227,11 +238,14 @@ trait ParsesBoundaryFiles
         $isMunicipalBoundary = $this->isMunicipalBoundaryName($name);
         $displayName = $isMunicipalBoundary ? 'Bayambang' : ucwords(strtolower($name));
         $barangay = $isMunicipalBoundary ? $this->findMunicipalBoundary() : $this->findBarangayByName($name);
+        $action = $reason ? 'Skipped' : ($isMunicipalBoundary || $barangay ? 'Update' : 'Create');
 
         return [
             'name' => $name,
             'display_name' => $displayName,
-            'action' => $isMunicipalBoundary || $barangay ? 'Update' : 'Create',
+            'action' => $action,
+            'reason' => $reason,
+            'geometry_type' => $geometryType,
             'is_municipal_boundary' => $isMunicipalBoundary,
             'barangay_id' => $barangay?->id,
             'boundary' => $boundary,
@@ -571,12 +585,90 @@ trait ParsesBoundaryFiles
     }
 
     // --- Helpers ---
+    protected function geoJsonFeatures(array $geojson): array
+    {
+        $type = $geojson['type'] ?? null;
+
+        if ($type === 'FeatureCollection') {
+            $features = $geojson['features'] ?? null;
+
+            if (! is_array($features)) {
+                throw new \Exception('Invalid GeoJSON FeatureCollection — features must be an array.');
+            }
+
+            return $features;
+        }
+
+        if ($type === 'Feature') {
+            return [$geojson];
+        }
+
+        if (in_array($type, ['Polygon', 'MultiPolygon'], true)) {
+            return [[
+                'type' => 'Feature',
+                'properties' => [],
+                'geometry' => $geojson,
+            ]];
+        }
+
+        throw new \Exception('GeoJSON must be a FeatureCollection, Feature, Polygon, or MultiPolygon.');
+    }
+
     protected function extractPolygonFromGeometry($geometry)
     {
         if (!$geometry || !isset($geometry['type'])) return null;
-        if ($geometry['type'] === 'Polygon') return $geometry['coordinates'][0]; 
-        if ($geometry['type'] === 'MultiPolygon') return $geometry['coordinates'][0][0]; 
+
+        if ($geometry['type'] === 'Polygon') {
+            return $this->validOuterRing($geometry['coordinates'][0] ?? null);
+        }
+
+        if ($geometry['type'] === 'MultiPolygon') {
+            return $this->validOuterRing($geometry['coordinates'][0][0] ?? null);
+        }
+
         return null;
+    }
+
+    protected function validOuterRing($ring): ?array
+    {
+        if (! is_array($ring) || count($ring) < 4) {
+            return null;
+        }
+
+        $coordinates = [];
+
+        foreach ($ring as $position) {
+            if (! is_array($position) || count($position) < 2) {
+                return null;
+            }
+
+            $lng = $position[0];
+            $lat = $position[1];
+
+            if (! is_numeric($lng) || ! is_numeric($lat)) {
+                return null;
+            }
+
+            $lng = (float) $lng;
+            $lat = (float) $lat;
+
+            if ($lng < -180 || $lng > 180 || $lat < -90 || $lat > 90) {
+                return null;
+            }
+
+            $coordinates[] = [$lng, $lat];
+        }
+
+        if ($coordinates[0] !== $coordinates[count($coordinates) - 1]) {
+            $coordinates[] = $coordinates[0];
+        }
+
+        $uniquePoints = collect($coordinates)
+            ->map(fn (array $point) => $point[0].','.$point[1])
+            ->unique()
+            ->count();
+
+        return $uniquePoints >= 3 ? $coordinates : null;
     }
 
     protected function calculateCentroid($points)

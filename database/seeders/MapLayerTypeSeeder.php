@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\MapLayerType;
+use App\Services\LayerMetadataSchema;
 
 class MapLayerTypeSeeder extends Seeder
 {
@@ -92,11 +93,15 @@ class MapLayerTypeSeeder extends Seeder
             ]
         ];
 
+        $schemas = app(LayerMetadataSchema::class);
+
         foreach ($types as $type) {
             $type = array_merge([
                 'is_public' => true,
                 'is_active' => true,
                 'sort_order' => 0,
+                'description' => null,
+                'metadata_schema' => $schemas->defaultFor($type['code'], $type['geom_type']),
             ], $type);
 
             MapLayerType::updateOrCreate(['code' => $type['code']], $type);

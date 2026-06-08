@@ -429,6 +429,7 @@
                 $mapGroupOpen = Request::routeIs('admin.map') || Request::routeIs('admin.map-export.*');
                 $layersGroupOpen = Request::routeIs('admin.features.*') || Request::routeIs('admin.layer-types.*');
                 $dataGroupOpen = Request::routeIs('admin.uploads.*')
+                    || Request::routeIs('admin.gis-converter.*')
                     || Request::routeIs('admin.municipal-boundary.*')
                     || Request::routeIs('admin.barangays.*')
                     || Request::routeIs('admin.data-completeness.*');
@@ -471,6 +472,7 @@
                     </summary>
                     <div class="nav-group-items">
                         <a href="{{ route('admin.uploads.index') }}" class="menu-item {{ Request::routeIs('admin.uploads.*') ? 'active' : '' }}"><i class="fa-solid fa-arrow-up-from-bracket"></i> Upload Data</a>
+                        <a href="{{ route('admin.gis-converter.index') }}" class="menu-item {{ Request::routeIs('admin.gis-converter.*') ? 'active' : '' }}"><i class="fa-solid fa-code-compare"></i> GIS Converter</a>
                         <a href="{{ route('admin.municipal-boundary.index') }}" class="menu-item {{ Request::routeIs('admin.municipal-boundary.*') ? 'active' : '' }}"><i class="fa-solid fa-border-top-left"></i> Bayambang Boundary</a>
                         <a href="{{ route('admin.barangays.index') }}" class="menu-item {{ Request::routeIs('admin.barangays.*') ? 'active' : '' }}"><i class="fa-solid fa-mountain-city"></i> Barangay Management</a>
                         <a href="{{ route('admin.data-completeness.index') }}" class="menu-item {{ Request::routeIs('admin.data-completeness.*') ? 'active' : '' }}"><i class="fa-solid fa-list-check"></i> Data Completeness</a>

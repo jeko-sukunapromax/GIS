@@ -147,4 +147,132 @@ class MapPublishingTest extends TestCase
         $this->assertEquals(15.8123456, (float) $feature->latitude);
         $this->assertEquals(120.4567891, (float) $feature->longitude);
     }
+
+    public function test_feature_metadata_is_standardized_by_layer_type_schema(): void
+    {
+        $staff = User::factory()->create();
+        Role::findOrCreate('staff', 'web');
+        $staff->assignRole('staff');
+
+        $barangay = Barangay::create(['name' => 'Alinggan']);
+        $layer = MapLayerType::create([
+            'name' => 'Evacuation Center',
+            'code' => 'evac_center',
+            'category' => 'critical_facilities',
+            'icon' => 'fa-solid fa-tent',
+            'color' => '#10b981',
+            'geom_type' => 'point',
+            'is_public' => true,
+            'is_active' => true,
+            'metadata_schema' => [
+                ['key' => 'capacity', 'label' => 'Capacity', 'type' => 'number'],
+                ['key' => 'status', 'label' => 'Status', 'type' => 'select', 'options' => ['Operational', 'Inactive']],
+            ],
+        ]);
+
+        $this
+            ->actingAs($staff)
+            ->post(route('admin.features.store'), [
+                'barangay_id' => $barangay->id,
+                'name' => 'Alinggan Evacuation Center',
+                'layer_type' => 'critical_facilities',
+                'feature_type' => $layer->code,
+                'latitude' => 15.8,
+                'longitude' => 120.4,
+                'status' => 'active',
+                'is_public' => '1',
+                'metadata' => [
+                    'capacity' => '250',
+                    'status' => 'Operational',
+                    'unregistered_field' => 'should be removed',
+                ],
+            ])
+            ->assertRedirect(route('admin.features.index', ['barangay_id' => $barangay->id]));
+
+        $feature = MapFeature::where('name', 'Alinggan Evacuation Center')->first();
+
+        $this->assertSame(250, $feature->metadata['capacity']);
+        $this->assertSame('Operational', $feature->metadata['status']);
+        $this->assertArrayNotHasKey('unregistered_field', $feature->metadata);
+    }
+
+    public function test_polyline_feature_cannot_be_saved_with_point_only_geometry(): void
+    {
+        $staff = User::factory()->create();
+        Role::findOrCreate('staff', 'web');
+        $staff->assignRole('staff');
+
+        $barangay = Barangay::create(['name' => 'Alinggan']);
+        $layer = MapLayerType::create([
+            'name' => 'Road Network',
+            'code' => 'road_network',
+            'category' => 'infrastructure',
+            'icon' => 'fa-solid fa-route',
+            'color' => '#8b5cf6',
+            'geom_type' => 'polyline',
+            'is_public' => true,
+            'is_active' => true,
+        ]);
+
+        $this
+            ->actingAs($staff)
+            ->from(route('admin.features.index', ['barangay_id' => $barangay->id]))
+            ->post(route('admin.features.store'), [
+                'barangay_id' => $barangay->id,
+                'name' => 'Single Point Road',
+                'layer_type' => 'infrastructure',
+                'feature_type' => $layer->code,
+                'latitude' => 15.8,
+                'longitude' => 120.4,
+                'status' => 'active',
+                'is_public' => '1',
+            ])
+            ->assertRedirect(route('admin.features.index', ['barangay_id' => $barangay->id]))
+            ->assertSessionHasErrors('geometry');
+
+        $this->assertDatabaseMissing('map_features', [
+            'name' => 'Single Point Road',
+        ]);
+    }
+
+    public function test_polyline_feature_can_be_saved_with_line_coordinates(): void
+    {
+        $staff = User::factory()->create();
+        Role::findOrCreate('staff', 'web');
+        $staff->assignRole('staff');
+
+        $barangay = Barangay::create(['name' => 'Alinggan']);
+        $layer = MapLayerType::create([
+            'name' => 'Road Network',
+            'code' => 'road_network',
+            'category' => 'infrastructure',
+            'icon' => 'fa-solid fa-route',
+            'color' => '#8b5cf6',
+            'geom_type' => 'polyline',
+            'is_public' => true,
+            'is_active' => true,
+        ]);
+
+        $this
+            ->actingAs($staff)
+            ->post(route('admin.features.store'), [
+                'barangay_id' => $barangay->id,
+                'name' => 'Valid Road Segment',
+                'layer_type' => 'infrastructure',
+                'feature_type' => $layer->code,
+                'coordinates' => json_encode([
+                    [15.8, 120.4],
+                    [15.81, 120.41],
+                ]),
+                'status' => 'active',
+                'is_public' => '1',
+            ])
+            ->assertRedirect(route('admin.features.index', ['barangay_id' => $barangay->id]));
+
+        $feature = MapFeature::where('name', 'Valid Road Segment')->firstOrFail();
+
+        $this->assertNull($feature->latitude);
+        $this->assertNull($feature->longitude);
+        $this->assertSame([[15.8, 120.4], [15.81, 120.41]], $feature->coordinates);
+    }
 }

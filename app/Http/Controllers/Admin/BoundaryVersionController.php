@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Barangay;
 use App\Models\BoundaryVersion;
 use App\Services\ActivityLogger;
+use App\Traits\RefreshesPostgisGeometry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class BoundaryVersionController extends Controller
 {
+    use RefreshesPostgisGeometry;
+
     public function restore(Request $request, Barangay $barangay, BoundaryVersion $boundaryVersion): RedirectResponse
     {
         abort_unless((int) $boundaryVersion->barangay_id === (int) $barangay->id, 404);
@@ -30,6 +33,8 @@ class BoundaryVersionController extends Controller
             'barangay_id' => $barangay->id,
             'barangay_name' => $barangay->name,
         ], $request);
+
+        $this->refreshPostgisGeometry('boundary_version.restored');
 
         return back()->with('success', "Restored {$barangay->name} boundary from version #{$boundaryVersion->id}.");
     }

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -22,7 +23,7 @@ class AuthenticationTest extends TestCase
     public function test_users_can_authenticate_using_the_login_screen(): void
     {
         Http::fake([
-            'https://testihris.bayambang.gov.ph/api/login' => Http::response([
+            $this->ihrisLoginUrl() => Http::response([
                 'user' => [
                     'name' => 'BDRRMC Admin',
                     'email' => 'admin@example.com',
@@ -45,7 +46,7 @@ class AuthenticationTest extends TestCase
     public function test_users_can_not_authenticate_with_invalid_password(): void
     {
         Http::fake([
-            'https://testihris.bayambang.gov.ph/api/login' => Http::response([], 401),
+            $this->ihrisLoginUrl() => Http::response([], 401),
         ]);
 
         $this->post('/login', [
@@ -56,10 +57,25 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_ihris_connection_timeout_does_not_crash_login(): void
+    {
+        Http::fake([
+            $this->ihrisLoginUrl() => fn () => throw new ConnectionException('Connection timed out.'),
+        ]);
+
+        $response = $this->post('/login', [
+            'email' => 'admin@example.com',
+            'password' => 'password',
+        ]);
+
+        $this->assertGuest();
+        $response->assertSessionHasErrors();
+    }
+
     public function test_non_bdrrmc_users_can_not_authenticate(): void
     {
         Http::fake([
-            'https://testihris.bayambang.gov.ph/api/login' => Http::response([
+            $this->ihrisLoginUrl() => Http::response([
                 'user' => [
                     'name' => 'Other Office User',
                     'email' => 'other@example.com',
@@ -82,7 +98,7 @@ class AuthenticationTest extends TestCase
         config(['services.ihris.admin_override_emails' => ['other@example.com']]);
 
         Http::fake([
-            'https://testihris.bayambang.gov.ph/api/login' => Http::response([
+            $this->ihrisLoginUrl() => Http::response([
                 'user' => [
                     'name' => 'Other Office User',
                     'email' => 'other@example.com',
@@ -115,7 +131,7 @@ class AuthenticationTest extends TestCase
         ]);
 
         Http::fake([
-            'https://testihris.bayambang.gov.ph/api/login' => Http::response([
+            $this->ihrisLoginUrl() => Http::response([
                 'user' => [
                     'name' => 'Jericho Villamor',
                     'email' => 'villamorjerichoivan@gmail.com',
@@ -150,7 +166,7 @@ class AuthenticationTest extends TestCase
         ])->assignRole('staff');
 
         Http::fake([
-            'https://testihris.bayambang.gov.ph/api/login' => Http::response([
+            $this->ihrisLoginUrl() => Http::response([
                 'user' => [
                     'name' => 'BDRRMC Staff',
                     'email' => 'staff@example.com',
@@ -181,7 +197,7 @@ class AuthenticationTest extends TestCase
         ]);
 
         Http::fake([
-            'https://testihris.bayambang.gov.ph/api/login' => Http::response([
+            $this->ihrisLoginUrl() => Http::response([
                 'user' => [
                     'name' => 'Deactivated User',
                     'email' => 'inactive@example.com',

@@ -73,6 +73,146 @@
         
         .map-panel { flex: 1; position: relative; }
         #map { height: 100%; width: 100%; background: #090d16; }
+        .measure-widget {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            z-index: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: var(--glass-blur);
+            box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28);
+        }
+        .measure-widget.is-active {
+            border-color: rgba(56, 189, 248, 0.45);
+            background: rgba(15, 23, 42, 0.96);
+            box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.14), 0 12px 30px rgba(0, 0, 0, 0.34);
+        }
+        .measure-action {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: rgba(30, 41, 59, 0.7);
+            color: var(--text-main);
+            min-height: 34px;
+            padding: 0 11px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+        .measure-action:disabled {
+            cursor: not-allowed;
+            opacity: 0.45;
+        }
+        .measure-action:hover,
+        .measure-action.active {
+            border-color: rgba(56, 189, 248, 0.45);
+            background: rgba(56, 189, 248, 0.16);
+            color: var(--accent-blue);
+        }
+        .measure-action.icon-only {
+            width: 34px;
+            padding: 0;
+        }
+        .measure-readout {
+            min-width: 118px;
+            color: var(--text-heading);
+            font-size: 12px;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+        }
+        .measure-hint {
+            color: var(--text-muted);
+            font-size: 10px;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+        .measure-point-label {
+            border: 1px solid rgba(56, 189, 248, 0.5);
+            background: rgba(15, 23, 42, 0.92);
+            color: #e0f2fe;
+            border-radius: 999px;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.24);
+        }
+        #map.measure-mode-active {
+            cursor: crosshair;
+        }
+        
+        /* Floating Basemap Switcher Widget */
+        .basemap-widget {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            z-index: 700;
+            display: flex;
+            gap: 8px;
+            padding: 6px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: var(--glass-blur);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        }
+        .basemap-option {
+            position: relative;
+            width: 72px;
+            height: 52px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            padding-bottom: 4px;
+        }
+        .basemap-option:hover {
+            border-color: rgba(56, 189, 248, 0.4);
+            transform: translateY(-2px);
+        }
+        .basemap-option.active {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+        }
+        .basemap-option span {
+            font-size: 9px;
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            z-index: 2;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .basemap-option::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(15, 23, 42, 0.85) 0%, rgba(15, 23, 42, 0.1) 80%);
+            z-index: 1;
+        }
+        .basemap-option.dark-style {
+            background: linear-gradient(135deg, #090d16 0%, #1e293b 100%);
+        }
+        .basemap-option.satellite-style {
+            background: linear-gradient(135deg, #134e4a 0%, #065f46 100%);
+        }
+        .basemap-option.roadmap-style {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        }
+        .basemap-option.terrain-style {
+            background: linear-gradient(135deg, #78350f 0%, #b45309 100%);
+        }
         
         .form-group { margin-bottom: 16px; }
         
@@ -260,6 +400,73 @@
             margin-bottom: 12px;
             line-height: 1.4;
         }
+        .draw-instruction-banner,
+        .geometry-summary {
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.34);
+            padding: 12px;
+            margin-bottom: 14px;
+        }
+        .draw-instruction-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            color: var(--accent-blue);
+            background: rgba(56, 189, 248, 0.08);
+            border-color: rgba(56, 189, 248, 0.24);
+            font-size: 12px;
+            line-height: 1.45;
+        }
+        .draw-instruction-banner i {
+            margin-top: 2px;
+        }
+        .geometry-summary {
+            display: none;
+        }
+        .geometry-summary.active {
+            display: block;
+        }
+        .geometry-summary-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .geometry-summary-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-heading);
+            font-weight: 800;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .geometry-summary-value {
+            color: var(--accent-blue);
+            font-size: 13px;
+            font-weight: 800;
+            line-height: 1.45;
+        }
+        .geometry-summary-actions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .geometry-raw {
+            display: none;
+            width: 100%;
+            min-height: 92px;
+            margin-top: 10px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 11px;
+        }
+        .geometry-raw.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -337,6 +544,34 @@
                 
                 <!-- JSON String container for road/zone boundaries -->
                 <input type="hidden" id="coordinates" name="coordinates">
+
+                <div id="draw-instruction-banner" class="draw-instruction-banner">
+                    <i class="fa-solid fa-location-dot"></i>
+                    <span>Select a feature type, then draw its location on the map.</span>
+                </div>
+
+                <div id="geometry-summary" class="geometry-summary">
+                    <div class="geometry-summary-header">
+                        <div class="geometry-summary-title">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>Geometry Captured</span>
+                        </div>
+                        <span class="badge" id="geometry-type-badge">Ready</span>
+                    </div>
+                    <div class="geometry-summary-value" id="geometry-summary-value">No geometry captured yet.</div>
+                    <textarea id="geometry-raw" class="geometry-raw" readonly></textarea>
+                    <div class="geometry-summary-actions">
+                        <button type="button" class="btn btn-secondary btn-mini" onclick="redrawGeometry()" title="Remove current shape and draw again">
+                            <i class="fa-solid fa-rotate-left"></i> Redraw
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-mini" onclick="toggleRawGeometry()" title="Show captured coordinates">
+                            <i class="fa-solid fa-code"></i> Coordinates
+                        </button>
+                        <button type="button" class="btn btn-danger btn-mini" onclick="clearCapturedGeometry()" title="Clear captured geometry">
+                            <i class="fa-solid fa-xmark"></i> Clear
+                        </button>
+                    </div>
+                </div>
 
                 <div class="grid-2">
                     <div class="form-group">
@@ -422,6 +657,42 @@
         
         <div class="map-panel">
             <div id="map"></div>
+            <div class="measure-widget" aria-label="Measurement tools">
+                <button type="button" id="measure-toggle" class="measure-action" onclick="toggleMeasureMode()" title="Measure distance">
+                    <i class="fa-solid fa-ruler"></i>
+                    <span>Measure</span>
+                </button>
+                <div>
+                    <div class="measure-readout" id="measure-distance">0 m</div>
+                    <div class="measure-hint" id="measure-hint">Click ruler, then click points</div>
+                </div>
+                <button type="button" id="measure-undo" class="measure-action icon-only" onclick="undoMeasurePoint()" title="Undo last point" disabled>
+                    <i class="fa-solid fa-rotate-left"></i>
+                </button>
+                <button type="button" class="measure-action icon-only" onclick="clearMeasure()" title="Clear measurement">
+                    <i class="fa-solid fa-eraser"></i>
+                </button>
+            </div>
+            
+            <!-- Basemap Selector Widget -->
+            <div class="basemap-widget" aria-label="Basemap selector">
+                <div class="basemap-option dark-style active" onclick="changeBasemap('dark', this)" title="Dark Theme">
+                    <i class="fa-solid fa-moon" style="font-size: 14px; color: #bae6fd; margin-bottom: 2px; z-index: 2; text-shadow: 0 0 8px rgba(56,189,248,0.4);"></i>
+                    <span>Dark</span>
+                </div>
+                <div class="basemap-option satellite-style" onclick="changeBasemap('satellite', this)" title="Satellite View">
+                    <i class="fa-solid fa-earth-asia" style="font-size: 14px; color: #a7f3d0; margin-bottom: 2px; z-index: 2; text-shadow: 0 0 8px rgba(16,185,129,0.4);"></i>
+                    <span>Satellite</span>
+                </div>
+                <div class="basemap-option roadmap-style" onclick="changeBasemap('roadmap', this)" title="Street View">
+                    <i class="fa-solid fa-map" style="font-size: 14px; color: #fed7aa; margin-bottom: 2px; z-index: 2; text-shadow: 0 0 8px rgba(245,158,11,0.4);"></i>
+                    <span>Roadmap</span>
+                </div>
+                <div class="basemap-option terrain-style" onclick="changeBasemap('terrain', this)" title="Terrain Map">
+                    <i class="fa-solid fa-mountain" style="font-size: 14px; color: #ddd6fe; margin-bottom: 2px; z-index: 2; text-shadow: 0 0 8px rgba(139,92,246,0.4);"></i>
+                    <span>Terrain</span>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -467,15 +738,58 @@
         
         const map = L.map('map', { maxZoom: 20 }).setView([centerLat, centerLng], 14);
 
-        // Premium Dark basemap matching dashboard style
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap &copy; CARTO',
-            maxZoom: 20,
-            maxNativeZoom: 20
-        }).addTo(map);
+        // Premium basemaps dictionary matching dashboard style
+        const basemaps = {
+            dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap &copy; CARTO',
+                maxZoom: 20,
+                maxNativeZoom: 20
+            }),
+            roadmap: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors',
+                maxZoom: 20,
+                maxNativeZoom: 19
+            }),
+            satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+                maxZoom: 20,
+                maxNativeZoom: 18
+            }),
+            terrain: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap (CC-BY-SA)',
+                maxZoom: 20,
+                maxNativeZoom: 17
+            })
+        };
+
+        let currentBasemap = 'dark';
+        basemaps[currentBasemap].addTo(map);
+
+        function changeBasemap(type, element) {
+            if (!basemaps[type]) return;
+
+            map.removeLayer(basemaps[currentBasemap]);
+            basemaps[type].addTo(map);
+            currentBasemap = type;
+
+            document.querySelectorAll('.basemap-option').forEach(opt => opt.classList.remove('active'));
+            if (element) {
+                element.classList.add('active');
+            } else {
+                const activeOpt = document.querySelector(`.basemap-option[onclick*="${type}"]`);
+                if (activeOpt) activeOpt.classList.add('active');
+            }
+        }
 
         const drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
+
+        const measureItems = L.layerGroup().addTo(map);
+        let measureMode = false;
+        let measurePoints = [];
+        let measurePointMarkers = [];
+        let measureLine = null;
+        let measurePreviewLine = null;
 
         // RENDER BARANGAY BOUNDARY IF EXISTS
         let mapBounds = [];
@@ -533,7 +847,7 @@
                         color: color,
                         weight: 4,
                         opacity: 0.8
-                    }).addTo(map).bindPopup(`<strong>${feat.name}</strong><br><span style="font-size: 11px; color:#94a3b8;">${config.name || 'Road Network'}</span>`);
+                    }).addTo(map).bindPopup(`<strong>${feat.name}</strong><br><span style="font-size: 11px; color:#94a3b8;">${config.name || 'Road Network'}</span><br><span style="font-size: 11px; color:#38bdf8;">Length: ${formatDistance(totalDistance(coords.map(coord => L.latLng(coord[0], coord[1]))))}</span>`);
                 } else if (feat.feature_type === 'population_density') {
                     L.polygon(coords, {
                         color: color,
@@ -547,7 +861,7 @@
                     const geomType = config.geom_type || 'polyline';
                     if (geomType === 'polyline') {
                         L.polyline(coords, { color: color, weight: 4, opacity: 0.8 })
-                            .addTo(map).bindPopup(`<strong>${feat.name}</strong><br><span style="font-size: 11px; color:#94a3b8;">${config.name}</span>`);
+                            .addTo(map).bindPopup(`<strong>${feat.name}</strong><br><span style="font-size: 11px; color:#94a3b8;">${config.name}</span><br><span style="font-size: 11px; color:#38bdf8;">Length: ${formatDistance(totalDistance(coords.map(coord => L.latLng(coord[0], coord[1]))))}</span>`);
                     } else {
                         L.polygon(coords, { color: color, fillColor: color, fillOpacity: 0.15, weight: 2 })
                             .addTo(map).bindPopup(`<strong>${feat.name}</strong><br><span style="font-size: 11px; color:#94a3b8;">${config.name}</span>`);
@@ -591,8 +905,307 @@
 
         let activeDrawLayer = null;
 
+        function formatDistance(meters) {
+            if (!Number.isFinite(meters) || meters <= 0) return '0 m';
+
+            if (meters >= 1000) {
+                return `${(meters / 1000).toLocaleString('en-US', {
+                    maximumFractionDigits: 2
+                })} km`;
+            }
+
+            return `${meters.toLocaleString('en-US', {
+                maximumFractionDigits: 1
+            })} m`;
+        }
+
+        function totalDistance(points) {
+            let distance = 0;
+
+            for (let index = 1; index < points.length; index++) {
+                distance += points[index - 1].distanceTo(points[index]);
+            }
+
+            return distance;
+        }
+
+        function approximatePolygonArea(points) {
+            if (!Array.isArray(points) || points.length < 3) return 0;
+
+            const earthRadius = 6378137;
+            const averageLatitude = points.reduce((sum, point) => sum + point.lat, 0) / points.length;
+            const cosLatitude = Math.cos(averageLatitude * Math.PI / 180);
+            const projected = points.map(point => ({
+                x: point.lng * Math.PI / 180 * earthRadius * cosLatitude,
+                y: point.lat * Math.PI / 180 * earthRadius
+            }));
+
+            let area = 0;
+            for (let index = 0; index < projected.length; index++) {
+                const next = (index + 1) % projected.length;
+                area += projected[index].x * projected[next].y;
+                area -= projected[index].y * projected[next].x;
+            }
+
+            return Math.abs(area) / 20000;
+        }
+
+        function formatArea(hectares) {
+            if (!Number.isFinite(hectares) || hectares <= 0) return '0 ha';
+
+            return `${hectares.toLocaleString('en-US', {
+                maximumFractionDigits: 2
+            })} ha`;
+        }
+
+        function updateGeometrySummary(type, coords = []) {
+            const panel = document.getElementById('geometry-summary');
+            const value = document.getElementById('geometry-summary-value');
+            const badge = document.getElementById('geometry-type-badge');
+            const raw = document.getElementById('geometry-raw');
+
+            if (!panel || !value || !badge || !raw) return;
+
+            panel.classList.add('active');
+
+            if (type === 'marker') {
+                const lat = document.getElementById('latitude').value;
+                const lng = document.getElementById('longitude').value;
+                badge.innerText = 'Point';
+                value.innerText = `Point captured: ${lat}, ${lng}`;
+                raw.value = JSON.stringify({ latitude: lat, longitude: lng }, null, 2);
+                return;
+            }
+
+            const points = coords.map(coord => L.latLng(coord[0], coord[1]));
+
+            if (type === 'polyline') {
+                badge.innerText = 'Line';
+                value.innerText = `Line captured: ${coords.length} points • ${formatDistance(totalDistance(points))}`;
+                raw.value = JSON.stringify(coords, null, 2);
+                return;
+            }
+
+            badge.innerText = 'Area';
+            value.innerText = `Area captured: ${coords.length} points • ${formatArea(approximatePolygonArea(points))} approx.`;
+            raw.value = JSON.stringify(coords, null, 2);
+        }
+
+        function resetGeometrySummary() {
+            const panel = document.getElementById('geometry-summary');
+            const raw = document.getElementById('geometry-raw');
+
+            if (panel) panel.classList.remove('active');
+            if (raw) {
+                raw.classList.remove('active');
+                raw.value = '';
+            }
+        }
+
+        function clearCapturedGeometry() {
+            if (activeDrawLayer) {
+                drawnItems.removeLayer(activeDrawLayer);
+                activeDrawLayer = null;
+            }
+
+            document.getElementById('latitude').value = '';
+            document.getElementById('longitude').value = '';
+            document.getElementById('coordinates').value = '';
+            resetGeometrySummary();
+
+            const selectedType = document.getElementById('feature_type').value;
+            if (selectedType) handleFeatureTypeChange(selectedType);
+        }
+
+        function redrawGeometry() {
+            clearCapturedGeometry();
+        }
+
+        function toggleRawGeometry() {
+            const raw = document.getElementById('geometry-raw');
+            if (raw) raw.classList.toggle('active');
+        }
+
+        function updateMeasureReadout(extraPoint = null) {
+            const points = extraPoint ? [...measurePoints, extraPoint] : measurePoints;
+            const distance = totalDistance(points);
+            const distanceEl = document.getElementById('measure-distance');
+            const hintEl = document.getElementById('measure-hint');
+            const undoBtn = document.getElementById('measure-undo');
+
+            if (distanceEl) distanceEl.innerText = formatDistance(distance);
+            if (hintEl) {
+                hintEl.innerText = measureMode
+                    ? (measurePoints.length ? 'Click next point, Esc to clear' : 'Click first point on map')
+                    : 'Click ruler, then click points';
+            }
+            if (undoBtn) undoBtn.disabled = measurePoints.length === 0;
+        }
+
+        function setMeasureMode(active) {
+            measureMode = active;
+            const btn = document.getElementById('measure-toggle');
+            const widget = document.querySelector('.measure-widget');
+            const mapEl = document.getElementById('map');
+            const buttonLabel = btn ? btn.querySelector('span') : null;
+
+            if (btn) btn.classList.toggle('active', measureMode);
+            if (widget) widget.classList.toggle('is-active', measureMode);
+            if (buttonLabel) buttonLabel.innerText = measureMode ? 'Measuring' : 'Measure';
+            if (mapEl) mapEl.classList.toggle('measure-mode-active', measureMode);
+            if (measureMode) {
+                map.doubleClickZoom.disable();
+            } else {
+                map.doubleClickZoom.enable();
+                if (measurePreviewLine) {
+                    measureItems.removeLayer(measurePreviewLine);
+                    measurePreviewLine = null;
+                }
+            }
+
+            updateMeasureReadout();
+        }
+
+        function toggleMeasureMode() {
+            setMeasureMode(!measureMode);
+        }
+
+        function clearMeasure() {
+            measureItems.clearLayers();
+            measurePoints = [];
+            measurePointMarkers = [];
+            measureLine = null;
+            measurePreviewLine = null;
+            setMeasureMode(false);
+            updateMeasureReadout();
+        }
+
+        function createMeasureMarker(latlng, pointNumber) {
+            return L.circleMarker(latlng, {
+                radius: 5,
+                color: '#0f172a',
+                weight: 2,
+                fillColor: '#38bdf8',
+                fillOpacity: 1
+            }).bindTooltip(String(pointNumber), {
+                permanent: true,
+                direction: 'center',
+                className: 'measure-point-label'
+            });
+        }
+
+        function redrawMeasureGeometry() {
+            measurePointMarkers.forEach(marker => measureItems.removeLayer(marker));
+            measurePointMarkers = measurePoints.map((point, index) => createMeasureMarker(point, index + 1));
+            measurePointMarkers.forEach(marker => measureItems.addLayer(marker));
+
+            if (measurePoints.length === 0) {
+                if (measureLine) {
+                    measureItems.removeLayer(measureLine);
+                    measureLine = null;
+                }
+            } else if (!measureLine) {
+                measureLine = L.polyline(measurePoints, {
+                    color: '#38bdf8',
+                    weight: 3,
+                    opacity: 0.95
+                });
+                measureItems.addLayer(measureLine);
+            } else {
+                measureLine.setLatLngs(measurePoints);
+            }
+
+            if (measurePreviewLine) {
+                measureItems.removeLayer(measurePreviewLine);
+                measurePreviewLine = null;
+            }
+
+            updateMeasureReadout();
+        }
+
+        function addMeasurePoint(latlng) {
+            measurePoints.push(latlng);
+            redrawMeasureGeometry();
+        }
+
+        function undoMeasurePoint() {
+            if (measurePoints.length === 0) return;
+
+            measurePoints.pop();
+            redrawMeasureGeometry();
+
+            if (!measureMode) setMeasureMode(true);
+        }
+
+        function isMeasureIgnoredTarget(target) {
+            if (!target || typeof target.closest !== 'function') return false;
+
+            return target.closest('.leaflet-control')
+                || target.closest('.leaflet-popup')
+                || target.closest('.leaflet-tooltip');
+        }
+
+        function measureLatLngFromDomEvent(event) {
+            return map.containerPointToLatLng(map.mouseEventToContainerPoint(event));
+        }
+
+        const mapContainer = map.getContainer();
+
+        mapContainer.addEventListener('click', function(event) {
+            if (!measureMode || isMeasureIgnoredTarget(event.target)) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+            addMeasurePoint(measureLatLngFromDomEvent(event));
+        }, true);
+
+        mapContainer.addEventListener('mousemove', function(event) {
+            if (!measureMode || measurePoints.length === 0 || isMeasureIgnoredTarget(event.target)) return;
+
+            const previewLatLng = measureLatLngFromDomEvent(event);
+            const previewPoints = [measurePoints[measurePoints.length - 1], previewLatLng];
+
+            if (!measurePreviewLine) {
+                measurePreviewLine = L.polyline(previewPoints, {
+                    color: '#38bdf8',
+                    weight: 2,
+                    opacity: 0.45,
+                    dashArray: '5, 5'
+                });
+                measureItems.addLayer(measurePreviewLine);
+            } else {
+                measurePreviewLine.setLatLngs(previewPoints);
+            }
+
+            updateMeasureReadout(previewLatLng);
+        }, true);
+
+        map.on('dblclick', function() {
+            if (measureMode) setMeasureMode(false);
+        });
+
+        map.on(L.Draw.Event.DRAWSTART, function() {
+            setMeasureMode(false);
+        });
+
+        document.addEventListener('keydown', function(event) {
+            if (!measureMode && measurePoints.length === 0) return;
+
+            if (event.key === 'Backspace' || (event.ctrlKey && event.key.toLowerCase() === 'z')) {
+                event.preventDefault();
+                undoMeasurePoint();
+            }
+
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                clearMeasure();
+            }
+        });
+
         // ON DRAW EVENT
         map.on(L.Draw.Event.CREATED, function (event) {
+            setMeasureMode(false);
+
             if (activeDrawLayer) drawnItems.removeLayer(activeDrawLayer);
             
             activeDrawLayer = event.layer;
@@ -605,18 +1218,21 @@
                 document.getElementById('latitude').value = latlng.lat.toFixed(7);
                 document.getElementById('longitude').value = latlng.lng.toFixed(7);
                 document.getElementById('coordinates').value = '';
+                updateGeometrySummary(type);
             } else if (type === 'polyline') {
                 const latlngs = activeDrawLayer.getLatLngs();
                 const coords = latlngs.map(ll => [ll.lat, ll.lng]);
                 document.getElementById('coordinates').value = JSON.stringify(coords);
                 document.getElementById('latitude').value = '';
                 document.getElementById('longitude').value = '';
+                updateGeometrySummary(type, coords);
             } else if (type === 'polygon') {
                 const latlngs = activeDrawLayer.getLatLngs()[0];
                 const coords = latlngs.map(ll => [ll.lat, ll.lng]);
                 document.getElementById('coordinates').value = JSON.stringify(coords);
                 document.getElementById('latitude').value = '';
                 document.getElementById('longitude').value = '';
+                updateGeometrySummary(type, coords);
             }
 
             // Update Draw Guide Banner to Success Green instantly!
@@ -676,7 +1292,102 @@
             }
         }
 
-        // DYNAMIC METADATA UI FIELDS DEPENDING ON TYPE
+        function escapeHtml(value) {
+            const div = document.createElement('div');
+            div.textContent = value ?? '';
+            return div.innerHTML;
+        }
+
+        function metadataSchemaFor(config) {
+            if (Array.isArray(config.metadata_schema) && config.metadata_schema.length > 0) {
+                return config.metadata_schema;
+            }
+
+            return [
+                {
+                    key: 'status',
+                    label: 'Status',
+                    type: 'select',
+                    options: ['Operational', 'Needs Maintenance', 'Inactive']
+                },
+                {
+                    key: 'description',
+                    label: config.geom_type === 'polyline' ? 'Line Details' : (config.geom_type === 'polygon' ? 'Area Details' : 'Asset Details'),
+                    type: 'textarea',
+                    placeholder: 'Notes, condition, capacity, or other official details'
+                }
+            ];
+        }
+
+        function metadataInputHtml(field) {
+            const key = escapeHtml(field.key);
+            const label = escapeHtml(field.label || field.key);
+            const placeholder = escapeHtml(field.placeholder || '');
+            const required = field.required ? 'required' : '';
+            const requiredMark = field.required ? ' *' : '';
+
+            if (field.type === 'select') {
+                const options = Array.isArray(field.options) ? field.options : [];
+                return `
+                    <div class="form-group">
+                        <label>${label}${requiredMark}</label>
+                        <select name="metadata[${key}]" ${required}>
+                            ${options.map(option => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+            }
+
+            if (field.type === 'textarea') {
+                return `
+                    <div class="form-group">
+                        <label>${label}${requiredMark}</label>
+                        <textarea name="metadata[${key}]" rows="3" placeholder="${placeholder}" ${required}></textarea>
+                    </div>
+                `;
+            }
+
+            if (field.type === 'boolean') {
+                return `
+                    <div class="form-group">
+                        <label style="display:flex; align-items:center; gap:8px; text-transform:none; letter-spacing:0;">
+                            <input type="hidden" name="metadata[${key}]" value="0">
+                            <input type="checkbox" name="metadata[${key}]" value="1" style="width:auto;">
+                            ${label}${requiredMark}
+                        </label>
+                    </div>
+                `;
+            }
+
+            const inputType = field.type === 'number' ? 'number' : (field.type === 'date' ? 'date' : 'text');
+            const step = field.type === 'number' ? ' step="any"' : '';
+
+            return `
+                <div class="form-group">
+                    <label>${label}${requiredMark}</label>
+                    <input type="${inputType}" name="metadata[${key}]" placeholder="${placeholder}" ${step} ${required}>
+                </div>
+            `;
+        }
+
+        function renderMetadataFields(config) {
+            const schema = metadataSchemaFor(config);
+            const rows = [];
+
+            for (let i = 0; i < schema.length; i += 2) {
+                const first = metadataInputHtml(schema[i]);
+                const second = schema[i + 1] ? metadataInputHtml(schema[i + 1]) : '';
+                rows.push(second ? `<div class="grid-2">${first}${second}</div>` : first);
+            }
+
+            const description = config.description
+                ? `<div class="section-desc">${escapeHtml(config.description)}</div>`
+                : '<div class="section-desc"><strong>Standard Metadata Fields:</strong> These fields are controlled by the selected layer type.</div>';
+
+            return `${description}${rows.join('')}`;
+        }
+
+        // DYNAMIC METADATA UI FIELDS DEPENDING ON LAYER TYPE SCHEMA
         function handleFeatureTypeChange(type) {
             const container = document.getElementById('metadata-fields');
             container.innerHTML = '';
@@ -698,193 +1409,17 @@
                 
                 if (geomType === 'point') {
                     icon.className = 'fa-solid fa-location-dot';
-                    span.innerHTML = `Use the <strong>Marker tool</strong> (Pin icon 📍 in upper right of map) and click on the map to set the <strong>${config.name}</strong> location.`;
+                    span.innerHTML = `Use the <strong>Marker tool</strong> (pin icon on the map toolbar) and click on the map to set the <strong>${config.name}</strong> location.`;
                 } else if (geomType === 'polyline') {
                     icon.className = 'fa-solid fa-route';
-                    span.innerHTML = `Use the <strong>Line tool</strong> (diagonal line icon 🛣️ in upper right) to draw the <strong>${config.name}</strong> road/route.`;
+                    span.innerHTML = `Use the <strong>Line tool</strong> (diagonal line icon on the map toolbar) to draw the <strong>${config.name}</strong> road/route.`;
                 } else if (geomType === 'polygon') {
                     icon.className = 'fa-solid fa-draw-polygon';
-                    span.innerHTML = `Use the <strong>Polygon tool</strong> (pentagon icon ⬡ in upper right) to draw the <strong>${config.name}</strong> boundary/area.`;
+                    span.innerHTML = `Use the <strong>Polygon tool</strong> (pentagon icon on the map toolbar) to draw the <strong>${config.name}</strong> boundary/area.`;
                 }
             }
 
-            let html = '';
-
-            if (type === 'barangay_hall') {
-                html = `
-                    <div class="section-desc"><strong>Critical Facility Details:</strong></div>
-                    <div class="form-group">
-                        <label>Brgy. Captain / Official Name</label>
-                        <input type="text" name="metadata[official]" placeholder="e.g. Capt. Juan Ramos">
-                    </div>
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>Status</label>
-                            <select name="metadata[status]">
-                                <option value="Operational">Operational</option>
-                                <option value="Under Maintenance">Under Maintenance</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Contact No.</label>
-                            <input type="text" name="metadata[contact]" placeholder="09XX-XXX-XXXX">
-                        </div>
-                    </div>
-                `;
-            } else if (type === 'health_center') {
-                html = `
-                    <div class="section-desc"><strong>Health Care Details:</strong></div>
-                    <div class="form-group">
-                        <label>Nurse / Midwife Name</label>
-                        <input type="text" name="metadata[nurse]" placeholder="e.g. Maria Santos, RN">
-                    </div>
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>Operating Hours</label>
-                            <input type="text" name="metadata[hours]" placeholder="8:00 AM - 5:00 PM">
-                        </div>
-                        <div class="form-group">
-                            <label>Status</label>
-                            <select name="metadata[status]">
-                                <option value="Operational">Operational</option>
-                                <option value="Closed">Closed</option>
-                            </select>
-                        </div>
-                    </div>
-                `;
-            } else if (type === 'multipurpose_bldg' || type === 'covered_court') {
-                html = `
-                    <div class="section-desc"><strong>Assembly Details:</strong></div>
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>Holding Capacity</label>
-                            <input type="text" name="metadata[capacity]" placeholder="e.g. 200 persons">
-                        </div>
-                        <div class="form-group">
-                            <label>Evacuation Ready?</label>
-                            <select name="metadata[evac_ready]">
-                                <option value="Yes">Yes</option>
-                                <option value="No">No</option>
-                            </select>
-                        </div>
-                    </div>
-                `;
-            } else if (type === 'police_post') {
-                html = `
-                    <div class="section-desc"><strong>Tanod Outpost Details:</strong></div>
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>Active Officers on Duty</label>
-                            <input type="text" name="metadata[on_duty]" placeholder="e.g. 2 officers">
-                        </div>
-                        <div class="form-group">
-                            <label>Emergency Contact</label>
-                            <input type="text" name="metadata[contact]" placeholder="e.g. Hotline 911">
-                        </div>
-                    </div>
-                `;
-            } else if (type === 'bert_member') {
-                html = `
-                    <div class="section-desc"><strong>BERT Responder Info:</strong></div>
-                    <div class="form-group">
-                        <label>Responder Role</label>
-                        <input type="text" name="metadata[role]" placeholder="e.g. Team Leader, First Aider">
-                    </div>
-                    <div class="form-group">
-                        <label>Special Skills</label>
-                        <input type="text" name="metadata[skills]" placeholder="e.g. Flood Rescue, First Aid, CPR">
-                    </div>
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>Contact Number</label>
-                            <input type="text" name="metadata[phone]" placeholder="09XX-XXX-XXXX">
-                        </div>
-                        <div class="form-group">
-                            <label>Deployment Status</label>
-                            <select name="metadata[status]">
-                                <option value="Active">Active Responder</option>
-                                <option value="Inactive">On Leave / Inactive</option>
-                            </select>
-                        </div>
-                    </div>
-                `;
-            } else if (type === 'road_network') {
-                html = `
-                    <div class="section-desc"><strong>Infrastructure Details:</strong></div>
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>Road Type</label>
-                            <input type="text" name="metadata[type]" placeholder="e.g. Concrete Highway">
-                        </div>
-                        <div class="form-group">
-                            <label>Condition</label>
-                            <select name="metadata[status]">
-                                <option value="Good Condition">Good Condition</option>
-                                <option value="Needs Maintenance">Needs Maintenance</option>
-                                <option value="Damaged / Closed">Damaged / Closed</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>Average Width</label>
-                            <input type="text" name="metadata[width]" placeholder="e.g. 6.0 meters">
-                        </div>
-                        <div class="form-group">
-                            <label>Length</label>
-                            <input type="text" name="metadata[length]" placeholder="e.g. 1.2 km">
-                        </div>
-                    </div>
-                `;
-            } else if (type === 'population_density') {
-                html = `
-                    <div class="section-desc"><strong>Zone Details:</strong></div>
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>Density Level</label>
-                            <select name="metadata[density_level]">
-                                <option value="High">High Density</option>
-                                <option value="Medium">Medium Density</option>
-                                <option value="Low">Low Density</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Est. Households</label>
-                            <input type="text" name="metadata[est_households]" placeholder="e.g. 150 households">
-                        </div>
-                    </div>
-                `;
-            } else if (type === 'household_distribution') {
-                html = `
-                    <div class="section-desc"><strong>Household Details:</strong></div>
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>Household No.</label>
-                            <input type="text" name="metadata[house_no]" placeholder="e.g. 104">
-                        </div>
-                        <div class="form-group">
-                            <label>Household Head</label>
-                            <input type="text" name="metadata[head]" placeholder="e.g. Juan Dela Cruz">
-                        </div>
-                    </div>
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>Family Members Count</label>
-                            <input type="number" name="metadata[members]" placeholder="e.g. 5">
-                        </div>
-                        <div class="form-group">
-                            <label>Flood/Landslide Risk</label>
-                            <select name="metadata[hazard_risk]">
-                                <option value="Low">Low Risk</option>
-                                <option value="Moderate">Moderate Risk</option>
-                                <option value="High">High Risk</option>
-                            </select>
-                        </div>
-                    </div>
-                `;
-            }
-
-            container.innerHTML = html;
+            container.innerHTML = renderMetadataFields(config);
         }
 
         // MODAL OPEN/CLOSE FUNCTIONS

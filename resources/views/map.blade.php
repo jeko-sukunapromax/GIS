@@ -148,14 +148,22 @@
             border: 0;
         }
 
-        .layer-feature-dot {
-            display: block;
-            width: 16px;
-            height: 16px;
+        .layer-feature-pin {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
             border: 2px solid rgba(255, 255, 255, 0.92);
             border-radius: 999px;
             background: var(--marker-color, #38bdf8);
+            color: #ffffff;
             box-shadow: 0 0 0 2px rgba(7, 17, 31, 0.86), 0 8px 18px rgba(0, 0, 0, 0.35);
+        }
+
+        .layer-feature-pin i {
+            font-size: 12px;
+            line-height: 1;
         }
 
         .sidebar-resize-handle {
@@ -244,6 +252,16 @@
                 <div id="barangayPanel" class="flex flex-col overflow-hidden">
                     <div class="font-orbitron text-[14px] font-bold text-cyber-primary tracking-[3px] mb-4 flex items-center gap-2.5 before:content-[''] before:block before:h-px before:bg-cyber-primary before:flex-1 before:opacity-50 after:content-[''] after:block after:h-px after:bg-cyber-primary after:flex-1 after:opacity-50">BARANGAYS</div>
                     
+                    <!-- View Switcher -->
+                    <div class="grid grid-cols-2 gap-2 mb-4">
+                        <button onclick="switchView('all')" id="viewAllBtn" class="font-orbitron text-[10px] tracking-[2px] py-1.5 border border-cyber-primary bg-cyber-primary/15 text-white transition-all duration-300 shadow-[0_0_8px_rgba(0,153,255,0.3)]">
+                            ALL BARANGAYS
+                        </button>
+                        <button onclick="switchView('district')" id="viewDistrictBtn" class="font-orbitron text-[10px] tracking-[2px] py-1.5 border border-cyber-primary/20 bg-transparent text-cyber-muted hover:text-cyber-primary hover:border-cyber-primary/50 transition-all duration-300">
+                            BY DISTRICT
+                        </button>
+                    </div>
+
                     <div class="bg-cyber-dark/60 border border-cyber-primary/20 px-4 py-2.5 flex items-center gap-2.5 mb-4">
                         <input type="text" id="searchInput" placeholder="SEARCH BARANGAY..." onkeyup="filterBarangays()" class="bg-transparent border-none text-cyber-primary font-rajdhani text-[14px] w-full outline-none placeholder-cyber-primary/30 placeholder:tracking-[1px]">
                         <i class="fa-solid fa-magnifying-glass text-cyber-primary text-[12px]"></i>
@@ -251,9 +269,14 @@
 
                     <div class="text-[11px] text-cyber-muted mb-4 tracking-[1px] flex gap-1.5 justify-between items-center">
                         <span class="text-cyber-primary">BAYAMBANG</span>
-                        <button onclick="selectAllBarangays()" id="selectAllBtn" class="font-orbitron text-[9px] text-cyber-primary px-2 py-1 border border-cyber-primary/30 transition-all duration-300 hover:bg-cyber-primary/10 hover:shadow-[0_0_10px_rgba(0,153,255,0.4)] tracking-[1px]">
-                            <i class="fa-solid fa-layer-group mr-1"></i> SELECT ALL
-                        </button>
+                        <div class="flex gap-1.5">
+                            <button onclick="toggleMultiSelectMode()" id="multiSelectBtn" class="font-orbitron text-[9px] text-cyber-muted px-2 py-1 border border-cyber-primary/20 transition-all duration-300 hover:bg-cyber-primary/10 hover:text-cyber-primary tracking-[1px]">
+                                <i class="fa-solid fa-object-ungroup mr-1"></i> MULTI
+                            </button>
+                            <button onclick="selectAllBarangays()" id="selectAllBtn" class="font-orbitron text-[9px] text-cyber-primary px-2 py-1 border border-cyber-primary/30 transition-all duration-300 hover:bg-cyber-primary/10 hover:shadow-[0_0_10px_rgba(0,153,255,0.4)] tracking-[1px]">
+                                <i class="fa-solid fa-layer-group mr-1"></i> SELECT ALL
+                            </button>
+                        </div>
                     </div>
 
                     <div class="flex-1 overflow-y-auto flex flex-col gap-0.5 pr-2.5 scrollbar-cyber" id="barangayList">
@@ -304,11 +327,82 @@
         let layerGroups = {};
         let activeLayerTypes = new Set();
         let selectedFallbackMarkers = null;
+        let currentView = 'all'; // 'all' or 'district'
+        let expandedDistricts = new Set();
+        let multiSelectMode = false;
 
         function escapeHtml(value) {
             const div = document.createElement('div');
             div.textContent = value ?? '';
             return div.innerHTML;
+        }
+
+        function metadataLabel(key) {
+            return String(key || '')
+                .replace(/_/g, ' ')
+                .replace(/\b\w/g, letter => letter.toUpperCase());
+        }
+
+        function collectMetadataRows(metadata) {
+            const rows = [];
+
+            Object.entries(metadata || {}).forEach(([key, value]) => {
+                if (value === null || value === undefined || value === '') return;
+
+                if (key === 'import_properties' && value && typeof value === 'object' && !Array.isArray(value)) {
+                    Object.entries(value).forEach(([importKey, importValue]) => {
+                        if (importValue === null || importValue === undefined || importValue === '') return;
+                        rows.push([importKey, importValue]);
+                    });
+                    return;
+                }
+
+                rows.push([key, value]);
+            });
+
+            return rows;
+        }
+
+        function metadataValue(value) {
+            if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+            if (typeof value === 'object') return JSON.stringify(value);
+            return String(value);
+        }
+
+        function featureMetadataHtml(metadata) {
+            return collectMetadataRows(metadata)
+                .slice(0, 8)
+                .map(([key, value]) => `
+                    <div style="display:flex; justify-content:space-between; gap:10px; font-size:11px; margin-top:4px;">
+                        <span style="color:#94a3b8;">${escapeHtml(metadataLabel(key))}</span>
+                        <strong style="text-align:right; max-width:170px; overflow-wrap:anywhere;">${escapeHtml(metadataValue(value))}</strong>
+                    </div>
+                `)
+                .join('');
+        }
+
+        function numericValue(value) {
+            if (value === null || value === undefined || value === '') return null;
+
+            const parsed = parseFloat(String(value).replace(/,/g, ''));
+            return Number.isFinite(parsed) ? parsed : null;
+        }
+
+        function formatHectares(value, zeroAsUnavailable = true) {
+            const area = numericValue(value);
+            if (area === null) return 'N/A';
+            if (area === 0 && zeroAsUnavailable) return 'N/A';
+
+            return `${area.toLocaleString('en-US', {
+                maximumFractionDigits: 2
+            })} ha`;
+        }
+
+        function formatPopulation(value) {
+            const population = numericValue(value);
+            if (population === null) return 'N/A';
+
+            return Math.round(population).toLocaleString('en-US');
         }
 
         function isMunicipalBoundary(brgy) {
@@ -347,6 +441,7 @@
             // Using Esri World Imagery (Satellite) for the basemap
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 maxZoom: 19,
+                maxNativeZoom: 18,
                 attribution: 'Tiles &copy; Esri'
             }).addTo(map);
 
@@ -498,26 +593,24 @@
                         const coords = typeof feature.coordinates === 'string'
                             ? JSON.parse(feature.coordinates)
                             : feature.coordinates;
-                        const metadata = feature.metadata || {};
-                        const metadataHtml = Object.entries(metadata)
-                            .slice(0, 6)
-                            .map(([key, value]) => `<div style="display:flex; justify-content:space-between; gap:10px; font-size:11px; margin-top:4px;"><span style="color:#94a3b8;">${key.replaceAll('_', ' ')}</span><strong>${value}</strong></div>`)
-                            .join('');
+                        const metadataHtml = featureMetadataHtml(feature.metadata || {});
                         const popup = `
                             <div style="min-width:180px;">
-                                <strong style="color:${layerType.color};">${feature.name}</strong>
-                                <div style="font-size:11px; color:#94a3b8; margin-top:2px;">${layerType.name}</div>
+                                <strong style="color:${layerType.color};">${escapeHtml(feature.name)}</strong>
+                                <div style="font-size:11px; color:#94a3b8; margin-top:2px;">${escapeHtml(layerType.name)}</div>
                                 ${metadataHtml ? `<div style="margin-top:8px;">${metadataHtml}</div>` : ''}
                             </div>
                         `;
 
                         if (layerType.geom_type === 'point' && feature.latitude && feature.longitude) {
+                            const markerColor = layerType.color || '#38bdf8';
+                            const markerIcon = layerType.icon || 'fa-solid fa-location-dot';
                             const marker = L.marker([feature.latitude, feature.longitude], {
                                 icon: L.divIcon({
-                                    html: `<span class="layer-feature-dot" style="--marker-color: ${layerType.color};"></span>`,
+                                    html: `<span class="layer-feature-pin" style="--marker-color: ${escapeHtml(markerColor)};"><i class="${escapeHtml(markerIcon)}"></i></span>`,
                                     className: 'layer-feature-marker',
-                                    iconSize: [18, 18],
-                                    iconAnchor: [9, 9]
+                                    iconSize: [30, 30],
+                                    iconAnchor: [15, 15]
                                 })
                             });
                             marker.bindPopup(popup);
@@ -605,28 +698,132 @@
 
             const filteredList = list.filter(b => !isMunicipalBoundary(b));
 
-            filteredList.forEach((brgy, index) => {
-                // Pad index with leading zero
-                const num = String(index + 1).padStart(2, '0');
-                
-                const div = document.createElement('div');
-                // Added "group" class for targeting child elements on hover, and active states
-                div.className = `brgy-item px-4 py-2.5 text-[13px] font-semibold text-cyber-text tracking-[1px] cursor-pointer transition-all duration-200 flex justify-between items-center border-l-2 border-transparent uppercase hover:bg-gradient-to-r hover:from-cyber-primary/10 hover:to-transparent hover:border-cyber-primary hover:text-white hover:drop-shadow-[0_0_5px_#0099ff] group`;
-                div.id = `brgy-item-${brgy.id}`;
-                div.onclick = () => selectBarangay(brgy.id);
-                
-                div.innerHTML = `
-                    <div class="flex items-center">
-                        <span class="font-orbitron text-[9px] text-cyber-primary/30 mr-2.5 group-hover:text-cyber-primary transition-colors" id="brgy-num-${brgy.id}">${num}</span>
-                        <span>${brgy.name}</span>
-                    </div>
-                    <i class="fa-solid fa-chevron-right text-[10px] opacity-0 transition duration-200 text-cyber-primary group-hover:opacity-100" id="brgy-icon-${brgy.id}"></i>
-                `;
-                
-                container.appendChild(div);
-            });
+            if (currentView === 'all') {
+                filteredList.forEach((brgy, index) => {
+                    const num = String(index + 1).padStart(2, '0');
+                    const div = document.createElement('div');
+                    div.className = `brgy-item px-4 py-2.5 text-[13px] font-semibold text-cyber-text tracking-[1px] cursor-pointer transition-all duration-200 flex justify-between items-center border-l-2 border-transparent uppercase hover:bg-gradient-to-r hover:from-cyber-primary/10 hover:to-transparent hover:border-cyber-primary hover:text-white hover:drop-shadow-[0_0_5px_#0099ff] group`;
+                    div.id = `brgy-item-${brgy.id}`;
+                    div.onclick = () => selectBarangay(brgy.id);
+                    
+                    div.innerHTML = `
+                        <div class="flex items-center">
+                            <span class="font-orbitron text-[9px] text-cyber-primary/30 mr-2.5 group-hover:text-cyber-primary transition-colors" id="brgy-num-${brgy.id}">${num}</span>
+                            <span>${brgy.name}</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-[10px] opacity-0 transition duration-200 text-cyber-primary group-hover:opacity-100" id="brgy-icon-${brgy.id}"></i>
+                    `;
+                    container.appendChild(div);
+                });
+            } else {
+                // Group by district
+                const districts = {};
+                filteredList.forEach(b => {
+                    const dist = b.district || 'Unassigned';
+                    districts[dist] = districts[dist] || [];
+                    districts[dist].push(b);
+                });
+
+                // Sort districts (District 1 to District 9)
+                const sortedDistrictNames = Object.keys(districts).sort((a, b) => {
+                    const numA = parseInt(a.replace(/^\D+/g, '')) || 999;
+                    const numB = parseInt(b.replace(/^\D+/g, '')) || 999;
+                    return numA - numB;
+                });
+
+                const query = document.getElementById('searchInput').value.trim();
+
+                sortedDistrictNames.forEach(distName => {
+                    const brgys = districts[distName];
+                    if (brgys.length === 0) return;
+
+                    const isExpanded = expandedDistricts.has(distName) || query.length > 0;
+                    const cleanDistNameId = distName.replace(/\s+/g, '-');
+
+                    const districtDiv = document.createElement('div');
+                    districtDiv.className = 'mb-1.5 flex flex-col';
+
+                    const header = document.createElement('div');
+                    header.className = `district-header flex items-center justify-between px-3 py-2 bg-cyber-dark/45 border border-cyber-primary/20 hover:border-cyber-primary/45 transition-colors cursor-pointer text-[12px] font-bold text-cyber-primary font-orbitron uppercase`;
+                    header.onclick = () => toggleDistrict(distName);
+
+                    const arrowClass = isExpanded ? 'fa-chevron-down' : 'fa-chevron-right';
+                    header.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid ${arrowClass} text-[10px] text-cyber-primary transition-transform duration-200" id="district-arrow-${cleanDistNameId}"></i>
+                            <span>${distName}</span>
+                        </div>
+                        <span class="text-[10px] text-cyber-muted font-normal font-sans">${brgys.length} brgys</span>
+                    `;
+
+                    const contentDiv = document.createElement('div');
+                    contentDiv.id = `district-content-${cleanDistNameId}`;
+                    contentDiv.className = `district-content flex flex-col gap-0.5 mt-0.5 pl-2 transition-all duration-200 ${isExpanded ? '' : 'hidden'}`;
+
+                    brgys.forEach(brgy => {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = `brgy-item px-3 py-2 text-[12px] font-semibold text-cyber-text tracking-[0.5px] cursor-pointer transition-all duration-200 flex flex-col border-l-2 border-transparent uppercase hover:bg-gradient-to-r hover:from-cyber-primary/10 hover:to-transparent hover:border-cyber-primary hover:text-white hover:drop-shadow-[0_0_5px_#0099ff] group`;
+                        itemDiv.id = `brgy-item-${brgy.id}`;
+                        itemDiv.onclick = (e) => {
+                            e.stopPropagation();
+                            selectBarangay(brgy.id);
+                        };
+
+                        itemDiv.innerHTML = `
+                            <div class="flex justify-between items-center w-full">
+                                <span>${brgy.name}</span>
+                                <i class="fa-solid fa-chevron-right text-[9px] opacity-0 group-hover:opacity-100 transition duration-200 text-cyber-primary" id="brgy-icon-${brgy.id}"></i>
+                            </div>
+                            <div class="flex flex-col text-[10px] text-cyber-muted font-normal lowercase tracking-[0.5px] mt-1 normal-case">
+                                <span class="flex items-center gap-1"><i class="fa-solid fa-user-tie text-[9px] text-cyber-primary/50"></i> Chairman: <strong class="text-white/85 ml-1 capitalize">${(brgy.barangay_chairman || 'N/A').toLowerCase()}</strong></span>
+                                <span class="flex items-center gap-1 mt-0.5"><i class="fa-solid fa-graduation-cap text-[9px] text-cyber-primary/50"></i> SK: <strong class="text-white/85 ml-1 capitalize">${(brgy.sk_chairman || 'N/A').toLowerCase()}</strong></span>
+                            </div>
+                        `;
+                        contentDiv.appendChild(itemDiv);
+                    });
+
+                    districtDiv.appendChild(header);
+                    districtDiv.appendChild(contentDiv);
+                    container.appendChild(districtDiv);
+                });
+            }
 
             syncSelectedListState();
+        }
+
+        function toggleDistrict(distName) {
+            const cleanDistNameId = distName.replace(/\s+/g, '-');
+            const content = document.getElementById(`district-content-${cleanDistNameId}`);
+            const arrow = document.getElementById(`district-arrow-${cleanDistNameId}`);
+
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                arrow.classList.remove('fa-chevron-right');
+                arrow.classList.add('fa-chevron-down');
+                expandedDistricts.add(distName);
+            } else {
+                content.classList.add('hidden');
+                arrow.classList.remove('fa-chevron-down');
+                arrow.classList.add('fa-chevron-right');
+                expandedDistricts.delete(distName);
+            }
+        }
+
+        function switchView(view) {
+            currentView = view;
+            
+            const viewAllBtn = document.getElementById('viewAllBtn');
+            const viewDistrictBtn = document.getElementById('viewDistrictBtn');
+            
+            if (view === 'all') {
+                viewAllBtn.className = "font-orbitron text-[10px] tracking-[2px] py-1.5 border border-cyber-primary bg-cyber-primary/15 text-white transition-all duration-300 shadow-[0_0_8px_rgba(0, 153, 255, 0.3)]";
+                viewDistrictBtn.className = "font-orbitron text-[10px] tracking-[2px] py-1.5 border border-cyber-primary/20 bg-transparent text-cyber-muted hover:text-cyber-primary hover:border-cyber-primary/50 transition-all duration-300";
+            } else {
+                viewDistrictBtn.className = "font-orbitron text-[10px] tracking-[2px] py-1.5 border border-cyber-primary bg-cyber-primary/15 text-white transition-all duration-300 shadow-[0_0_8px_rgba(0, 153, 255, 0.3)]";
+                viewAllBtn.className = "font-orbitron text-[10px] tracking-[2px] py-1.5 border border-cyber-primary/20 bg-transparent text-cyber-muted hover:text-cyber-primary hover:border-cyber-primary/50 transition-all duration-300";
+            }
+            
+            filterBarangays();
         }
 
         function filterBarangays() {
@@ -642,10 +839,17 @@
             if (activeItem) {
                 activeItem.classList.remove('border-transparent');
                 activeItem.classList.add('bg-gradient-to-r', 'from-cyber-primary/10', 'to-transparent', 'border-cyber-primary', 'text-white', 'drop-shadow-[0_0_5px_#0099ff]');
-                activeItem.querySelector('span:first-child').classList.remove('text-cyber-primary/30');
-                activeItem.querySelector('span:first-child').classList.add('text-cyber-primary');
-                activeItem.querySelector('i').classList.remove('opacity-0');
-                activeItem.querySelector('i').classList.add('opacity-100');
+                
+                const numEl = activeItem.querySelector('span:first-child');
+                if (numEl && numEl.id === `brgy-num-${id}`) {
+                    numEl.classList.remove('text-cyber-primary/30');
+                    numEl.classList.add('text-cyber-primary');
+                }
+                const iconEl = activeItem.querySelector('i');
+                if (iconEl) {
+                    iconEl.classList.remove('opacity-0');
+                    iconEl.classList.add('opacity-100');
+                }
             }
         }
 
@@ -653,10 +857,17 @@
             document.querySelectorAll('.brgy-item').forEach(el => {
                 el.classList.remove('bg-gradient-to-r', 'from-cyber-primary/10', 'to-transparent', 'border-cyber-primary', 'text-white', 'drop-shadow-[0_0_5px_#0099ff]');
                 el.classList.add('border-transparent');
-                el.querySelector('span:first-child').classList.remove('text-cyber-primary');
-                el.querySelector('span:first-child').classList.add('text-cyber-primary/30');
-                el.querySelector('i').classList.remove('opacity-100');
-                el.querySelector('i').classList.add('opacity-0');
+                
+                const numEl = el.querySelector('span:first-child');
+                if (numEl && numEl.id && numEl.id.startsWith('brgy-num-')) {
+                    numEl.classList.remove('text-cyber-primary');
+                    numEl.classList.add('text-cyber-primary/30');
+                }
+                const iconEl = el.querySelector('i');
+                if (iconEl) {
+                    iconEl.classList.remove('opacity-100');
+                    iconEl.classList.add('opacity-0');
+                }
             });
         }
 
@@ -679,11 +890,38 @@
                 selectAllBtn.innerHTML = '<i class="fa-solid fa-layer-group mr-1"></i> SELECT ALL';
             }
             const numericId = parseInt(id);
-            selectedBarangayIds.has(numericId)
-                ? selectedBarangayIds.delete(numericId)
-                : selectedBarangayIds.add(numericId);
+
+            if (multiSelectMode) {
+                // Multi-select: toggle individual barangay in/out
+                selectedBarangayIds.has(numericId)
+                    ? selectedBarangayIds.delete(numericId)
+                    : selectedBarangayIds.add(numericId);
+            } else {
+                // Single-select (default): replace entire selection
+                if (selectedBarangayIds.size === 1 && selectedBarangayIds.has(numericId)) {
+                    // Clicking the already-selected one deselects it
+                    selectedBarangayIds.clear();
+                } else {
+                    selectedBarangayIds.clear();
+                    selectedBarangayIds.add(numericId);
+                }
+            }
 
             applySelectedBarangays();
+        }
+
+        function toggleMultiSelectMode() {
+            multiSelectMode = !multiSelectMode;
+            const btn = document.getElementById('multiSelectBtn');
+            if (btn) {
+                if (multiSelectMode) {
+                    btn.classList.remove('text-cyber-muted', 'border-cyber-primary/20');
+                    btn.classList.add('text-cyber-primary', 'bg-cyber-primary/15', 'border-cyber-primary', 'shadow-[0_0_10px_rgba(0,153,255,0.4)]');
+                } else {
+                    btn.classList.remove('text-cyber-primary', 'bg-cyber-primary/15', 'border-cyber-primary', 'shadow-[0_0_10px_rgba(0,153,255,0.4)]');
+                    btn.classList.add('text-cyber-muted', 'border-cyber-primary/20');
+                }
+            }
         }
 
         function resetBarangaySelection(showDefaultHud = true) {
@@ -960,12 +1198,24 @@
                     <div class="text-white font-semibold">${brgy.name}</div>
                 </div>
                 <div class="mb-3">
+                    <div class="text-cyber-muted text-[10px] uppercase tracking-[1px] mb-1">District</div>
+                    <div class="text-white">${brgy.district || 'N/A'}</div>
+                </div>
+                <div class="mb-3">
+                    <div class="text-cyber-muted text-[10px] uppercase tracking-[1px] mb-1">Barangay Chairman</div>
+                    <div class="text-white">${brgy.barangay_chairman || 'N/A'}</div>
+                </div>
+                <div class="mb-3">
+                    <div class="text-cyber-muted text-[10px] uppercase tracking-[1px] mb-1">SK Chairman</div>
+                    <div class="text-white">${brgy.sk_chairman || 'N/A'}</div>
+                </div>
+                <div class="mb-3">
                     <div class="text-cyber-muted text-[10px] uppercase tracking-[1px] mb-1">Population</div>
-                    <div class="text-white">${brgy.population || 'N/A'}</div>
+                    <div class="text-white">${formatPopulation(brgy.population)}</div>
                 </div>
                 <div class="mb-3">
                     <div class="text-cyber-muted text-[10px] uppercase tracking-[1px] mb-1">Area</div>
-                    <div class="text-white">${brgy.total_area ? brgy.total_area + ' ha' : 'N/A'}</div>
+                    <div class="text-white">${formatHectares(brgy.total_area)}</div>
                 </div>
                 <div class="mb-3">
                     <div class="text-cyber-muted text-[10px] uppercase tracking-[1px] mb-1">Hazard Level</div>

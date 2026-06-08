@@ -216,11 +216,17 @@
                         <i class="fa-solid fa-download"></i> Boundary GeoJSON
                     </a>
                 @endif
+                <a href="{{ route('admin.map-export.geojson', ['barangay_id' => $selectedBarangay->id, 'scope' => 'selected']) }}" class="btn btn-secondary">
+                    <i class="fa-solid fa-file-code"></i> Selected GeoJSON
+                </a>
+                <a href="{{ route('admin.map-export.geojson', ['scope' => 'public']) }}" class="btn btn-secondary">
+                    <i class="fa-solid fa-earth-asia"></i> Public Layers GeoJSON
+                </a>
             </div>
         @endif
 
         <div style="margin-top: 22px; color: var(--text-muted); font-size: 13px; line-height: 1.6;">
-            Satellite is used for preview and print. PNG export captures the report when the browser allows map tiles; otherwise it falls back to a clean vector PNG.
+            Satellite is used for preview and print. GeoJSON downloads include boundaries and mapped features in standard FeatureCollection format.
         </div>
     </div>
 

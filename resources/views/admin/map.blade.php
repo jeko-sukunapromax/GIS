@@ -261,6 +261,38 @@
             font-size: 11px;
             line-height: 1.45;
         }
+        .spatial-section-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .spatial-status {
+            border-radius: 999px;
+            border: 1px solid rgba(56, 189, 248, 0.28);
+            background: rgba(56, 189, 248, 0.1);
+            color: #7dd3fc;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            padding: 4px 8px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .spatial-status.warning {
+            border-color: rgba(245, 158, 11, 0.28);
+            background: rgba(245, 158, 11, 0.1);
+            color: #fbbf24;
+        }
+        .spatial-grid {
+            margin-top: 12px;
+        }
+        .spatial-caption {
+            color: var(--text-muted);
+            font-size: 11px;
+            line-height: 1.45;
+            margin-top: 12px;
+        }
         
         .distribution-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 16px; }
         .dist-item { display: flex; align-items: center; gap: 12px; }
@@ -506,9 +538,9 @@
 
             <div class="sidebar-section" style="flex: 1; overflow-y: auto; min-height: 0;">
                 <div class="section-title" style="margin-bottom: 8px;">
-                    <div>Layers — <span id="active-brgy-name" style="color: var(--accent-blue);">Tococ East</span></div>
+                    <div>Layers — <span id="active-brgy-name" style="color: var(--accent-blue);">Select barangay</span></div>
                 </div>
-                <div id="active-brgy-subtitle" style="font-size: 11px; color: var(--text-muted); margin-bottom: 16px; margin-top: -6px; text-transform: none; letter-spacing: 0;">Bayambang, Pangasinan</div>
+                <div id="active-brgy-subtitle" style="font-size: 11px; color: var(--text-muted); margin-bottom: 16px; margin-top: -6px; text-transform: none; letter-spacing: 0;">Choose one from the barangay list</div>
 
                 <!-- BOUNDARY SECTION -->
                 <div style="margin-bottom: 14px;">
@@ -644,31 +676,67 @@
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-label">Barangay Name</div>
-                    <div class="stat-value">Tococ East</div>
+                    <div class="stat-value" id="profile-name">Select barangay</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">Total Land Area</div>
-                    <div class="stat-value">345.2 ha</div>
+                    <div class="stat-value" id="profile-total-area">N/A</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">Total Population</div>
-                    <div class="stat-value">2,841</div>
+                    <div class="stat-value" id="profile-population">N/A</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">Hazard Level</div>
-                    <div class="stat-value" style="color: #ef4444;">Moderate</div>
+                    <div class="stat-value" id="profile-hazard">N/A</div>
                 </div>
             </div>
 
             <div class="viz-section">
                 <div class="section-title">General Information</div>
-                <div class="detail-row"><span>Official Name</span><span>Brgy. Tococ East</span></div>
-                <div class="detail-row"><span>Municipality</span><span>Bayambang</span></div>
-                <div class="detail-row"><span>Province</span><span>Pangasinan</span></div>
-                <div class="detail-row"><span>Land Area</span><span>345.2 ha</span></div>
-                <div class="detail-row"><span>Primary Land Use</span><span>Agricultural</span></div>
-                <div class="detail-row"><span>Status</span><span>Active</span></div>
-                <div class="detail-row"><span>Coordinates</span><span>15.8287, 120.4173</span></div>
+                <div class="detail-row"><span>Official Name</span><span id="profile-official-name">N/A</span></div>
+                <div class="detail-row"><span>Municipality</span><span id="profile-municipality">Bayambang</span></div>
+                <div class="detail-row"><span>Province</span><span id="profile-province">Pangasinan</span></div>
+                <div class="detail-row"><span>Land Area</span><span id="profile-land-area">N/A</span></div>
+                <div class="detail-row"><span>Primary Land Use</span><span id="profile-land-use">N/A</span></div>
+                <div class="detail-row"><span>Status</span><span id="profile-status">N/A</span></div>
+                <div class="detail-row"><span>Coordinates</span><span id="profile-coordinates">N/A</span></div>
+            </div>
+
+            <div class="viz-section">
+                <div class="spatial-section-title">
+                    <div class="section-title" style="margin-bottom: 0;">PostGIS Measurements</div>
+                    <span class="spatial-status warning" id="postgis-status">Waiting</span>
+                </div>
+                <div class="grid-layout spatial-grid">
+                    <div class="grid-item">
+                        <div class="item-label">Computed Area</div>
+                        <div class="item-value" id="postgis-computed-area">N/A</div>
+                    </div>
+                    <div class="grid-item">
+                        <div class="item-label">Perimeter</div>
+                        <div class="item-value" id="postgis-perimeter">N/A</div>
+                    </div>
+                    <div class="grid-item">
+                        <div class="item-label">Area Difference</div>
+                        <div class="item-value" id="postgis-area-diff">N/A</div>
+                    </div>
+                    <div class="grid-item">
+                        <div class="item-label">Road Length</div>
+                        <div class="item-value" id="postgis-road-length">N/A</div>
+                    </div>
+                    <div class="grid-item">
+                        <div class="item-label">Features Inside</div>
+                        <div class="item-value" id="postgis-contained-features">N/A</div>
+                    </div>
+                    <div class="grid-item">
+                        <div class="item-label">Nearest Feature</div>
+                        <div class="item-value" id="postgis-nearest-feature">N/A</div>
+                    </div>
+                </div>
+                <div class="spatial-caption" id="postgis-caption">
+                    Select a barangay to load measurements computed from PostGIS.
+                </div>
             </div>
 
             <div class="viz-section">
@@ -676,19 +744,19 @@
                 <div class="grid-layout">
                     <div class="grid-item">
                         <div class="item-label">Agriculture</div>
-                        <div class="item-value">245.5 ha</div>
+                        <div class="item-value" id="profile-agri-area">N/A</div>
                     </div>
                     <div class="grid-item">
                         <div class="item-label">Residential</div>
-                        <div class="item-value">82.1 ha</div>
+                        <div class="item-value" id="profile-residential-area">N/A</div>
                     </div>
                     <div class="grid-item">
                         <div class="item-label">Commercial</div>
-                        <div class="item-value">12.4 ha</div>
+                        <div class="item-value" id="profile-commercial-area">N/A</div>
                     </div>
                     <div class="grid-item">
                         <div class="item-label">Not Identified</div>
-                        <div class="item-value">5.2 ha</div>
+                        <div class="item-value" id="profile-unidentified-area">N/A</div>
                     </div>
                 </div>
             </div>
@@ -743,6 +811,7 @@
         let filteredBarangays = [];
         let identifyActive = false;
         let editModeActive = false;
+        let spatialAnalysisToken = 0;
         const boundaryEditingEnabled = false;
         function createMeasureControl() {
             return L.control.measure({
@@ -765,6 +834,122 @@
 
         function isMunicipalBoundary(brgy) {
             return brgy.is_municipal_boundary || brgy.name.toLowerCase() === 'bayambang';
+        }
+
+        function hasDisplayValue(value) {
+            return value !== null && value !== undefined && value !== '';
+        }
+
+        function formatHectares(value, zeroAsUnavailable = true) {
+            if (!hasDisplayValue(value)) return 'N/A';
+
+            const area = numericValue(value);
+            if (area < 0 || (area === 0 && zeroAsUnavailable)) return 'N/A';
+
+            return `${area.toLocaleString('en-US', {
+                maximumFractionDigits: 2
+            })} ha`;
+        }
+
+        function formatPopulation(value) {
+            if (!hasDisplayValue(value)) return 'N/A';
+
+            const population = numericValue(value);
+            if (population <= 0) return 'N/A';
+
+            return Math.round(population).toLocaleString('en-US');
+        }
+
+        function formatMeters(value, zeroAsUnavailable = true) {
+            if (!hasDisplayValue(value)) return 'N/A';
+
+            const meters = numericValue(value);
+            if (meters < 0 || (meters === 0 && zeroAsUnavailable)) return 'N/A';
+            if (meters === 0) return '0 m';
+
+            if (meters >= 1000) {
+                return `${(meters / 1000).toLocaleString('en-US', {
+                    maximumFractionDigits: 2
+                })} km`;
+            }
+
+            return `${meters.toLocaleString('en-US', {
+                maximumFractionDigits: 1
+            })} m`;
+        }
+
+        function formatPlainNumber(value) {
+            if (!hasDisplayValue(value)) return 'N/A';
+
+            const number = numericValue(value);
+            if (number < 0) return 'N/A';
+
+            return number.toLocaleString('en-US', {
+                maximumFractionDigits: 0
+            });
+        }
+
+        function setProfileText(id, value) {
+            const element = document.getElementById(id);
+            if (element) element.innerText = value;
+        }
+
+        function hazardColor(value) {
+            const normalized = String(value || '').toLowerCase();
+            if (normalized.includes('high')) return '#ef4444';
+            if (normalized.includes('moderate') || normalized.includes('medium')) return '#f59e0b';
+            if (normalized.includes('low')) return '#22c55e';
+            return 'var(--text-heading)';
+        }
+
+        function escapeHtml(value) {
+            const div = document.createElement('div');
+            div.textContent = value ?? '';
+            return div.innerHTML;
+        }
+
+        function metadataLabel(key) {
+            return String(key || '')
+                .replace(/_/g, ' ')
+                .replace(/\b\w/g, letter => letter.toUpperCase());
+        }
+
+        function collectMetadataRows(metadata) {
+            const rows = [];
+
+            Object.entries(metadata || {}).forEach(([key, value]) => {
+                if (value === null || value === undefined || value === '') return;
+
+                if (key === 'import_properties' && value && typeof value === 'object' && !Array.isArray(value)) {
+                    Object.entries(value).forEach(([importKey, importValue]) => {
+                        if (importValue === null || importValue === undefined || importValue === '') return;
+                        rows.push([importKey, importValue]);
+                    });
+                    return;
+                }
+
+                rows.push([key, value]);
+            });
+
+            return rows;
+        }
+
+        function metadataValue(value) {
+            if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+            if (typeof value === 'object') return JSON.stringify(value);
+            return String(value);
+        }
+
+        function featureMetadataHtml(metadata) {
+            return collectMetadataRows(metadata)
+                .slice(0, 8)
+                .map(([key, value]) => `
+                    <div style="display:grid; grid-template-columns: minmax(88px, 1fr) auto; gap:10px; align-items:start;">
+                        <span style="color: var(--text-muted);">${escapeHtml(metadataLabel(key))}</span>
+                        <span style="font-weight: 600; color:#e2e8f0; text-align:right; max-width:180px; overflow-wrap:anywhere;">${escapeHtml(metadataValue(value))}</span>
+                    </div>
+                `)
+                .join('');
         }
 
         function drawMunicipalPolygon(boundaryCoords) {
@@ -940,8 +1125,8 @@
                         <div style="padding: 4px; color: var(--text-heading); font-family: 'Inter', sans-serif;">
                             <h4 style="margin: 0 0 4px 0; font-size: 14px; font-weight:700; color:var(--accent-blue);">${brgy.name}</h4>
                             <div style="display:flex; flex-direction:column; gap:4px; font-size:11px; margin-top:8px;">
-                                <div><span style="color:var(--text-muted);">Pop:</span> <b>${brgy.population || 'N/A'}</b></div>
-                                <div><span style="color:var(--text-muted);">Area:</span> <b>${brgy.total_area || 'N/A'} ha</b></div>
+                                <div><span style="color:var(--text-muted);">Pop:</span> <b>${formatPopulation(brgy.population)}</b></div>
+                                <div><span style="color:var(--text-muted);">Area:</span> <b>${formatHectares(brgy.total_area)}</b></div>
                                 <div><span style="color:var(--text-muted);">⚠️ Hazard:</span> <b style="color:#ef4444;">${brgy.hazard_level || 'Low'}</b></div>
                             </div>
                             <button onclick="selectBarangay(${brgy.id})" style="margin-top:12px; width:100%; padding:6px; font-size:11px; font-weight:600; background:var(--accent-blue); border:none; color:white; border-radius:6px; cursor:pointer; transition:0.2s;">Focus & View Layers</button>
@@ -1146,21 +1331,14 @@
                             counts[type]++;
                         }
 
-                        const metadata = feat.metadata || {};
+                        const metadataHtml = featureMetadataHtml(feat.metadata || {});
                         let popupHtml = `
                             <div style="padding: 4px; font-family: 'Inter', sans-serif; min-width: 180px;">
                                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;">
-                                    <b style="font-size: 13px; color: var(--accent-blue);">${feat.name}</b>
+                                    <b style="font-size: 13px; color: var(--accent-blue);">${escapeHtml(feat.name)}</b>
                                 </div>
                                 <div style="font-size: 11px; display: flex; flex-direction: column; gap: 4px; color:#cbd5e1;">
-                        `;
-
-                        // Populate metadata into descriptive rows
-                        Object.keys(metadata).forEach(key => {
-                            const label = key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-                            popupHtml += `<div><span style="color: var(--text-muted);">${label}:</span> <span style="font-weight: 500;">${metadata[key]}</span></div>`;
-                        });
-                        popupHtml += `
+                                    ${metadataHtml || '<div style="color: var(--text-muted);">No metadata available.</div>'}
                                 </div>
                             </div>
                         `;
@@ -1310,6 +1488,7 @@
             resetLayerBadges();
             updateSelectedMarkerState();
             updateDynamicLegend();
+            resetSpatialAnalysis('Select a barangay to load measurements computed from PostGIS.');
 
             map.setView([15.8287, 120.4173], 14);
         }
@@ -1409,6 +1588,7 @@
                 });
                 resetLayerBadges();
                 updateDynamicLegend();
+                resetSpatialAnalysis('PostGIS measurements are available for one selected barangay at a time.');
             }
             
             // Premium smooth transition: fit map bounds strictly to the active boundary
@@ -1538,33 +1718,103 @@
             const brgy = barangays.find(b => b.id == id);
             if (!brgy) return;
 
-            // Stats cards
-            const statValues = document.querySelectorAll('.stat-value');
-            if(statValues.length >= 4) {
-                statValues[0].innerText = brgy.name;
-                statValues[1].innerText = (brgy.total_area || 0) + ' ha';
-                statValues[2].innerText = brgy.population || 'N/A';
-                statValues[3].innerText = brgy.hazard_level || 'Low';
-            }
+            const hazard = brgy.hazard_level || 'N/A';
+            const lat = parseFloat(brgy.latitude);
+            const lng = parseFloat(brgy.longitude);
+            const coordinates = (!isNaN(lat) && !isNaN(lng))
+                ? `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+                : 'N/A';
 
-            // General Profile details
-            const details = document.querySelectorAll('.detail-row');
-            if(details.length >= 7) {
-                details[0].querySelector('span:last-child').innerText = brgy.name;
-                details[1].querySelector('span:last-child').innerText = brgy.municipality || 'Bayambang';
-                details[2].querySelector('span:last-child').innerText = brgy.province || 'Pangasinan';
-                details[3].querySelector('span:last-child').innerText = (brgy.total_area || 0) + ' ha';
-                details[4].querySelector('span:last-child').innerText = brgy.land_use || 'N/A';
-                details[5].querySelector('span:last-child').innerText = brgy.status || 'Active';
-                
-                const lat = parseFloat(brgy.latitude);
-                const lng = parseFloat(brgy.longitude);
-                details[6].querySelector('span:last-child').innerText = (!isNaN(lat) && !isNaN(lng)) 
-                    ? `${lat.toFixed(6)}, ${lng.toFixed(6)}` 
-                    : 'N/A';
-            }
+            setProfileText('profile-name', brgy.name || 'N/A');
+            setProfileText('profile-total-area', formatHectares(brgy.total_area));
+            setProfileText('profile-population', formatPopulation(brgy.population));
+            setProfileText('profile-hazard', hazard);
+            setProfileText('profile-official-name', brgy.name || 'N/A');
+            setProfileText('profile-municipality', brgy.municipality || 'Bayambang');
+            setProfileText('profile-province', brgy.province || 'Pangasinan');
+            setProfileText('profile-land-area', formatHectares(brgy.total_area));
+            setProfileText('profile-land-use', brgy.land_use || 'N/A');
+            setProfileText('profile-status', brgy.status || 'Active');
+            setProfileText('profile-coordinates', coordinates);
+            setProfileText('profile-agri-area', formatHectares(brgy.agri_area, false));
+            setProfileText('profile-residential-area', formatHectares(brgy.residential_area, false));
+            setProfileText('profile-commercial-area', formatHectares(brgy.commercial_area, false));
+            setProfileText('profile-unidentified-area', formatHectares(brgy.unidentified_area, false));
+
+            const hazardElement = document.getElementById('profile-hazard');
+            if (hazardElement) hazardElement.style.color = hazardColor(hazard);
 
             updatePopulationInsight(brgy);
+            loadSpatialAnalysis(brgy.id);
+        }
+
+        function resetSpatialAnalysis(message) {
+            spatialAnalysisToken++;
+            setSpatialStatus('Waiting', true);
+            setProfileText('postgis-computed-area', 'N/A');
+            setProfileText('postgis-perimeter', 'N/A');
+            setProfileText('postgis-area-diff', 'N/A');
+            setProfileText('postgis-road-length', 'N/A');
+            setProfileText('postgis-contained-features', 'N/A');
+            setProfileText('postgis-nearest-feature', 'N/A');
+            setProfileText('postgis-caption', message || 'Select a barangay to load measurements computed from PostGIS.');
+        }
+
+        function setSpatialStatus(text, warning = false) {
+            const status = document.getElementById('postgis-status');
+            if (!status) return;
+
+            status.innerText = text;
+            status.classList.toggle('warning', warning);
+        }
+
+        function loadSpatialAnalysis(barangayId) {
+            const token = ++spatialAnalysisToken;
+
+            setSpatialStatus('Loading', true);
+            setProfileText('postgis-caption', 'Loading PostGIS measurements...');
+
+            fetch(`/admin/barangays/${barangayId}/spatial-analysis`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Unable to load PostGIS measurements.');
+                    return response.json();
+                })
+                .then(data => {
+                    if (token !== spatialAnalysisToken) return;
+
+                    if (data.status !== 'ready') {
+                        setSpatialStatus('Offline', true);
+                        setProfileText('postgis-computed-area', 'N/A');
+                        setProfileText('postgis-perimeter', 'N/A');
+                        setProfileText('postgis-area-diff', 'N/A');
+                        setProfileText('postgis-road-length', 'N/A');
+                        setProfileText('postgis-contained-features', 'N/A');
+                        setProfileText('postgis-nearest-feature', 'N/A');
+                        setProfileText('postgis-caption', data.message || 'PostGIS measurements are not available.');
+                        return;
+                    }
+
+                    const nearest = data.nearest_feature
+                        ? `${data.nearest_feature.name} (${formatMeters(data.nearest_feature.distance_meters)})`
+                        : 'N/A';
+
+                    setSpatialStatus('Synced');
+                    setProfileText('postgis-computed-area', formatHectares(data.computed_area_hectares));
+                    setProfileText('postgis-perimeter', formatMeters(data.perimeter_meters));
+                    setProfileText('postgis-area-diff', formatHectares(data.area_difference_hectares, false));
+                    setProfileText('postgis-road-length', formatMeters(data.road_length_meters, false));
+                    setProfileText('postgis-contained-features', formatPlainNumber(data.contained_features));
+                    setProfileText('postgis-nearest-feature', nearest);
+                    setProfileText('postgis-caption', data.synced_at
+                        ? `Computed from PostGIS geometry. Last synced ${new Date(data.synced_at).toLocaleString()}.`
+                        : data.message || 'Computed from PostGIS geometry.');
+                })
+                .catch(error => {
+                    if (token !== spatialAnalysisToken) return;
+
+                    setSpatialStatus('Offline', true);
+                    setProfileText('postgis-caption', error.message || 'PostGIS measurements are not available.');
+                });
         }
 
         function numericValue(value) {

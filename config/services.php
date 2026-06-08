@@ -29,7 +29,7 @@ return [
     ],
 
     'ihris' => [
-        'base_url' => env('IHRIS_API_BASE_URL', 'https://testihris.bayambang.gov.ph/api'),
+        'base_url' => env('IHRIS_API_BASE_URL', env('IHRI_API_URL', 'https://testihris.bayambang.gov.ph/api')),
         'login_endpoint' => env('IHRIS_LOGIN_ENDPOINT', 'login'),
         'username_field' => env('IHRIS_USERNAME_FIELD', 'email'),
         'allowed_office' => env('IHRIS_ALLOWED_OFFICE', 'BDRRMC'),
@@ -43,6 +43,7 @@ return [
             'villamorjerichoivan@gmail.com'
         )))),
         'office_uuid' => env('IHRIS_OFFICE_UUID', '6b8aa468-3d99-483a-8f3b-ba70375c102e'),
+        'connect_timeout' => env('IHRIS_CONNECT_TIMEOUT', 5),
         'timeout' => env('IHRIS_TIMEOUT', 10),
         'test_login' => [
             'enabled' => env('IHRIS_TEST_LOGIN_ENABLED', false),

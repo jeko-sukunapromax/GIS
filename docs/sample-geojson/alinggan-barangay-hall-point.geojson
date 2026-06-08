@@ -1,0 +1,25 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Alinggan Sample Barangay Hall",
+        "barangay": "Alinggan",
+        "feature_type": "barangay_hall",
+        "status": "Operational",
+        "contact_person": "Sample Contact Person",
+        "contact_number": "0917-000-0000",
+        "current_people_count": 8,
+        "notes": "Sample GeoJSON upload for testing map feature import."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.405,
+          15.805
+        ]
+      }
+    }
+  ]
+}

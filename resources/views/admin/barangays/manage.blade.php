@@ -296,6 +296,27 @@
             @csrf
             @method('PUT')
             
+            <div class="form-group">
+                <label>District</label>
+                <select name="district">
+                    <option value="">Select District</option>
+                    @for($i = 1; $i <= 9; $i++)
+                        <option value="District {{ $i }}" {{ $barangay->district == "District $i" ? 'selected' : '' }}>District {{ $i }}</option>
+                    @endfor
+                </select>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Barangay Chairman</label>
+                    <input type="text" name="barangay_chairman" value="{{ $barangay->barangay_chairman }}" placeholder="e.g. Mr. John Doe">
+                </div>
+                <div class="form-group">
+                    <label>SK Chairman</label>
+                    <input type="text" name="sk_chairman" value="{{ $barangay->sk_chairman }}" placeholder="e.g. Jane Smith">
+                </div>
+            </div>
+
             <div class="grid-2">
                 <div class="form-group">
                     <label>Population</label>

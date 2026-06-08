@@ -53,7 +53,7 @@ class ActivityLogTest extends TestCase
     public function test_ihris_login_is_logged(): void
     {
         Http::fake([
-            'https://testihris.bayambang.gov.ph/api/login' => Http::response([
+            $this->ihrisLoginUrl() => Http::response([
                 'user' => [
                     'name' => 'BDRRMC Admin',
                     'email' => 'admin@example.com',
