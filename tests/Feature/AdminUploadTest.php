@@ -203,6 +203,147 @@ class AdminUploadTest extends TestCase
         ]);
     }
 
+    public function test_boundary_upload_matches_common_barangay_name_variants_without_creating_duplicates(): void
+    {
+        $admin = User::factory()->create();
+        Role::findOrCreate('admin', 'web');
+        $admin->assignRole('admin');
+
+        Barangay::create(['name' => 'Zone I (pob.)']);
+        Barangay::create(['name' => 'M. H. Del Pilar']);
+        Barangay::create(['name' => 'Darawey (tangal)']);
+
+        $geoJson = [
+            'type' => 'FeatureCollection',
+            'features' => [
+                $this->boundaryFeature('Zone I', 120.40, 15.80),
+                $this->boundaryFeature('Mh Del Pilar', 120.42, 15.82),
+                $this->boundaryFeature('Darawey', 120.44, 15.84),
+                $this->boundaryFeature('Feature 1', 120.46, 15.86),
+            ],
+        ];
+
+        $file = UploadedFile::fake()->createWithContent('variant-boundaries.geojson', json_encode($geoJson));
+
+        $this
+            ->actingAs($admin)
+            ->post(route('admin.uploads.store'), ['upload_files' => [$file]])
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseCount('barangays', 3);
+        $this->assertDatabaseHas('barangays', [
+            'name' => 'Zone I (pob.)',
+            'latitude' => 15.804,
+            'longitude' => 120.404,
+        ]);
+        $this->assertDatabaseHas('barangays', [
+            'name' => 'M. H. Del Pilar',
+            'latitude' => 15.824,
+            'longitude' => 120.424,
+        ]);
+        $this->assertDatabaseHas('barangays', [
+            'name' => 'Darawey (tangal)',
+            'latitude' => 15.844,
+            'longitude' => 120.444,
+        ]);
+        $this->assertDatabaseMissing('barangays', ['name' => 'Zone I']);
+        $this->assertDatabaseMissing('barangays', ['name' => 'Mh Del Pilar']);
+        $this->assertDatabaseMissing('barangays', ['name' => 'Darawey']);
+        $this->assertDatabaseMissing('barangays', ['name' => 'Feature 1']);
+    }
+
+    public function test_boundary_preview_decision_can_match_unmatched_boundary_to_existing_barangay(): void
+    {
+        $admin = User::factory()->create();
+        Role::findOrCreate('admin', 'web');
+        $admin->assignRole('admin');
+
+        $barangay = Barangay::create(['name' => 'Tococ East']);
+        $file = UploadedFile::fake()->createWithContent(
+            'tococ-mismatch.geojson',
+            json_encode([
+                'type' => 'FeatureCollection',
+                'features' => [
+                    $this->boundaryFeature('Tococ E.', 120.40, 15.80),
+                ],
+            ]),
+        );
+
+        $this
+            ->actingAs($admin)
+            ->post(route('admin.uploads.preview'), ['upload_files' => [$file]])
+            ->assertSessionHas('upload_preview');
+
+        $preview = session('upload_preview');
+
+        $this
+            ->actingAs($admin)
+            ->post(route('admin.uploads.store'), [
+                'preview_token' => $preview['token'],
+                'boundary_decisions' => [
+                    0 => [
+                        0 => [
+                            'action' => 'match',
+                            'barangay_id' => $barangay->id,
+                        ],
+                    ],
+                ],
+            ])
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseCount('barangays', 1);
+        $this->assertDatabaseHas('barangays', [
+            'name' => 'Tococ East',
+            'latitude' => 15.804,
+            'longitude' => 120.404,
+        ]);
+        $this->assertDatabaseMissing('barangays', ['name' => 'Tococ E.']);
+    }
+
+    public function test_boundary_preview_decision_can_skip_unmatched_boundary_without_creating_barangay(): void
+    {
+        $admin = User::factory()->create();
+        Role::findOrCreate('admin', 'web');
+        $admin->assignRole('admin');
+
+        $file = UploadedFile::fake()->createWithContent(
+            'unknown-boundary.geojson',
+            json_encode([
+                'type' => 'FeatureCollection',
+                'features' => [
+                    $this->boundaryFeature('Unknown Boundary', 120.40, 15.80),
+                ],
+            ]),
+        );
+
+        $this
+            ->actingAs($admin)
+            ->post(route('admin.uploads.preview'), ['upload_files' => [$file]])
+            ->assertSessionHas('upload_preview');
+
+        $preview = session('upload_preview');
+
+        $this
+            ->actingAs($admin)
+            ->post(route('admin.uploads.store'), [
+                'preview_token' => $preview['token'],
+                'boundary_decisions' => [
+                    0 => [
+                        0 => [
+                            'action' => 'skip',
+                        ],
+                    ],
+                ],
+            ])
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseCount('barangays', 0);
+        $this->assertDatabaseHas('map_uploads', [
+            'file_name' => 'unknown-boundary.geojson',
+            'status' => 'Processed',
+        ]);
+    }
+
     public function test_invalid_geojson_coordinates_are_rejected(): void
     {
         $admin = User::factory()->create();
@@ -596,6 +737,24 @@ KML;
             'file_type' => 'Shapefile Features',
             'status' => 'Processed',
         ]);
+    }
+
+    private function boundaryFeature(string $name, float $lng, float $lat): array
+    {
+        return [
+            'type' => 'Feature',
+            'properties' => ['NAME' => $name],
+            'geometry' => [
+                'type' => 'Polygon',
+                'coordinates' => [[
+                    [$lng, $lat],
+                    [$lng + 0.01, $lat],
+                    [$lng + 0.01, $lat + 0.01],
+                    [$lng, $lat + 0.01],
+                    [$lng, $lat],
+                ]],
+            ],
+        ];
     }
 
     private function fakePointShapefileZip(string $fileName, float $lng, float $lat, array $attributes): UploadedFile

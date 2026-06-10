@@ -246,6 +246,10 @@ class UploadController extends Controller
     {
         $validated = $request->validate([
             'preview_token' => 'required|string',
+            'boundary_decisions' => 'nullable|array',
+            'boundary_decisions.*' => 'nullable|array',
+            'boundary_decisions.*.*.action' => 'nullable|in:default,match,create,skip',
+            'boundary_decisions.*.*.barangay_id' => 'nullable|integer|exists:barangays,id',
         ]);
 
         $token = $validated['preview_token'];
@@ -261,13 +265,16 @@ class UploadController extends Controller
         $errorMessages = [];
         $postgisRefreshNeeded = false;
 
-        foreach ($preview['files'] as $file) {
+        foreach ($preview['files'] as $fileIndex => $file) {
             $fileName = $file['name'];
             $type = $file['type'];
             $sizeFormatted = $file['size'];
+            $boundaryDecisions = $context['mode'] === 'boundaries'
+                ? (array) ($validated['boundary_decisions'][$fileIndex] ?? [])
+                : [];
 
             try {
-                $result = $this->processConvertedFile($file['converted_path'] ?? $file['path'], $fileName, $context, $featureImporter);
+                $result = $this->processConvertedFile($file['converted_path'] ?? $file['path'], $fileName, $context, $featureImporter, $boundaryDecisions);
                 $postgisRefreshNeeded = true;
 
                 $upload = MapUpload::create([
@@ -386,7 +393,7 @@ class UploadController extends Controller
         return $this->previewBulkGeoJson($this->storedFile($geoJsonPath), $fileName);
     }
 
-    private function processConvertedFile(string $geoJsonPath, string $fileName, array $context, FeatureGeoJsonImporter $featureImporter): array
+    private function processConvertedFile(string $geoJsonPath, string $fileName, array $context, FeatureGeoJsonImporter $featureImporter, array $boundaryDecisions = []): array
     {
         if ($context['mode'] === 'features') {
             return $featureImporter->import(
@@ -397,7 +404,7 @@ class UploadController extends Controller
             );
         }
 
-        return $this->parseBulkGeoJson($this->storedFile($geoJsonPath), $fileName);
+        return $this->parseBulkGeoJson($this->storedFile($geoJsonPath), $fileName, $boundaryDecisions);
     }
 
     private function storeConvertedGeoJson(string $sourcePath, string $extension, string $fileName, string $targetDir, int $index, GisFileConverter $converter): array
@@ -460,7 +467,10 @@ class UploadController extends Controller
                     'reason' => $item['reason'] ?? null,
                     'geometry_type' => $item['geometry_type'] ?? null,
                     'is_municipal_boundary' => $item['is_municipal_boundary'],
+                    'barangay_id' => $item['barangay_id'] ?? null,
                     'barangay_name' => $item['barangay_name'] ?? null,
+                    'suggested_barangay_id' => $item['suggested_barangay_id'] ?? null,
+                    'suggested_barangay_name' => $item['suggested_barangay_name'] ?? null,
                     'feature_type_name' => $item['feature_type_name'] ?? null,
                     'metadata_count' => $item['metadata_count'] ?? 0,
                     'area' => $item['area'],

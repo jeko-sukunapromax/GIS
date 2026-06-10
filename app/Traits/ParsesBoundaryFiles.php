@@ -9,11 +9,12 @@ trait ParsesBoundaryFiles
     /**
      * Parse GeoJSON and attempt to map all polygons to barangays by name.
      */
-    protected function parseBulkGeoJson($file, $fallbackName = null)
+    protected function parseBulkGeoJson($file, $fallbackName = null, array $boundaryDecisions = [])
     {
         return $this->applyBoundaryPreview(
             $this->previewBulkGeoJson($file, $fallbackName),
-            'Bulk GeoJSON Upload'
+            'Bulk GeoJSON Upload',
+            $boundaryDecisions
         );
     }
 
@@ -161,9 +162,14 @@ trait ParsesBoundaryFiles
         return $this->summarizeBoundaryPreview($items);
     }
 
-    protected function applyBoundaryPreview(array $preview, string $source): array
+    protected function applyBoundaryPreview(array $preview, string $source, array $boundaryDecisions = []): array
     {
-        foreach ($preview['items'] as $item) {
+        $appliedItems = [];
+
+        foreach ($preview['items'] as $index => $item) {
+            $item = $this->applyBoundaryDecision($item, (array) ($boundaryDecisions[$index] ?? []));
+            $appliedItems[] = $item;
+
             if ($item['action'] === 'Skipped') {
                 continue;
             }
@@ -207,8 +213,11 @@ trait ParsesBoundaryFiles
         }
 
         return [
-            'matched' => $preview['matched'],
-            'unmatched' => collect($preview['items'])
+            'mode' => 'boundaries',
+            'matched' => collect($appliedItems)->where('action', 'Update')->count(),
+            'created' => collect($appliedItems)->where('action', 'Create')->count(),
+            'skipped' => collect($appliedItems)->where('action', 'Skipped')->count(),
+            'unmatched' => collect($appliedItems)
                 ->where('action', 'Create')
                 ->pluck('display_name')
                 ->map(fn (string $name) => $name.' (Created)')
@@ -235,10 +244,27 @@ trait ParsesBoundaryFiles
             ];
         }
 
+        if ($this->isGenericBoundaryName($name)) {
+            return [
+                'name' => $name,
+                'display_name' => $name,
+                'action' => 'Skipped',
+                'reason' => 'Generic feature name was found, but no barangay name was provided in the GIS properties.',
+                'geometry_type' => $geometryType,
+                'is_municipal_boundary' => false,
+                'barangay_id' => null,
+                'boundary' => $boundary,
+                'centroid' => $centroid,
+                'attributes' => $attributes,
+                'area' => $attributes['total_area'] ?? null,
+            ];
+        }
+
         $isMunicipalBoundary = $this->isMunicipalBoundaryName($name);
         $displayName = $isMunicipalBoundary ? 'Bayambang' : ucwords(strtolower($name));
         $barangay = $isMunicipalBoundary ? $this->findMunicipalBoundary() : $this->findBarangayByName($name);
         $action = $reason ? 'Skipped' : ($isMunicipalBoundary || $barangay ? 'Update' : 'Create');
+        $suggestedBarangay = $action === 'Create' ? $this->suggestBarangayMatch($name) : null;
 
         return [
             'name' => $name,
@@ -248,6 +274,8 @@ trait ParsesBoundaryFiles
             'geometry_type' => $geometryType,
             'is_municipal_boundary' => $isMunicipalBoundary,
             'barangay_id' => $barangay?->id,
+            'suggested_barangay_id' => $suggestedBarangay?->id,
+            'suggested_barangay_name' => $suggestedBarangay?->name,
             'boundary' => $boundary,
             'centroid' => $centroid,
             'attributes' => $attributes,
@@ -258,6 +286,7 @@ trait ParsesBoundaryFiles
     protected function summarizeBoundaryPreview(array $items): array
     {
         return [
+            'mode' => 'boundaries',
             'items' => $items,
             'matched' => collect($items)->where('action', 'Update')->count(),
             'created' => collect($items)->where('action', 'Create')->count(),
@@ -298,6 +327,99 @@ trait ParsesBoundaryFiles
         return Barangay::where('is_municipal_boundary', false)
             ->get()
             ->first(fn (Barangay $barangay) => $this->normalizeBarangayName($barangay->name) === $targetName);
+    }
+
+    protected function suggestBarangayMatch($name): ?Barangay
+    {
+        $targetName = $this->normalizeBarangayName($name);
+
+        if ($targetName === '' || $this->isGenericBoundaryName($name)) {
+            return null;
+        }
+
+        $bestMatch = null;
+        $bestScore = 0.0;
+
+        foreach (Barangay::where('is_municipal_boundary', false)->get() as $barangay) {
+            $candidate = $this->normalizeBarangayName($barangay->name);
+
+            if ($candidate === '') {
+                continue;
+            }
+
+            similar_text($targetName, $candidate, $similarity);
+            $distance = levenshtein($targetName, $candidate);
+            $length = max(strlen($targetName), strlen($candidate), 1);
+            $score = max($similarity / 100, 1 - ($distance / $length));
+
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $bestMatch = $barangay;
+            }
+        }
+
+        return $bestScore >= 0.82 ? $bestMatch : null;
+    }
+
+    protected function applyBoundaryDecision(array $item, array $decision): array
+    {
+        $action = $decision['action'] ?? 'default';
+
+        if ($action === 'default' || $item['is_municipal_boundary']) {
+            return $item;
+        }
+
+        if ($action === 'skip') {
+            $item['action'] = 'Skipped';
+            $item['reason'] = 'Skipped during import review.';
+
+            return $item;
+        }
+
+        if (empty($item['boundary']) || empty($item['centroid']['lat']) || empty($item['centroid']['lng'])) {
+            $item['action'] = 'Skipped';
+            $item['reason'] = $item['reason'] ?? 'No valid boundary geometry was available.';
+
+            return $item;
+        }
+
+        if ($action === 'match') {
+            $barangayId = $decision['barangay_id'] ?? $item['suggested_barangay_id'] ?? null;
+            $barangay = $barangayId
+                ? Barangay::where('is_municipal_boundary', false)->find($barangayId)
+                : null;
+
+            if (! $barangay) {
+                $item['action'] = 'Skipped';
+                $item['reason'] = 'Match existing was selected, but no valid barangay was chosen.';
+
+                return $item;
+            }
+
+            $item['action'] = 'Update';
+            $item['reason'] = null;
+            $item['barangay_id'] = $barangay->id;
+            $item['display_name'] = $barangay->name;
+
+            return $item;
+        }
+
+        if ($action === 'create') {
+            if (empty($item['name']) || $this->isGenericBoundaryName($item['name'])) {
+                $item['action'] = 'Skipped';
+                $item['reason'] = 'Generic or missing GIS feature name cannot be created as a barangay.';
+
+                return $item;
+            }
+
+            $item['action'] = 'Create';
+            $item['reason'] = null;
+            $item['barangay_id'] = null;
+
+            return $item;
+        }
+
+        return $item;
     }
 
     protected function findMunicipalBoundary()
@@ -342,7 +464,7 @@ trait ParsesBoundaryFiles
     {
         $normalized = strtolower(trim((string) $name));
         $normalized = preg_replace('/^(brgy\.?|barangay)\s+/i', '', $normalized);
-        $normalized = str_replace(['(pob.)', '(pob)', '(tangal)'], ['pob', 'pob', 'tangal'], $normalized);
+        $normalized = preg_replace('/\((pob\.?|tangal)\)/i', '', $normalized);
         $normalized = preg_replace('/\b1st\b/', 'i', $normalized);
         $normalized = preg_replace('/\b2nd\b/', 'ii', $normalized);
         $normalized = preg_replace('/\b3rd\b/', 'iii', $normalized);
@@ -351,8 +473,20 @@ trait ParsesBoundaryFiles
         $normalized = preg_replace('/\b6th\b/', 'vi', $normalized);
         $normalized = preg_replace('/\b7th\b/', 'vii', $normalized);
         $normalized = preg_replace('/[^a-z0-9]+/', ' ', $normalized);
+        $normalized = trim(preg_replace('/\s+/', ' ', $normalized));
+        $normalized = preg_replace('/\b([a-z])\s+([a-z])\b(?=\s+)/', '$1$2', $normalized);
 
         return trim(preg_replace('/\s+/', ' ', $normalized));
+    }
+
+    protected function isGenericBoundaryName($name): bool
+    {
+        $normalized = strtolower(trim((string) $name));
+        $normalized = preg_replace('/[^a-z0-9]+/', ' ', $normalized);
+        $normalized = trim(preg_replace('/\s+/', ' ', $normalized));
+
+        return in_array($normalized, ['feature', 'unnamed feature', 'imported feature'], true)
+            || preg_match('/^(feature|kml feature|imported feature)\s+\d+$/', $normalized) === 1;
     }
 
     /**

@@ -233,14 +233,14 @@
 
                     <div>
                         <div class="converter-section-title">Sample Records</div>
-                        <div class="table-responsive">
+                        <div class="table-responsive" style="max-height: 520px; overflow: auto; border: 1px solid rgba(148, 163, 184, 0.08); border-radius: 10px;">
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>Name</th>
-                                        <th>Geometry</th>
-                                        <th>Attributes</th>
-                                        <th>Sample Properties</th>
+                                        <th style="position: sticky; top: 0; z-index: 1; background: #111827;">Name</th>
+                                        <th style="position: sticky; top: 0; z-index: 1; background: #111827;">Geometry</th>
+                                        <th style="position: sticky; top: 0; z-index: 1; background: #111827;">Attributes</th>
+                                        <th style="position: sticky; top: 0; z-index: 1; background: #111827;">Sample Properties</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -258,6 +258,9 @@
                                     @endforeach
                                 </tbody>
                             </table>
+                        </div>
+                        <div style="color: var(--text-muted); font-size: 12px; margin-top: 10px;">
+                            Showing all {{ count($inspection['sample_rows'] ?? []) }} record(s).
                         </div>
                     </div>
                 </div>

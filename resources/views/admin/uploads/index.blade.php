@@ -375,6 +375,103 @@
         border-radius: 10px;
         background: rgba(56, 189, 248, 0.06);
     }
+    .preview-filter-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+    }
+    .preview-filter-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 34px;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        background: rgba(15, 23, 42, 0.58);
+        color: #94a3b8;
+        font-size: 12px;
+        font-weight: 800;
+        padding: 0 13px;
+        cursor: pointer;
+        transition: all 0.18s ease;
+    }
+    .preview-filter-btn:hover,
+    .preview-filter-btn.is-active {
+        border-color: rgba(56, 189, 248, 0.48);
+        background: rgba(56, 189, 248, 0.12);
+        color: #e0f2fe;
+    }
+    .preview-search {
+        margin-left: auto;
+        min-width: min(320px, 100%);
+        min-height: 36px;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        background: rgba(15, 23, 42, 0.64);
+        color: #f8fafc;
+        padding: 0 14px;
+        font-size: 13px;
+        outline: none;
+    }
+    .preview-search:focus {
+        border-color: rgba(56, 189, 248, 0.65);
+        box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.09);
+    }
+    .preview-table-scroll {
+        max-height: 560px;
+        overflow: auto;
+        border: 1px solid rgba(148, 163, 184, 0.08);
+        border-radius: 12px;
+    }
+    .preview-table-scroll table {
+        margin-bottom: 0;
+    }
+    .preview-table-scroll thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: #111827;
+    }
+    .preview-count-note {
+        margin-top: 12px;
+        color: #94a3b8;
+        font-size: 12px;
+        margin-left: 4px;
+    }
+    .preview-row[hidden] {
+        display: none;
+    }
+    .review-action-cell {
+        min-width: 240px;
+        color: #94a3b8;
+        font-size: 12px;
+    }
+    .reconcile-select {
+        width: 100%;
+        min-height: 34px;
+        border-radius: 8px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        background: rgba(15, 23, 42, 0.72);
+        color: #f8fafc;
+        padding: 0 10px;
+        font-size: 12px;
+        font-weight: 700;
+        outline: none;
+    }
+    .reconcile-select + .reconcile-select {
+        margin-top: 7px;
+    }
+    .reconcile-note {
+        margin-top: 6px;
+        color: #64748b;
+        font-size: 11px;
+        line-height: 1.35;
+    }
+    .reconcile-note strong {
+        color: #bae6fd;
+    }
 </style>
 
 <div class="page-header">
@@ -470,7 +567,7 @@
                     </button>
                 </form>
 
-                <form action="{{ route('admin.uploads.store') }}" method="POST">
+                <form action="{{ route('admin.uploads.store') }}" method="POST" id="uploadPreviewSaveForm">
                     @csrf
                     <input type="hidden" name="preview_token" value="{{ $preview['token'] }}">
                     <button type="submit" class="btn-confirm-save">
@@ -481,6 +578,9 @@
         </div>
 
         @foreach($preview['files'] as $file)
+            @php($fileIndex = $loop->index)
+            @php($previewTableId = 'upload-preview-'.$loop->index)
+            @php($previewModeLabel = ($file['mode'] ?? 'boundaries') === 'features' ? 'map features' : 'boundaries')
             <div class="preview-file-block">
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
                     <div>
@@ -518,7 +618,25 @@
                     </div>
                 </div>
 
-                <div class="table-responsive">
+                <div class="preview-filter-bar" data-preview-controls="{{ $previewTableId }}" data-preview-label="{{ $previewModeLabel }}">
+                    <button type="button" class="preview-filter-btn is-active" data-preview-filter="all">
+                        <i class="fa-solid fa-list"></i> All: {{ count($file['items']) }}
+                    </button>
+                    <button type="button" class="preview-filter-btn" data-preview-filter="Update">
+                        <i class="fa-solid fa-circle-check"></i> Existing: {{ $file['matched'] }}
+                    </button>
+                    <button type="button" class="preview-filter-btn" data-preview-filter="Create">
+                        <i class="fa-solid fa-circle-plus"></i> New: {{ $file['created'] }}
+                    </button>
+                    @if($file['skipped'] > 0)
+                        <button type="button" class="preview-filter-btn" data-preview-filter="Skipped">
+                            <i class="fa-solid fa-circle-minus"></i> Skipped: {{ $file['skipped'] }}
+                        </button>
+                    @endif
+                    <input type="search" class="preview-search" data-preview-search placeholder="Search {{ $previewModeLabel }}...">
+                </div>
+
+                <div class="table-responsive preview-table-scroll">
                     <table>
                         <thead>
                             @if(($file['mode'] ?? 'boundaries') === 'features')
@@ -533,12 +651,14 @@
                                     <th>BARANGAY</th>
                                     <th>RESULT</th>
                                     <th>AREA</th>
+                                    <th>REVIEW ACTION</th>
                                 </tr>
                             @endif
                         </thead>
-                        <tbody>
-                            @forelse(array_slice($file['items'], 0, 12) as $item)
-                                <tr>
+                        <tbody id="{{ $previewTableId }}" data-preview-total="{{ count($file['items']) }}">
+                            @forelse($file['items'] as $item)
+                                @php($itemIndex = $loop->index)
+                                <tr class="preview-row" data-preview-action="{{ $item['action'] }}" data-preview-search="{{ strtolower($item['display_name'].' '.($item['barangay_name'] ?? '').' '.($item['feature_type_name'] ?? '').' '.($item['geometry_type'] ?? '').' '.($item['reason'] ?? '')) }}">
                                     <td style="font-weight: 600; color: #f8fafc; display: flex; align-items: center;">
                                         <i class="fa-solid fa-map-pin" style="color: #64748b; font-size: 11px; margin-right: 8px;"></i>
                                         {{ $item['display_name'] }}
@@ -574,11 +694,51 @@
                                         </td>
                                     @else
                                         <td style="color: #94a3b8; font-family: monospace; font-weight: 600;">{{ $item['area'] ? number_format($item['area'], 2).' ha' : '—' }}</td>
+                                        <td class="review-action-cell">
+                                            @if(!empty($item['is_municipal_boundary']))
+                                                <span class="status-badge status-update">Municipal boundary</span>
+                                                <div class="reconcile-note">Saved to the Bayambang municipal boundary record.</div>
+                                            @elseif($item['action'] === 'Update')
+                                                <select class="reconcile-select" name="boundary_decisions[{{ $fileIndex }}][{{ $itemIndex }}][action]" form="uploadPreviewSaveForm">
+                                                    <option value="default">Update matched barangay</option>
+                                                    <option value="skip">Skip this boundary</option>
+                                                </select>
+                                                <div class="reconcile-note">Matched to existing barangay ID #{{ $item['barangay_id'] ?? '—' }}.</div>
+                                            @elseif($item['action'] === 'Create')
+                                                <select class="reconcile-select" name="boundary_decisions[{{ $fileIndex }}][{{ $itemIndex }}][action]" form="uploadPreviewSaveForm">
+                                                    @if(!empty($item['suggested_barangay_id']))
+                                                        <option value="match" selected>Use suggested match</option>
+                                                    @else
+                                                        <option value="skip" selected>Skip unmatched</option>
+                                                        <option value="match">Match existing barangay</option>
+                                                    @endif
+                                                    <option value="create">Create new barangay</option>
+                                                    @if(!empty($item['suggested_barangay_id']))
+                                                        <option value="skip">Skip unmatched</option>
+                                                    @endif
+                                                </select>
+                                                <select class="reconcile-select" name="boundary_decisions[{{ $fileIndex }}][{{ $itemIndex }}][barangay_id]" form="uploadPreviewSaveForm">
+                                                    <option value="">Choose existing barangay...</option>
+                                                    @foreach($barangays as $barangay)
+                                                        <option value="{{ $barangay->id }}" @selected(($item['suggested_barangay_id'] ?? null) === $barangay->id)>{{ $barangay->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                                @if(!empty($item['suggested_barangay_name']))
+                                                    <div class="reconcile-note">Suggested match: <strong>{{ $item['suggested_barangay_name'] }}</strong>.</div>
+                                                @else
+                                                    <div class="reconcile-note">No safe match found. This row will be skipped unless you choose create or match.</div>
+                                                @endif
+                                            @else
+                                                <span class="status-badge status-skipped">Skipped</span>
+                                                <input type="hidden" name="boundary_decisions[{{ $fileIndex }}][{{ $itemIndex }}][action]" value="skip" form="uploadPreviewSaveForm">
+                                                <div class="reconcile-note">{{ $item['reason'] ?? 'This row is not importable.' }}</div>
+                                            @endif
+                                        </td>
                                     @endif
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="{{ ($file['mode'] ?? 'boundaries') === 'features' ? 4 : 3 }}" style="text-align: center; color: #64748b; padding: 22px;">
+                                    <td colspan="{{ ($file['mode'] ?? 'boundaries') === 'features' ? 4 : 4 }}" style="text-align: center; color: #64748b; padding: 22px;">
                                         No importable records were detected in this file.
                                     </td>
                                 </tr>
@@ -587,9 +747,9 @@
                     </table>
                 </div>
 
-                @if(count($file['items']) > 12)
-                    <div style="margin-top: 12px; color: #94a3b8; font-size: 12px; margin-left: 4px;">Showing first 12 of {{ count($file['items']) }} detected {{ ($file['mode'] ?? 'boundaries') === 'features' ? 'map features' : 'boundaries' }}.</div>
-                @endif
+                <div class="preview-count-note" data-preview-count-note="{{ $previewTableId }}">
+                    Showing all {{ count($file['items']) }} detected {{ $previewModeLabel }}. Use search or filters before confirming save.
+                </div>
             </div>
         @endforeach
     </div>
@@ -704,6 +864,52 @@
 
     importMode.addEventListener('change', syncImportModeUi);
     syncImportModeUi();
+
+    document.querySelectorAll('[data-preview-controls]').forEach(controlBar => {
+        const tableId = controlBar.dataset.previewControls;
+        const tableBody = document.getElementById(tableId);
+        const label = controlBar.dataset.previewLabel || 'records';
+        const note = document.querySelector(`[data-preview-count-note="${tableId}"]`);
+        const searchInput = controlBar.querySelector('[data-preview-search]');
+        const buttons = controlBar.querySelectorAll('[data-preview-filter]');
+
+        if (!tableBody) {
+            return;
+        }
+
+        const applyPreviewFilters = () => {
+            const activeFilter = controlBar.querySelector('.preview-filter-btn.is-active')?.dataset.previewFilter || 'all';
+            const searchTerm = (searchInput?.value || '').trim().toLowerCase();
+            const rows = tableBody.querySelectorAll('.preview-row');
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const actionMatches = activeFilter === 'all' || row.dataset.previewAction === activeFilter;
+                const searchMatches = !searchTerm || (row.dataset.previewSearch || '').includes(searchTerm);
+                const shouldShow = actionMatches && searchMatches;
+
+                row.hidden = !shouldShow;
+                if (shouldShow) {
+                    visibleCount++;
+                }
+            });
+
+            if (note) {
+                note.textContent = `Showing ${visibleCount} of ${rows.length} detected ${label}.`;
+            }
+        };
+
+        buttons.forEach(button => {
+            button.addEventListener('click', () => {
+                buttons.forEach(item => item.classList.remove('is-active'));
+                button.classList.add('is-active');
+                applyPreviewFilters();
+            });
+        });
+
+        searchInput?.addEventListener('input', applyPreviewFilters);
+        applyPreviewFilters();
+    });
 
       fileInput.addEventListener('change', function() {
         if (this.files && this.files.length > 0) {

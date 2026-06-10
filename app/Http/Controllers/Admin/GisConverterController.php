@@ -202,7 +202,6 @@ class GisConverterController extends Controller
                 ->all(),
             'property_keys' => $propertyKeys,
             'sample_rows' => $features
-                ->take(10)
                 ->values()
                 ->map(fn (array $feature, int $index) => [
                     'name' => $this->featureName($feature, $index),
