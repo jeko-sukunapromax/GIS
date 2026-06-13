@@ -32,135 +32,14 @@
                               radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 40%);
             color: var(--text-main); 
             display: flex; 
+            flex-direction: column;
             height: 100vh; 
             overflow: hidden; 
         }
 
-        /* Sidebar */
-        .sidebar { 
-            width: 260px; 
-            background-color: var(--sidebar-bg); 
-            color: var(--sidebar-text); 
-            display: flex; 
-            flex-direction: column; 
-            border-right: 1px solid var(--border-color);
-            backdrop-filter: var(--glass-blur);
-        }
-        .sidebar-header {
-            padding: 20px;
-            border-bottom: 1px solid var(--border-color); 
-            font-family: 'Outfit', sans-serif;
-            color: var(--text-heading); 
-            display: flex; 
-            align-items: center; 
-            gap: 12px;
-        }
-        .brand-logo {
-            width: 48px;
-            height: 48px;
-            object-fit: contain;
-            flex-shrink: 0;
-            filter: drop-shadow(0 4px 12px rgba(0, 153, 255, 0.25));
-        }
-        .brand-copy {
-            min-width: 0;
-        }
-        .brand-title {
-            font-size: 16px;
-            font-weight: 800;
-            letter-spacing: 0.2px;
-            line-height: 1.1;
-        }
-        .brand-kicker {
-            margin-top: 4px;
-            font-family: 'Inter', sans-serif;
-            color: var(--text-muted);
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 1.8px;
-            text-transform: uppercase;
-        }
-        .sidebar-menu { padding: 16px 0 20px; flex: 1; overflow-y: auto; }
-        .nav-group {
-            margin: 0 10px 8px;
-        }
-        .nav-group summary {
-            list-style: none;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 11px 12px;
-            color: var(--sidebar-text);
-            border: 1px solid transparent;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 12px;
-            font-weight: 800;
-            letter-spacing: 0.8px;
-            text-transform: uppercase;
-            user-select: none;
-        }
-        .nav-group summary::-webkit-details-marker {
-            display: none;
-        }
-        .nav-group summary:hover,
-        .nav-group[open] summary {
-            color: var(--text-heading);
-            background: rgba(255, 255, 255, 0.04);
-            border-color: var(--border-color);
-        }
-        .nav-group summary .group-chevron {
-            margin-left: auto;
-            font-size: 10px;
-            transition: transform 0.2s ease;
-        }
-        .nav-group[open] summary .group-chevron {
-            transform: rotate(180deg);
-        }
-        .nav-group-items {
-            padding: 6px 0 4px;
-        }
-        .menu-item { 
-            display: flex; 
-            align-items: center; 
-            gap: 12px; 
-            padding: 11px 14px 11px 18px; 
-            border-left: 3px solid transparent;
-            color: var(--sidebar-text); 
-            text-decoration: none; 
-            transition: all 0.2s ease; 
-            font-size: 13px;
-            font-weight: 500;
-            border-radius: 8px;
-            margin: 2px 0;
-        }
-        .menu-item:hover, .menu-item.active, .menu-item:active, .menu-item:focus { 
-            background-color: var(--sidebar-active); 
-            color: white; 
-            border-left: 3px solid var(--accent-blue); 
-            text-shadow: 0 0 5px rgba(255,255,255,0.2);
-        }
-        .menu-item:visited {
-            color: var(--sidebar-text);
-        }
-        .menu-item.active:visited,
-        .menu-item:hover:visited,
-        .menu-item:active:visited,
-        .menu-item:focus:visited {
-            color: white;
-        }
-        .menu-item:focus {
-            outline: none;
-        }
-        .menu-item:focus-visible {
-            box-shadow: inset 0 0 0 2px rgba(0, 153, 255, 0.35);
-        }
-
-        /* Main Content Wrapper */
-        .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .topbar { 
-            height: 64px; 
+        /* Navbar */
+        .navbar { 
+            height: 72px; 
             background: var(--bg-panel); 
             border-bottom: 1px solid var(--border-color); 
             display: flex; 
@@ -168,88 +47,224 @@
             justify-content: space-between; 
             padding: 0 24px; 
             backdrop-filter: var(--glass-blur);
+            position: relative;
+            z-index: 1000;
         }
-        .topbar-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: var(--text-heading);
-            font-size: 13px;
-            font-weight: 700;
-        }
-        .topbar-status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #10b981;
-            box-shadow: 0 0 8px #10b981;
-        }
-        .topbar-actions {
+        .navbar-left {
             display: flex;
             align-items: center;
             gap: 12px;
         }
-        .user-chip {
+        .brand-logo {
+            width: 44px;
+            height: 44px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 10px rgba(0, 153, 255, 0.45));
+        }
+        .brand-copy {
             display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 999px;
-            background: rgba(255,255,255,0.04);
-        }
-        .user-avatar {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: grid;
-            place-items: center;
-            background: rgba(0, 153, 255, 0.14);
-            color: #7dd3fc;
-            border: 1px solid rgba(125, 211, 252, 0.28);
-        }
-        .user-meta {
+            flex-direction: column;
             line-height: 1.1;
         }
-        .user-name {
-            color: var(--text-heading);
-            font-size: 13px;
-            font-weight: 700;
+        .brand-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
+            font-weight: 800;
+            color: #0099ff;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(0, 153, 255, 0.4);
         }
-        .user-office {
-            margin-top: 3px;
+        .brand-kicker {
+            font-family: 'Inter', sans-serif;
             color: var(--text-muted);
             font-size: 10px;
             font-weight: 700;
             letter-spacing: 1.2px;
             text-transform: uppercase;
         }
-        .logout-form {
-            margin: 0;
-        }
-        .logout-btn {
-            display: inline-flex;
+        .navbar-center {
+            display: flex;
             align-items: center;
             gap: 8px;
-            padding: 9px 13px;
-            border-radius: 999px;
-            border: 1px solid rgba(248, 113, 113, 0.25);
-            background: rgba(239, 68, 68, 0.10);
-            color: #fecaca;
-            font-size: 12px;
-            font-weight: 800;
-            letter-spacing: 0.8px;
-            text-transform: uppercase;
+            height: 100%;
+        }
+        .nav-dropdown {
+            position: relative;
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+        .nav-dropdown-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-main);
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
             transition: all 0.2s ease;
         }
-        .logout-btn:hover {
-            background: rgba(239, 68, 68, 0.18);
-            border-color: rgba(248, 113, 113, 0.45);
+        .nav-dropdown-btn:hover,
+        .nav-dropdown.open .nav-dropdown-btn {
             color: white;
-            transform: translateY(-1px);
-            box-shadow: 0 10px 28px rgba(239, 68, 68, 0.16);
+            background: rgba(255, 255, 255, 0.04);
+            border-color: var(--border-color);
         }
+        .nav-dropdown-btn.active-group {
+            color: #0099ff;
+            background: rgba(0, 153, 255, 0.05);
+            border-color: rgba(0, 153, 255, 0.2);
+            text-shadow: 0 0 5px rgba(0, 153, 255, 0.2);
+        }
+        .nav-dropdown-btn .dropdown-chevron {
+            font-size: 10px;
+            color: var(--text-muted);
+            transition: transform 0.2s ease;
+        }
+        .nav-dropdown:hover .nav-dropdown-btn .dropdown-chevron,
+        .nav-dropdown.open .nav-dropdown-btn .dropdown-chevron {
+            transform: rotate(180deg);
+            color: white;
+        }
+        .nav-dropdown-content {
+            position: absolute;
+            top: calc(100% - 10px);
+            left: 0;
+            min-width: 220px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            padding: 8px;
+            z-index: 1010;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.2s ease;
+            pointer-events: none;
+        }
+        .nav-dropdown:hover .nav-dropdown-content {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            color: var(--text-main);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        .dropdown-item i {
+            width: 16px;
+            text-align: center;
+            font-size: 14px;
+            color: var(--text-muted);
+            transition: color 0.2s ease;
+        }
+        .dropdown-item:hover {
+            background: rgba(0, 153, 255, 0.1);
+            color: white;
+        }
+        .dropdown-item:hover i {
+            color: #0099ff;
+        }
+        .dropdown-item.active {
+            background: rgba(0, 153, 255, 0.15);
+            color: white;
+            border-left: 3px solid var(--accent-blue);
+            padding-left: 11px;
+        }
+        .dropdown-item.active i {
+            color: #0099ff;
+        }
+
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .mobile-menu-toggle {
+            display: none;
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        @media (max-width: 991px) {
+            .navbar-center {
+                display: none;
+                position: absolute;
+                top: 72px;
+                left: 0;
+                width: 100%;
+                background: rgba(15, 23, 42, 0.98);
+                backdrop-filter: blur(20px);
+                border-bottom: 1px solid var(--border-color);
+                flex-direction: column;
+                align-items: stretch;
+                padding: 16px;
+                gap: 12px;
+                height: auto;
+                box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            }
+            .navbar-center.open {
+                display: flex;
+            }
+            .mobile-menu-toggle {
+                display: block;
+            }
+            .nav-dropdown {
+                flex-direction: column;
+                align-items: flex-start;
+                height: auto;
+            }
+            .nav-dropdown-btn {
+                width: 100%;
+                justify-content: space-between;
+                padding: 12px;
+            }
+            .nav-dropdown-content {
+                position: static;
+                width: 100%;
+                opacity: 1;
+                visibility: visible;
+                transform: none;
+                box-shadow: none;
+                background: rgba(255,255,255,0.02);
+                border: 1px solid rgba(255,255,255,0.05);
+                margin-top: 4px;
+                display: none;
+                pointer-events: auto;
+            }
+            .nav-dropdown.open .nav-dropdown-content {
+                display: block;
+            }
+            .navbar-right {
+                gap: 8px;
+            }
+            .user-meta {
+                display: none;
+            }
+        }
+
+        /* Main Content Wrapper */
+        .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         .content { flex: 1; padding: 32px; overflow-y: auto; }
         
         /* Typography & Utilities */
@@ -416,118 +431,120 @@
 </head>
 <body class="admin-body">
 
-    <div class="sidebar">
-        <div class="sidebar-header">
+    @php
+        $mapGroupOpen = Request::routeIs('admin.map') || Request::routeIs('admin.map-export.*');
+        $layersGroupOpen = Request::routeIs('admin.features.*') || Request::routeIs('admin.layer-types.*');
+        $dataGroupOpen = Request::routeIs('admin.uploads.*')
+            || Request::routeIs('admin.gis-converter.*')
+            || Request::routeIs('admin.municipal-boundary.*')
+            || Request::routeIs('admin.barangays.*')
+            || Request::routeIs('admin.data-completeness.*');
+        $systemGroupOpen = Request::routeIs('admin.activity-logs.*') || Request::routeIs('admin.users.*');
+    @endphp
+
+    <header class="navbar">
+        <div class="navbar-left">
             <img src="/images/logo.png" alt="Bayambang Logo" class="brand-logo">
             <div class="brand-copy">
-                <div class="brand-title">BDRRMC GIS</div>
+                <div class="brand-title">GEOBAYAMBANG</div>
                 <div class="brand-kicker">Admin Console</div>
             </div>
         </div>
-        <div class="sidebar-menu">
-            @php
-                $mapGroupOpen = Request::routeIs('admin.map') || Request::routeIs('admin.map-export.*');
-                $layersGroupOpen = Request::routeIs('admin.features.*') || Request::routeIs('admin.layer-types.*');
-                $dataGroupOpen = Request::routeIs('admin.uploads.*')
-                    || Request::routeIs('admin.gis-converter.*')
-                    || Request::routeIs('admin.municipal-boundary.*')
-                    || Request::routeIs('admin.barangays.*')
-                    || Request::routeIs('admin.data-completeness.*');
-                $systemGroupOpen = Request::routeIs('admin.activity-logs.*') || Request::routeIs('admin.users.*');
-            @endphp
 
-            <details class="nav-group" {{ $mapGroupOpen ? 'open' : '' }}>
-                <summary>
+        <nav class="navbar-center" id="navbarCenterMenu">
+            <!-- Workspace Dropdown -->
+            <div class="nav-dropdown">
+                <button class="nav-dropdown-btn {{ $mapGroupOpen ? 'active-group' : '' }}" onclick="toggleMobileDropdown(event)">
                     <i class="fa-solid fa-map-location-dot"></i>
-                    Map Workspace
-                    <i class="fa-solid fa-chevron-down group-chevron"></i>
-                </summary>
-                <div class="nav-group-items">
-                    <a href="/" class="menu-item"><i class="fa-solid fa-map"></i> Public Map</a>
-                    <a href="{{ route('admin.map') }}" class="menu-item {{ Request::routeIs('admin.map') ? 'active' : '' }}"><i class="fa-solid fa-location-dot"></i> Admin Map</a>
-                    <a href="{{ route('admin.map-export.index') }}" class="menu-item {{ Request::routeIs('admin.map-export.*') ? 'active' : '' }}"><i class="fa-solid fa-file-export"></i> Map Export</a>
+                    Workspace
+                    <i class="fa-solid fa-chevron-down dropdown-chevron"></i>
+                </button>
+                <div class="nav-dropdown-content">
+                    <a href="/" class="dropdown-item"><i class="fa-solid fa-map"></i> Public Map</a>
+                    <a href="{{ route('admin.map') }}" class="dropdown-item {{ Request::routeIs('admin.map') ? 'active' : '' }}"><i class="fa-solid fa-location-dot"></i> Admin Map</a>
+                    <a href="{{ route('admin.map-export.index') }}" class="dropdown-item {{ Request::routeIs('admin.map-export.*') ? 'active' : '' }}"><i class="fa-solid fa-file-export"></i> Map Export</a>
                 </div>
-            </details>
+            </div>
 
-            <details class="nav-group" {{ $layersGroupOpen ? 'open' : '' }}>
-                <summary>
+            <!-- Layers & Features Dropdown -->
+            <div class="nav-dropdown">
+                <button class="nav-dropdown-btn {{ $layersGroupOpen ? 'active-group' : '' }}" onclick="toggleMobileDropdown(event)">
                     <i class="fa-solid fa-layer-group"></i>
                     Layers & Features
-                    <i class="fa-solid fa-chevron-down group-chevron"></i>
-                </summary>
-                <div class="nav-group-items">
-                    <a href="{{ route('admin.features.index') }}" class="menu-item {{ Request::routeIs('admin.features.*') ? 'active' : '' }}"><i class="fa-solid fa-draw-polygon"></i> Map Features</a>
+                    <i class="fa-solid fa-chevron-down dropdown-chevron"></i>
+                </button>
+                <div class="nav-dropdown-content">
+                    <a href="{{ route('admin.features.index') }}" class="dropdown-item {{ Request::routeIs('admin.features.*') ? 'active' : '' }}"><i class="fa-solid fa-draw-polygon"></i> Map Features</a>
                     @hasanyrole('admin|super-admin')
-                        <a href="{{ route('admin.layer-types.index') }}" class="menu-item {{ Request::routeIs('admin.layer-types.*') ? 'active' : '' }}"><i class="fa-solid fa-layer-group"></i> Layer Types</a>
+                        <a href="{{ route('admin.layer-types.index') }}" class="dropdown-item {{ Request::routeIs('admin.layer-types.*') ? 'active' : '' }}"><i class="fa-solid fa-layer-group"></i> Layer Types</a>
                     @endhasanyrole
                 </div>
-            </details>
+            </div>
 
+            <!-- Boundary & Data Dropdown (restricted to admin|super-admin) -->
             @hasanyrole('admin|super-admin')
-                <details class="nav-group" {{ $dataGroupOpen ? 'open' : '' }}>
-                    <summary>
+                <div class="nav-dropdown">
+                    <button class="nav-dropdown-btn {{ $dataGroupOpen ? 'active-group' : '' }}" onclick="toggleMobileDropdown(event)">
                         <i class="fa-solid fa-database"></i>
                         Boundary & Data
-                        <i class="fa-solid fa-chevron-down group-chevron"></i>
-                    </summary>
-                    <div class="nav-group-items">
-                        <a href="{{ route('admin.uploads.index') }}" class="menu-item {{ Request::routeIs('admin.uploads.*') ? 'active' : '' }}"><i class="fa-solid fa-arrow-up-from-bracket"></i> Upload Data</a>
-                        <a href="{{ route('admin.gis-converter.index') }}" class="menu-item {{ Request::routeIs('admin.gis-converter.*') ? 'active' : '' }}"><i class="fa-solid fa-code-compare"></i> GIS Converter</a>
-                        <a href="{{ route('admin.municipal-boundary.index') }}" class="menu-item {{ Request::routeIs('admin.municipal-boundary.*') ? 'active' : '' }}"><i class="fa-solid fa-border-top-left"></i> Bayambang Boundary</a>
-                        <a href="{{ route('admin.barangays.index') }}" class="menu-item {{ Request::routeIs('admin.barangays.*') ? 'active' : '' }}"><i class="fa-solid fa-mountain-city"></i> Barangay Management</a>
-                        <a href="{{ route('admin.data-completeness.index') }}" class="menu-item {{ Request::routeIs('admin.data-completeness.*') ? 'active' : '' }}"><i class="fa-solid fa-list-check"></i> Data Completeness</a>
+                        <i class="fa-solid fa-chevron-down dropdown-chevron"></i>
+                    </button>
+                    <div class="nav-dropdown-content">
+                        <a href="{{ route('admin.uploads.index') }}" class="dropdown-item {{ Request::routeIs('admin.uploads.*') ? 'active' : '' }}"><i class="fa-solid fa-arrow-up-from-bracket"></i> Upload Data</a>
+                        <a href="{{ route('admin.gis-converter.index') }}" class="dropdown-item {{ Request::routeIs('admin.gis-converter.*') ? 'active' : '' }}"><i class="fa-solid fa-code-compare"></i> GIS Converter</a>
+                        <a href="{{ route('admin.municipal-boundary.index') }}" class="dropdown-item {{ Request::routeIs('admin.municipal-boundary.*') ? 'active' : '' }}"><i class="fa-solid fa-border-top-left"></i> Bayambang Boundary</a>
+                        <a href="{{ route('admin.barangays.index') }}" class="dropdown-item {{ Request::routeIs('admin.barangays.*') ? 'active' : '' }}"><i class="fa-solid fa-mountain-city"></i> Barangay Management</a>
+                        <a href="{{ route('admin.data-completeness.index') }}" class="dropdown-item {{ Request::routeIs('admin.data-completeness.*') ? 'active' : '' }}"><i class="fa-solid fa-list-check"></i> Data Completeness</a>
                     </div>
-                </details>
+                </div>
             @endhasanyrole
 
+            <!-- System Admin Dropdown (restricted to admin|super-admin) -->
             @hasanyrole('admin|super-admin')
-                <details class="nav-group" {{ $systemGroupOpen ? 'open' : '' }}>
-                    <summary>
+                <div class="nav-dropdown">
+                    <button class="nav-dropdown-btn {{ $systemGroupOpen ? 'active-group' : '' }}" onclick="toggleMobileDropdown(event)">
                         <i class="fa-solid fa-shield-halved"></i>
                         System Admin
-                        <i class="fa-solid fa-chevron-down group-chevron"></i>
-                    </summary>
-                    <div class="nav-group-items">
-                        <a href="{{ route('admin.activity-logs.index') }}" class="menu-item {{ Request::routeIs('admin.activity-logs.*') ? 'active' : '' }}"><i class="fa-solid fa-clock-rotate-left"></i> Activity Logs</a>
+                        <i class="fa-solid fa-chevron-down dropdown-chevron"></i>
+                    </button>
+                    <div class="nav-dropdown-content">
+                        <a href="{{ route('admin.activity-logs.index') }}" class="dropdown-item {{ Request::routeIs('admin.activity-logs.*') ? 'active' : '' }}"><i class="fa-solid fa-clock-rotate-left"></i> Activity Logs</a>
                         @role('super-admin')
-                            <a href="{{ route('admin.users.index') }}" class="menu-item {{ Request::routeIs('admin.users.*') ? 'active' : '' }}"><i class="fa-solid fa-users-gear"></i> Users</a>
+                            <a href="{{ route('admin.users.index') }}" class="dropdown-item {{ Request::routeIs('admin.users.*') ? 'active' : '' }}"><i class="fa-solid fa-users-gear"></i> Users</a>
                         @endrole
                     </div>
-                </details>
+                </div>
             @endhasanyrole
+        </nav>
+
+        <div class="navbar-right">
+            @auth
+                <div class="user-chip">
+                    <div class="user-avatar">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                    <div class="user-meta">
+                        <div class="user-name">{{ auth()->user()->name }}</div>
+                        <div class="user-office">{{ auth()->user()->office ?? 'BDRRMC Office' }}</div>
+                    </div>
+                </div>
+            @endauth
+
+            <form method="POST" action="{{ route('logout') }}" class="logout-form">
+                @csrf
+                <button type="submit" class="logout-btn">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    Logout
+                </button>
+            </form>
+
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                <i class="fa-solid fa-bars"></i>
+            </button>
         </div>
-    </div>
+    </header>
 
     <div class="main-wrapper">
-        <div class="topbar">
-            <div class="topbar-left">
-                <div class="topbar-status-dot"></div>
-                BDRRMC / GIS Admin
-            </div>
-
-            <div class="topbar-actions">
-                @auth
-                    <div class="user-chip">
-                        <div class="user-avatar">
-                            <i class="fa-solid fa-user-shield"></i>
-                        </div>
-                        <div class="user-meta">
-                            <div class="user-name">{{ auth()->user()->name }}</div>
-                            <div class="user-office">{{ auth()->user()->office ?? 'BDRRMC Office' }}</div>
-                        </div>
-                    </div>
-                @endauth
-
-                <form method="POST" action="{{ route('logout') }}" class="logout-form">
-                    @csrf
-                    <button type="submit" class="logout-btn">
-                        <i class="fa-solid fa-right-from-bracket"></i>
-                        Logout
-                    </button>
-                </form>
-            </div>
-        </div>
-        
         <div class="content">
             @yield('content')
         </div>
@@ -551,6 +568,45 @@
             });
         </script>
     @endif
+
+    <script>
+        function toggleMobileMenu() {
+            const menu = document.getElementById('navbarCenterMenu');
+            if (menu) menu.classList.toggle('open');
+        }
+        
+        function toggleMobileDropdown(event) {
+            if (window.innerWidth < 992) {
+                event.preventDefault();
+                event.stopPropagation();
+                const btn = event.currentTarget;
+                const dropdown = btn.closest('.nav-dropdown');
+                
+                // Toggle current dropdown
+                const isOpen = dropdown.classList.contains('open');
+                
+                // Close all dropdowns first
+                document.querySelectorAll('.nav-dropdown').forEach(d => {
+                    d.classList.remove('open');
+                });
+                
+                if (!isOpen) {
+                    dropdown.classList.add('open');
+                }
+            }
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.nav-dropdown') && !event.target.closest('.mobile-menu-toggle')) {
+                document.querySelectorAll('.nav-dropdown').forEach(d => {
+                    d.classList.remove('open');
+                });
+                const menu = document.getElementById('navbarCenterMenu');
+                if (menu) menu.classList.remove('open');
+            }
+        });
+    </script>
 
 </body>
 </html>

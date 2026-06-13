@@ -489,142 +489,234 @@
         .map-labels-muted .brgy-centroid-icon-container.selected .brgy-map-label {
             opacity: 1;
         }
+
+        /* Earthquake Simulation Styling */
+        @keyframes ping {
+            0% { transform: scale(1); opacity: 1; }
+            70% { transform: scale(2.2); opacity: 0; }
+            100% { transform: scale(2.2); opacity: 0; }
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+        .warning-map-icon {
+            background: transparent !important;
+            border: none !important;
+        }
+
+        /* Sidebar Tabbed Layout */
+        .sidebar-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(15, 23, 42, 0.4);
+            flex-shrink: 0;
+        }
+        .sidebar-tab {
+            flex: 1;
+            text-align: center;
+            padding: 12px 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .sidebar-tab:hover {
+            color: var(--text-heading);
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .sidebar-tab.active {
+            color: var(--accent-blue) !important;
+            border-bottom-color: var(--accent-blue) !important;
+            background: rgba(0, 153, 255, 0.05);
+        }
+        .back-btn-navbar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .back-btn-navbar:hover {
+            color: var(--accent-blue);
+            border-color: var(--accent-blue);
+            background: rgba(56, 189, 248, 0.1);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+        }
     </style>
 </head>
 <body>
 
     <nav class="navbar">
-        <div class="logo-area">
+        <div class="logo-area" style="gap: 16px;">
+            @hasanyrole('admin|super-admin')
+                <a href="{{ route('admin.barangays.index') }}" class="back-btn-navbar" title="Back to Dashboard"><i class="fa-solid fa-arrow-left"></i></a>
+            @else
+                <a href="{{ route('admin.features.index') }}" class="back-btn-navbar" title="Back to Dashboard"><i class="fa-solid fa-arrow-left"></i></a>
+            @endhasanyrole
             <i class="fa-solid fa-earth-philippines"></i>
             <div>
                 <div class="logo-text">GeoBayambang</div>
                 <div class="logo-tagline">Geographic Information Systems</div>
             </div>
         </div>
-        <div class="nav-links">
-            <a href="#" class="nav-link">Dashboard</a>
-            <a href="#" class="nav-link">Planning</a>
-            <a href="#" class="nav-link">Analysis</a>
-            <a href="#" class="nav-link">Reports</a>
-            <a href="#" class="nav-link">Help</a>
-            @hasanyrole('admin|super-admin')
-                <a href="{{ route('admin.barangays.index') }}" class="nav-link" style="color: var(--accent-blue); font-weight: 600;"><i class="fa-solid fa-user-shield"></i> Admin Dashboard</a>
-            @else
-                <a href="{{ route('admin.features.index') }}" class="nav-link" style="color: var(--accent-blue); font-weight: 600;"><i class="fa-solid fa-draw-polygon"></i> Features</a>
-            @endhasanyrole
-        </div>
-        <div class="nav-right">
-            <div class="search-container">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="searchInput" placeholder="Search barangays..." onkeyup="searchBarangays()">
-                <button onclick="clearSearch()" id="clearBtn" style="display:none; background:none; border:none; color:var(--text-muted); cursor:pointer; padding:0;"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <button class="toolbar-btn" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 50%;"><i class="fa-solid fa-bell"></i></button>
-            <button class="toolbar-btn" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 50%;"><i class="fa-solid fa-user"></i></button>
-        </div>
+
     </nav>
 
     <div class="main-container">
         <!-- Sidebar Left -->
         <aside class="sidebar-left">
-            <div class="sidebar-section" style="flex-shrink: 0;">
-                <div class="section-title">Barangay List <span id="resultCount" style="font-weight:400; color:var(--accent-blue);"></span>
-                    <button onclick="selectAllBarangays()" id="selectAllBtn" style="font-size:9px; padding:3px 8px; background:var(--bg-card); border:1px solid var(--border-color); color:var(--accent-blue); border-radius:4px; cursor:pointer; transition:0.2s; text-transform:uppercase; letter-spacing:0.5px;" onmouseover="this.style.background='rgba(56,189,248,0.1)'; this.style.borderColor='var(--accent-blue)';" onmouseout="this.style.background='var(--bg-card)'; this.style.borderColor='var(--border-color)';"><i class="fa-solid fa-layer-group" style="font-size:8px;"></i> Select All</button>
+            <div class="sidebar-tabs">
+                <div class="sidebar-tab active" data-tab="tab-barangays">
+                    <i class="fa-solid fa-list-ul" style="margin-right: 4px;"></i> Barangays
                 </div>
-                <div id="barangayList" style="max-height: 180px; overflow-y: auto;">
-                    <!-- Barangay list will be populated here -->
+                <div class="sidebar-tab" data-tab="tab-layers">
+                    <i class="fa-solid fa-layer-group" style="margin-right: 4px;"></i> Layers
+                </div>
+                <div class="sidebar-tab" data-tab="tab-analysis">
+                    <i class="fa-solid fa-gears" style="margin-right: 4px;"></i> Tools
                 </div>
             </div>
 
-            <div class="sidebar-section" style="flex: 1; overflow-y: auto; min-height: 0;">
-                <div class="section-title" style="margin-bottom: 8px;">
-                    <div>Layers — <span id="active-brgy-name" style="color: var(--accent-blue);">Select barangay</span></div>
-                </div>
-                <div id="active-brgy-subtitle" style="font-size: 11px; color: var(--text-muted); margin-bottom: 16px; margin-top: -6px; text-transform: none; letter-spacing: 0;">Choose one from the barangay list</div>
-
-                <!-- BOUNDARY SECTION -->
-                <div style="margin-bottom: 14px;">
-                    <div style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 6px;">Boundary</div>
-                    <div class="layer-item" style="margin-bottom: 0;">
-                        <div class="layer-info">
-                            <div class="layer-icon" style="color: var(--accent-blue); width: 26px; height: 26px; border-radius: 6px; font-size: 11px;"><i class="fa-solid fa-draw-polygon"></i></div>
-                            <span style="font-size: 13px;">Brgy. Boundary</span>
-                        </div>
-                        <label class="switch" style="width: 32px; height: 18px;">
-                            <input type="checkbox" id="layer-boundary" checked>
-                            <span class="slider" style="border-radius: 18px;"></span>
-                        </label>
+            <!-- TAB 1: Barangays -->
+            <div id="tab-barangays" class="tab-content" style="display: block; flex: 1; overflow-y: auto;">
+                <div class="sidebar-section" style="padding-bottom: 10px;">
+                    <div class="search-container" style="width: 100%; margin-bottom: 15px; position: relative;">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="searchInput" placeholder="Search barangays..." onkeyup="searchBarangays()">
+                        <button onclick="clearSearch()" id="clearBtn" style="display:none; background:none; border:none; color:var(--text-muted); cursor:pointer; padding:0; position: absolute; right: 15px; top: 50%; transform: translateY(-50%);"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div class="section-title" style="margin-top: 10px;">Barangay List <span id="resultCount" style="font-weight:400; color:var(--accent-blue);"></span>
+                        <button onclick="selectAllBarangays()" id="selectAllBtn" style="font-size:9px; padding:3px 8px; background:var(--bg-card); border:1px solid var(--border-color); color:var(--accent-blue); border-radius:4px; cursor:pointer; transition:0.2s; text-transform:uppercase; letter-spacing:0.5px;" onmouseover="this.style.background='rgba(56,189,248,0.1)'; this.style.borderColor='var(--accent-blue)';" onmouseout="this.style.background='var(--bg-card)'; this.style.borderColor='var(--border-color)';"><i class="fa-solid fa-layer-group" style="font-size:8px;"></i> Select All</button>
+                    </div>
+                    <div id="barangayList" style="max-height: calc(100vh - 240px); overflow-y: auto;">
+                        <!-- Barangay list will be populated here -->
                     </div>
                 </div>
+            </div>
 
-                <!-- DYNAMIC SECTIONS LOADED FROM DATABASE -->
-                @php
-                    $categories = $layerTypes
-                        ->groupBy('category')
-                        ->map(fn ($items, $category) => ucwords(str_replace('_', ' ', $category)));
-                @endphp
+            <!-- TAB 2: Layers -->
+            <div id="tab-layers" class="tab-content" style="display: none; flex: 1; overflow-y: auto;">
+                <div class="sidebar-section">
+                    <div class="section-title" style="margin-bottom: 8px;">
+                        <div>Layers — <span id="active-brgy-name" style="color: var(--accent-blue);">Select barangay</span></div>
+                    </div>
+                    <div id="active-brgy-subtitle" style="font-size: 11px; color: var(--text-muted); margin-bottom: 16px; margin-top: -6px; text-transform: none; letter-spacing: 0;">Choose one from the barangay list</div>
 
-                @foreach($categories as $catCode => $catName)
+                    <!-- BOUNDARY SECTION -->
+                    <div style="margin-bottom: 14px;">
+                        <div style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 6px;">Boundary</div>
+                        <div class="layer-item" style="margin-bottom: 0;">
+                            <div class="layer-info">
+                                <div class="layer-icon" style="color: var(--accent-blue); width: 26px; height: 26px; border-radius: 6px; font-size: 11px;"><i class="fa-solid fa-draw-polygon"></i></div>
+                                <span style="font-size: 13px;">Brgy. Boundary</span>
+                            </div>
+                            <label class="switch" style="width: 32px; height: 18px;">
+                                <input type="checkbox" id="layer-boundary" checked>
+                                <span class="slider" style="border-radius: 18px;"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- DYNAMIC SECTIONS LOADED FROM DATABASE -->
                     @php
-                        $filteredTypes = $layerTypes->where('category', $catCode);
+                        $categories = $layerTypes
+                            ->groupBy('category')
+                            ->map(fn ($items, $category) => ucwords(str_replace('_', ' ', $category)));
                     @endphp
 
-                    @if($filteredTypes->count() > 0)
-                        <div style="margin-bottom: 14px;">
-                            <div style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 6px;">{{ $catName }}</div>
-                            
-                            @foreach($filteredTypes as $type)
-                                <div class="layer-item" style="margin-bottom: 8px;">
-                                    <div class="layer-info">
-                                        <div class="layer-icon" style="color: {{ $type->color }}; width: 26px; height: 26px; border-radius: 6px; font-size: 11px; background: {{ $type->color }}12;">
-                                            <i class="{{ $type->icon }}"></i>
-                                        </div>
-                                        <span style="font-size: 13px;">{{ $type->name }}</span>
-                                    </div>
-                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                        <span id="badge-{{ $type->code }}" class="badge" style="font-size: 10px; padding: 1px 6px; border-radius: 8px; background: rgba(255,255,255,0.05); color: var(--text-muted); font-weight: bold;">0</span>
-                                        <label class="switch" style="width: 32px; height: 18px;">
-                                            <input type="checkbox" id="layer-{{ $type->code }}" checked>
-                                            <span class="slider" style="border-radius: 18px;"></span>
-                                        </label>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    @endif
-                @endforeach
-            </div>
+                    @foreach($categories as $catCode => $catName)
+                        @php
+                            $filteredTypes = $layerTypes->where('category', $catCode);
+                        @endphp
 
-            <div class="sidebar-section" style="flex-shrink: 0;">
-                <div class="section-title">Basemap Selection</div>
-                <div class="basemap-grid">
-                    <div class="basemap-card" onclick="setBasemap('roadmap', this)">
-                        <div class="basemap-img bg-street"></div>
-                        <div class="basemap-label">Street</div>
-                    </div>
-                    <div class="basemap-card" onclick="setBasemap('satellite', this)">
-                        <div class="basemap-img bg-satellite"></div>
-                        <div class="basemap-label">Satellite</div>
-                    </div>
-                    <div class="basemap-card" onclick="setBasemap('terrain', this)">
-                        <div class="basemap-img bg-terrain"></div>
-                        <div class="basemap-label">Terrain</div>
-                    </div>
-                    <div class="basemap-card active" onclick="setBasemap('dark', this)">
-                        <div class="basemap-img bg-dark"></div>
-                        <div class="basemap-label">Dark Matter</div>
+                        @if($filteredTypes->count() > 0)
+                            <div style="margin-bottom: 14px;">
+                                <div style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 6px;">{{ $catName }}</div>
+                                
+                                @foreach($filteredTypes as $type)
+                                    <div class="layer-item" style="margin-bottom: 8px;">
+                                        <div class="layer-info">
+                                            <div class="layer-icon" style="color: {{ $type->color }}; width: 26px; height: 26px; border-radius: 6px; font-size: 11px; background: {{ $type->color }}12;">
+                                                <i class="{{ $type->icon }}"></i>
+                                            </div>
+                                            <span style="font-size: 13px;">{{ $type->name }}</span>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <span id="badge-{{ $type->code }}" class="badge" style="font-size: 10px; padding: 1px 6px; border-radius: 8px; background: rgba(255,255,255,0.05); color: var(--text-muted); font-weight: bold;">0</span>
+                                            <label class="switch" style="width: 32px; height: 18px;">
+                                                <input type="checkbox" id="layer-{{ $type->code }}" checked>
+                                                <span class="slider" style="border-radius: 18px;"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    @endforeach
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="section-title">Basemap Selection</div>
+                    <div class="basemap-grid">
+                        <div class="basemap-card" onclick="setBasemap('roadmap', this)">
+                            <div class="basemap-img bg-street"></div>
+                            <div class="basemap-label">Street</div>
+                        </div>
+                        <div class="basemap-card" onclick="setBasemap('satellite', this)">
+                            <div class="basemap-img bg-satellite"></div>
+                            <div class="basemap-label">Satellite</div>
+                        </div>
+                        <div class="basemap-card" onclick="setBasemap('terrain', this)">
+                            <div class="basemap-img bg-terrain"></div>
+                            <div class="basemap-label">Terrain</div>
+                        </div>
+                        <div class="basemap-card active" onclick="setBasemap('dark', this)">
+                            <div class="basemap-img bg-dark"></div>
+                            <div class="basemap-label">Dark Matter</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="sidebar-section" style="flex-shrink: 0;">
-                <div class="section-title">Analysis Tools</div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <button class="toolbar-btn" onclick="startMeasure()" style="width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 12px; gap: 8px;"><i class="fa-solid fa-ruler"></i> Measure</button>
-                    <button class="toolbar-btn" onclick="clearMeasure()" style="width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 12px; gap: 8px;"><i class="fa-solid fa-eraser"></i> Clear</button>
-                    @hasanyrole('admin|super-admin')
-                        <button id="editModeBtn" type="button" class="toolbar-btn" disabled title="Boundary editing is disabled until the save workflow is ready." style="grid-column: span 2; width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 12px; gap: 8px;"><i class="fa-solid fa-pen-ruler"></i> Edit Boundary Mode</button>
-                    @endhasanyrole
+            <!-- TAB 3: Tools -->
+            <div id="tab-analysis" class="tab-content" style="display: none; flex: 1; overflow-y: auto;">
+                <div class="sidebar-section">
+                    <div class="section-title">Analysis Tools</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <button class="toolbar-btn" onclick="startMeasure()" style="width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 12px; gap: 8px;"><i class="fa-solid fa-ruler"></i> Measure</button>
+                        <button class="toolbar-btn" onclick="clearMeasure()" style="width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 12px; gap: 8px;"><i class="fa-solid fa-eraser"></i> Clear</button>
+                    </div>
+                </div>
+
+                <div class="sidebar-section" style="border-top: 1px solid var(--border-color); padding-top: 15px;">
+                    <div class="section-title" style="color: #f87171; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-house-crack"></i> Earthquake Impact Analysis & DSS</div>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <button id="eqSimBtn" class="toolbar-btn" type="button" onclick="toggleEqSimulation()" style="width: 100%; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; font-size: 12px; gap: 8px; justify-content: center; height: 36px;"><i class="fa-solid fa-radiation"></i> Run Impact Analysis</button>
+                        
+                        <div id="eqRadiusContainer" style="display: none; flex-direction: column; gap: 6px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                            <label style="font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between;">
+                                <span>Damage Radius:</span>
+                                <strong id="eqRadiusVal" style="color: #f87171;">500m</strong>
+                            </label>
+                            <input type="range" id="eqRadiusInput" min="100" max="3000" step="100" value="500" oninput="updateEqRadius(this.value)" style="width: 100%; accent-color: #ef4444; background: rgba(255,255,255,0.1); height: 4px; border-radius: 2px; border: none; cursor: pointer; margin: 4px 0;">
+                            <span style="font-size: 9px; color: var(--text-muted); text-align: center; display: block;">Click on the map to place epicenter.</span>
+                        </div>
+
+                        <button id="eqClearBtn" class="toolbar-btn" type="button" onclick="clearEqSimulation()" style="display: none; width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); font-size: 12px; gap: 8px; justify-content: center; height: 36px;"><i class="fa-solid fa-trash-can"></i> Clear Analysis</button>
+                    </div>
                 </div>
             </div>
         </aside>
@@ -632,6 +724,39 @@
         <!-- Map Container -->
         <main class="map-container">
             <div id="map"></div>
+
+            <!-- Floating Earthquake Simulation Report Overlay -->
+            <div id="eq-report-panel" style="display: none; position: absolute; bottom: 80px; right: 24px; z-index: 1000; width: 320px; font-family: 'Outfit', 'Inter', sans-serif; background: rgba(9, 13, 22, 0.92); border: 1.5px solid rgba(239, 68, 68, 0.5); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.7), 0 0 15px rgba(239, 68, 68, 0.2); backdrop-filter: blur(10px); padding: 16px; transition: all 0.3s ease;">
+                <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(239, 68, 68, 0.3); padding-bottom: 8px; margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-triangle-exclamation" style="color: #ef4444; font-size: 18px; animation: pulse 1.5s infinite;"></i>
+                        <b style="color: #fff; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Seismic Impact Report</b>
+                    </div>
+                    <button type="button" onclick="clearEqSimulation()" style="background: none; border: none; color: #f87171; font-size: 18px; cursor: pointer; line-height: 1;">×</button>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12px; color: #cbd5e1;">
+                    <div style="display: flex; justify-content: space-between; background: rgba(255,255,255,0.03); padding: 6px 8px; border-radius: 4px;">
+                        <span>Impact Radius:</span>
+                        <strong id="eq-rep-radius" style="color: #f87171;">500 m</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; background: rgba(255,255,255,0.03); padding: 6px 8px; border-radius: 4px;">
+                        <span>Affected Buildings:</span>
+                        <strong id="eq-rep-buildings" style="color: #fff;">0</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; background: rgba(239, 68, 68, 0.1); padding: 8px; border-radius: 4px; border: 1px solid rgba(239,68,68,0.2); align-items: center;">
+                        <span style="font-weight: 600;">People At Risk:</span>
+                        <strong id="eq-rep-people" style="color: #ef4444; font-size: 15px; font-weight: 800;">0</strong>
+                    </div>
+
+                    <div style="margin-top: 6px;">
+                        <div style="font-size: 10px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">At Risk Breakdown:</div>
+                        <div id="eq-rep-breakdown" style="display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto; padding-right: 4px;">
+                            <!-- Dynamically loaded list -->
+                        </div>
+                    </div>
+                </div>
+            </div>
             
             <!-- Dynamic Map HUD Title (Scope) styled exactly like the picture! -->
             <div id="map-hud-scope" style="display: none; position: absolute; top: 24px; left: 50%; transform: translateX(-50%); z-index: 1000; pointer-events: none; text-align: center;">
@@ -668,119 +793,134 @@
 
         <!-- Sidebar Right -->
         <aside class="sidebar-right">
-            <div class="data-header">
-                <div class="data-title">Barangay Profile</div>
-                <div class="data-subtitle">Statistical data visualization and records</div>
-            </div>
-
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-label">Barangay Name</div>
-                    <div class="stat-value" id="profile-name">Select barangay</div>
+            <div class="sidebar-tabs">
+                <div class="sidebar-tab active" data-tab="tab-profile">
+                    <i class="fa-solid fa-circle-info" style="margin-right: 4px;"></i> Profile
                 </div>
-                <div class="stat-card">
-                    <div class="stat-label">Total Land Area</div>
-                    <div class="stat-value" id="profile-total-area">N/A</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Total Population</div>
-                    <div class="stat-value" id="profile-population">N/A</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Hazard Level</div>
-                    <div class="stat-value" id="profile-hazard">N/A</div>
+                <div class="sidebar-tab" data-tab="tab-spatial">
+                    <i class="fa-solid fa-chart-line" style="margin-right: 4px;"></i> Spatial & Metrics
                 </div>
             </div>
 
-            <div class="viz-section">
-                <div class="section-title">General Information</div>
-                <div class="detail-row"><span>Official Name</span><span id="profile-official-name">N/A</span></div>
-                <div class="detail-row"><span>Municipality</span><span id="profile-municipality">Bayambang</span></div>
-                <div class="detail-row"><span>Province</span><span id="profile-province">Pangasinan</span></div>
-                <div class="detail-row"><span>Land Area</span><span id="profile-land-area">N/A</span></div>
-                <div class="detail-row"><span>Primary Land Use</span><span id="profile-land-use">N/A</span></div>
-                <div class="detail-row"><span>Status</span><span id="profile-status">N/A</span></div>
-                <div class="detail-row"><span>Coordinates</span><span id="profile-coordinates">N/A</span></div>
-            </div>
+            <!-- TAB 1: Profile -->
+            <div id="tab-profile" class="tab-content" style="display: block; flex: 1; overflow-y: auto;">
+                <div class="data-header">
+                    <div class="data-title">Barangay Profile</div>
+                    <div class="data-subtitle">Statistical data visualization and records</div>
+                </div>
 
-            <div class="viz-section">
-                <div class="spatial-section-title">
-                    <div class="section-title" style="margin-bottom: 0;">PostGIS Measurements</div>
-                    <span class="spatial-status warning" id="postgis-status">Waiting</span>
-                </div>
-                <div class="grid-layout spatial-grid">
-                    <div class="grid-item">
-                        <div class="item-label">Computed Area</div>
-                        <div class="item-value" id="postgis-computed-area">N/A</div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Barangay Name</div>
+                        <div class="stat-value" id="profile-name">Select barangay</div>
                     </div>
-                    <div class="grid-item">
-                        <div class="item-label">Perimeter</div>
-                        <div class="item-value" id="postgis-perimeter">N/A</div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Land Area</div>
+                        <div class="stat-value" id="profile-total-area">N/A</div>
                     </div>
-                    <div class="grid-item">
-                        <div class="item-label">Area Difference</div>
-                        <div class="item-value" id="postgis-area-diff">N/A</div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Population</div>
+                        <div class="stat-value" id="profile-population">N/A</div>
                     </div>
-                    <div class="grid-item">
-                        <div class="item-label">Road Length</div>
-                        <div class="item-value" id="postgis-road-length">N/A</div>
-                    </div>
-                    <div class="grid-item">
-                        <div class="item-label">Features Inside</div>
-                        <div class="item-value" id="postgis-contained-features">N/A</div>
-                    </div>
-                    <div class="grid-item">
-                        <div class="item-label">Nearest Feature</div>
-                        <div class="item-value" id="postgis-nearest-feature">N/A</div>
+                    <div class="stat-card">
+                        <div class="stat-label">Hazard Level</div>
+                        <div class="stat-value" id="profile-hazard">N/A</div>
                     </div>
                 </div>
-                <div class="spatial-caption" id="postgis-caption">
-                    Select a barangay to load measurements computed from PostGIS.
-                </div>
-            </div>
 
-            <div class="viz-section">
-                <div class="section-title">Land Cover Distribution</div>
-                <div class="grid-layout">
-                    <div class="grid-item">
-                        <div class="item-label">Agriculture</div>
-                        <div class="item-value" id="profile-agri-area">N/A</div>
-                    </div>
-                    <div class="grid-item">
-                        <div class="item-label">Residential</div>
-                        <div class="item-value" id="profile-residential-area">N/A</div>
-                    </div>
-                    <div class="grid-item">
-                        <div class="item-label">Commercial</div>
-                        <div class="item-value" id="profile-commercial-area">N/A</div>
-                    </div>
-                    <div class="grid-item">
-                        <div class="item-label">Not Identified</div>
-                        <div class="item-value" id="profile-unidentified-area">N/A</div>
+                <div class="viz-section">
+                    <div class="section-title">General Information</div>
+                    <div class="detail-row"><span>Official Name</span><span id="profile-official-name">N/A</span></div>
+                    <div class="detail-row"><span>Municipality</span><span id="profile-municipality">Bayambang</span></div>
+                    <div class="detail-row"><span>Province</span><span id="profile-province">Pangasinan</span></div>
+                    <div class="detail-row"><span>Land Area</span><span id="profile-land-area">N/A</span></div>
+                    <div class="detail-row"><span>Primary Land Use</span><span id="profile-land-use">N/A</span></div>
+                    <div class="detail-row"><span>Status</span><span id="profile-status">N/A</span></div>
+                    <div class="detail-row"><span>Coordinates</span><span id="profile-coordinates">N/A</span></div>
+                </div>
+
+                <div class="viz-section">
+                    <div class="section-title">Land Cover Distribution</div>
+                    <div class="grid-layout">
+                        <div class="grid-item">
+                            <div class="item-label">Agriculture</div>
+                            <div class="item-value" id="profile-agri-area">N/A</div>
+                        </div>
+                        <div class="grid-item">
+                            <div class="item-label">Residential</div>
+                            <div class="item-value" id="profile-residential-area">N/A</div>
+                        </div>
+                        <div class="grid-item">
+                            <div class="item-label">Commercial</div>
+                            <div class="item-value" id="profile-commercial-area">N/A</div>
+                        </div>
+                        <div class="grid-item">
+                            <div class="item-label">Not Identified</div>
+                            <div class="item-value" id="profile-unidentified-area">N/A</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="viz-section">
-                <div class="section-title">Population Insight</div>
-                <div class="population-insight">
-                    <div class="insight-row">
-                        <span>Density</span>
-                        <strong id="population-density-value">0 people/ha</strong>
+            <!-- TAB 2: Spatial & Metrics -->
+            <div id="tab-spatial" class="tab-content" style="display: none; flex: 1; overflow-y: auto;">
+                <div class="viz-section" style="border-top: none;">
+                    <div class="spatial-section-title">
+                        <div class="section-title" style="margin-bottom: 0;">PostGIS Measurements</div>
+                        <span class="spatial-status warning" id="postgis-status">Waiting</span>
                     </div>
-                    <div class="insight-row">
-                        <span>Municipal avg.</span>
-                        <strong id="population-average-value">0 people/ha</strong>
+                    <div class="grid-layout spatial-grid">
+                        <div class="grid-item">
+                            <div class="item-label">Computed Area</div>
+                            <div class="item-value" id="postgis-computed-area">N/A</div>
+                        </div>
+                        <div class="grid-item">
+                            <div class="item-label">Perimeter</div>
+                            <div class="item-value" id="postgis-perimeter">N/A</div>
+                        </div>
+                        <div class="grid-item">
+                            <div class="item-label">Area Difference</div>
+                            <div class="item-value" id="postgis-area-diff">N/A</div>
+                        </div>
+                        <div class="grid-item">
+                            <div class="item-label">Road Length</div>
+                            <div class="item-value" id="postgis-road-length">N/A</div>
+                        </div>
+                        <div class="grid-item">
+                            <div class="item-label">Features Inside</div>
+                            <div class="item-value" id="postgis-contained-features">N/A</div>
+                        </div>
+                        <div class="grid-item">
+                            <div class="item-label">Nearest Feature</div>
+                            <div class="item-value" id="postgis-nearest-feature">N/A</div>
+                        </div>
                     </div>
-                    <div class="insight-row">
-                        <span>Barangay rank</span>
-                        <strong id="population-rank-value">N/A</strong>
+                    <div class="spatial-caption" id="postgis-caption">
+                        Select a barangay to load measurements computed from PostGIS.
                     </div>
-                    <div class="insight-bar" aria-hidden="true">
-                        <div class="insight-bar-fill" id="population-density-bar"></div>
-                    </div>
-                    <div class="insight-caption" id="population-insight-caption">
-                        Select a barangay to compare its population density against the rest of Bayambang.
+                </div>
+
+                <div class="viz-section">
+                    <div class="section-title">Population Insight</div>
+                    <div class="population-insight">
+                        <div class="insight-row">
+                            <span>Density</span>
+                            <strong id="population-density-value">0 people/ha</strong>
+                        </div>
+                        <div class="insight-row">
+                            <span>Municipal avg.</span>
+                            <strong id="population-average-value">0 people/ha</strong>
+                        </div>
+                        <div class="insight-row">
+                            <span>Barangay rank</span>
+                            <strong id="population-rank-value">N/A</strong>
+                        </div>
+                        <div class="insight-bar" aria-hidden="true">
+                            <div class="insight-bar-fill" id="population-density-bar"></div>
+                        </div>
+                        <div class="insight-caption" id="population-insight-caption">
+                            Select a barangay to compare its population density against the rest of Bayambang.
+                        </div>
                     </div>
                 </div>
             </div>
@@ -802,6 +942,22 @@
     <script src="https://cdn.jsdelivr.net/npm/leaflet-measure@3.1.0/dist/leaflet-measure.js"></script>
 
     <script>
+        // Tab switching logic for sidebars
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.sidebar-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const sidebar = tab.closest('aside');
+                    sidebar.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    const targetTab = tab.getAttribute('data-tab');
+                    sidebar.querySelectorAll('.tab-content').forEach(content => {
+                        content.style.display = content.id === targetTab ? 'block' : 'none';
+                    });
+                });
+            });
+        });
+
         let map;
         let currentLayer;
         let markers = {};
@@ -811,8 +967,16 @@
         let filteredBarangays = [];
         let identifyActive = false;
         let editModeActive = false;
+        let measureActive = false;
         let spatialAnalysisToken = 0;
         const boundaryEditingEnabled = false;
+
+        // Earthquake Simulator Variables
+        let eqSimulationActive = false;
+        let eqEpicenterMarker = null;
+        let eqCircleArea = null;
+        let eqSimulationRadius = 500;
+        let eqHighlightedMarkers = [];
         function createMeasureControl() {
             return L.control.measure({
                 position: 'topright',
@@ -1088,7 +1252,9 @@
                                  });
                              });
 
-                             polygon.on('click', function() {
+                             polygon.on('click', function(e) {
+                                 if (measureActive) return;
+                                 if (eqSimulationActive) { triggerEarthquakeSimulation(e.latlng); return; }
                                  selectBarangay(brgy.id);
                              });
 
@@ -1134,7 +1300,15 @@
                     `;
                     
                     marker.bindPopup(infoWindowContent);
-                    marker.on('click', () => selectBarangay(brgy.id));
+                    marker._customPopupContent = infoWindowContent;
+                    marker.on('click', (e) => {
+                        if (measureActive) return;
+                        if (eqSimulationActive) {
+                            triggerEarthquakeSimulation(e.latlng || L.latLng(brgy.latitude, brgy.longitude));
+                            return;
+                        }
+                        selectBarangay(brgy.id);
+                    });
 	                }
 	            });
 
@@ -1166,8 +1340,16 @@
                 alert('Unable to detect your location. Please allow location access in the browser.');
             });
 
-            // Map Click (Identify Coordinate Tool)
+            map.on('measurestart', function() {
+                measureActive = true;
+            });
+
+            // Map Click (Identify Coordinate / Earthquake Simulation Tool)
             map.on('click', function(e) {
+                if (eqSimulationActive) {
+                    triggerEarthquakeSimulation(e.latlng);
+                    return;
+                }
                 if(identifyActive) {
                     L.popup()
                         .setLatLng(e.latlng)
@@ -1209,11 +1391,7 @@
             filteredBarangays = barangays.filter(b => !isMunicipalBoundary(b));
             renderBarangayList();
             updateLabelVisibility();
-
-            const defaultBarangay = filteredBarangays.find(brgy => brgy.name.toLowerCase() === 'tococ east') || filteredBarangays[0];
-            if (defaultBarangay) {
-                selectBarangay(defaultBarangay.id);
-            }
+            updateSidebarToMunicipal();
         }
 
         function createCustomIcon(iconClass, color) {
@@ -1489,6 +1667,7 @@
             updateSelectedMarkerState();
             updateDynamicLegend();
             resetSpatialAnalysis('Select a barangay to load measurements computed from PostGIS.');
+            updateSidebarToMunicipal();
 
             map.setView([15.8287, 120.4173], 14);
         }
@@ -1639,8 +1818,228 @@
             searchBarangays();
         }
 
+        function toggleEqSimulation() {
+            eqSimulationActive = !eqSimulationActive;
+            const btn = document.getElementById('eqSimBtn');
+            const container = document.getElementById('eqRadiusContainer');
+            const clearBtn = document.getElementById('eqClearBtn');
+
+            if (eqSimulationActive) {
+                // Deactivate other modes
+                identifyActive = false;
+                clearMeasure();
+                document.querySelectorAll('.toolbar-btn.active').forEach(b => b.classList.remove('active'));
+                document.getElementById('map').style.cursor = 'crosshair';
+                
+                btn.classList.add('active');
+                btn.innerHTML = '<i class="fa-solid fa-circle-stop"></i> Exit Analysis Mode';
+                btn.style.background = 'rgba(239, 68, 68, 0.25)';
+                btn.style.borderColor = '#ef4444';
+                
+                container.style.display = 'flex';
+                clearBtn.style.display = 'block';
+            } else {
+                document.getElementById('map').style.cursor = '';
+                btn.classList.remove('active');
+                btn.innerHTML = '<i class="fa-solid fa-radiation"></i> Run Impact Analysis';
+                btn.style.background = 'rgba(239, 68, 68, 0.1)';
+                btn.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+                
+                container.style.display = 'none';
+                if (!eqEpicenterMarker) {
+                    clearBtn.style.display = 'none';
+                }
+            }
+
+            // Temporarily unbind popups on centroid markers so they dont open when clicking to simulate
+            if (typeof markers !== 'undefined') {
+                Object.values(markers).forEach(m => {
+                    if (eqSimulationActive) {
+                        m.unbindPopup();
+                    } else {
+                        if (m._customPopupContent) {
+                            m.bindPopup(m._customPopupContent);
+                        }
+                    }
+                });
+            }
+        }
+
+        function updateEqRadius(val) {
+            eqSimulationRadius = parseInt(val);
+            document.getElementById('eqRadiusVal').innerText = val + 'm';
+            if (eqCircleArea) {
+                eqCircleArea.setRadius(eqSimulationRadius);
+                if (eqEpicenterMarker) {
+                    triggerEarthquakeSimulation(eqEpicenterMarker.getLatLng());
+                }
+            }
+        }
+
+        function clearEqSimulation() {
+            if (eqCircleArea) {
+                map.removeLayer(eqCircleArea);
+                eqCircleArea = null;
+            }
+            if (eqEpicenterMarker) {
+                map.removeLayer(eqEpicenterMarker);
+                eqEpicenterMarker = null;
+            }
+            eqHighlightedMarkers.forEach(m => map.removeLayer(m));
+            eqHighlightedMarkers = [];
+            
+            document.getElementById('eq-report-panel').style.display = 'none';
+            document.getElementById('eqClearBtn').style.display = 'none';
+            
+            if (eqSimulationActive) {
+                toggleEqSimulation();
+            }
+        }
+
+        function triggerEarthquakeSimulation(latlng) {
+            // 1. Remove previous layers
+            if (eqCircleArea) map.removeLayer(eqCircleArea);
+            if (eqEpicenterMarker) map.removeLayer(eqEpicenterMarker);
+            eqHighlightedMarkers.forEach(m => map.removeLayer(m));
+            eqHighlightedMarkers = [];
+
+            // 2. Add Epicenter Marker (Red pulsing marker)
+            const epicenterIcon = L.divIcon({
+                html: `
+                    <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+                        <div style="position: absolute; width: 40px; height: 40px; border-radius: 50%; background: rgba(239, 68, 68, 0.3); animation: ping 1s infinite; pointer-events: none;"></div>
+                        <div style="background-color: #ef4444; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2.5px solid white; box-shadow: 0 0 15px rgba(239,68,68,1.0); z-index: 10;">
+                            <i class="fa-solid fa-burst" style="color: white; font-size: 11px;"></i>
+                        </div>
+                    </div>
+                `,
+                className: 'epicenter-map-icon',
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+            });
+            eqEpicenterMarker = L.marker(latlng, { icon: epicenterIcon }).addTo(map);
+
+            // 3. Add Circle Area
+            eqCircleArea = L.circle(latlng, {
+                color: '#ef4444',
+                fillColor: '#ef4444',
+                fillOpacity: 0.12,
+                weight: 2,
+                dashArray: '5, 5',
+                radius: eqSimulationRadius
+            }).addTo(map);
+
+            // 4. Show report panel in loading state
+            const reportPanel = document.getElementById('eq-report-panel');
+            document.getElementById('eq-rep-radius').innerText = `${eqSimulationRadius} m`;
+            document.getElementById('eq-rep-buildings').innerText = 'Calculating...';
+            document.getElementById('eq-rep-people').innerText = 'Calculating...';
+            document.getElementById('eq-rep-breakdown').innerHTML = '<div style="color:var(--text-muted); text-align:center; padding: 10px;">Analyzing impact...</div>';
+            reportPanel.style.display = 'block';
+            document.getElementById('eqClearBtn').style.display = 'block';
+
+            // 5. Send AJAX request to Laravel backend
+            fetch('/admin/map/simulate-earthquake', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    latitude: latlng.lat,
+                    longitude: latlng.lng,
+                    radius: eqSimulationRadius
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) {
+                    throw new Error('Analysis failed');
+                }
+
+                // 6. Update Report Panel with real statistics
+                document.getElementById('eq-rep-buildings').innerText = data.total_buildings;
+                document.getElementById('eq-rep-people').innerText = data.total_people.toLocaleString();
+
+                // 7. Render Risk Breakdown
+                const breakdownContainer = document.getElementById('eq-rep-breakdown');
+                if (data.features.length === 0) {
+                    breakdownContainer.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding: 10px;">No buildings in this radius.</div>';
+                } else {
+                    const typeLabels = {
+                        barangay_hall: 'Barangay Halls',
+                        evac_center: 'Evacuation Centers',
+                        school: 'Schools',
+                        covered_court: 'Covered Courts',
+                        health_center: 'Health Centers',
+                        police_post: 'Police Posts',
+                        multipurpose_bldg: 'Multipurpose Bldgs',
+                        road_network: 'Road Networks',
+                        hauz_of_anubis: 'Hauz of Anubis'
+                    };
+
+                    let breakdownHtml = '';
+                    Object.entries(data.type_breakdown).forEach(([type, count]) => {
+                        const label = typeLabels[type] || type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                        breakdownHtml += `
+                            <div style="display:flex; justify-content:space-between; font-size:11px; padding: 2px 0;">
+                                <span style="color:var(--text-muted);">${label}</span>
+                                <strong style="color:#f87171;">${count} people</strong>
+                            </div>
+                        `;
+                    });
+                    breakdownContainer.innerHTML = breakdownHtml;
+                }
+
+                // 8. Draw high-impact warning markers for all affected points in the circle
+                data.features.forEach(feat => {
+                    if (feat.latitude && feat.longitude) {
+                        const warningIcon = L.divIcon({
+                            html: `
+                                <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+                                    <div style="position: absolute; width: 28px; height: 28px; border-radius: 50%; background: rgba(239, 68, 68, 0.4); animation: ping 1.5s infinite; pointer-events: none;"></div>
+                                    <div style="background-color: #ef4444; width: 14px; height: 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1.5px solid white; box-shadow: 0 0 8px rgba(239,68,68,0.8); z-index: 10;">
+                                        <i class="fa-solid fa-person-falling-burst" style="color: white; font-size: 7px;"></i>
+                                    </div>
+                                </div>
+                            `,
+                            className: 'warning-map-icon',
+                            iconSize: [28, 28],
+                            iconAnchor: [14, 14]
+                        });
+
+                        const marker = L.marker([parseFloat(feat.latitude), parseFloat(feat.longitude)], { icon: warningIcon })
+                            .bindPopup(`
+                                <div style="padding: 4px; font-family: 'Inter', sans-serif; min-width: 180px; color: #fff;">
+                                    <b style="font-size: 13px; color: #ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> ${feat.name}</b>
+                                    <div style="font-size: 11px; margin-top: 6px; color: #cbd5e1; display: flex; flex-direction: column; gap: 4px;">
+                                        <div>Type: <b>${feat.feature_type.replace(/_/g, ' ').toUpperCase()}</b></div>
+                                        <div>Distance: <b>${Math.round(feat.distance_meters)} m</b></div>
+                                        <div style="background: rgba(239,68,68,0.15); padding: 4px 6px; border-radius: 4px; border: 1px solid rgba(239,68,68,0.3); font-weight: bold; color: #f87171; margin-top: 4px;">
+                                            Occupants: ${feat.occupants} people
+                                        </div>
+                                    </div>
+                                </div>
+                            `)
+                            .addTo(map);
+
+                        eqHighlightedMarkers.push(marker);
+                    }
+                });
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('eq-rep-buildings').innerText = 'Error';
+                document.getElementById('eq-rep-people').innerText = 'Error';
+                document.getElementById('eq-rep-breakdown').innerHTML = '<div style="color:#ef4444; text-align:center; padding: 10px;">Analysis error. Please try again.</div>';
+            });
+        }
+
         function toggleIdentify(btn) {
             identifyActive = !identifyActive;
+            if (identifyActive) {
+                clearMeasure();
+            }
             btn.classList.toggle('active', identifyActive);
             document.getElementById('map').style.cursor = identifyActive ? 'crosshair' : '';
         }
@@ -1656,6 +2055,7 @@
         }
 
         function clearMeasure() {
+            measureActive = false;
             if (measureControl) {
                 try { map.removeControl(measureControl); } catch (e) {}
             }
@@ -1712,6 +2112,86 @@
 
         function findMyLocation() {
             map.locate({ setView: true, maxZoom: 16 });
+        }
+
+        function getMunicipalStats() {
+            let totalPopulation = 0;
+            let totalArea = 0;
+            let totalAgri = 0;
+            let totalRes = 0;
+            let totalComm = 0;
+            let totalUnidentified = 0;
+
+            barangays.forEach(brgy => {
+                if (isMunicipalBoundary(brgy)) return;
+
+                const pop = parseInt(String(brgy.population || '0').replace(/,/g, '')) || 0;
+                totalPopulation += pop;
+
+                totalArea += parseFloat(brgy.total_area) || 0;
+                totalAgri += parseFloat(brgy.agri_area) || 0;
+                totalRes += parseFloat(brgy.residential_area) || 0;
+                totalComm += parseFloat(brgy.commercial_area) || 0;
+                totalUnidentified += parseFloat(brgy.unidentified_area) || 0;
+            });
+
+            const muniRecord = barangays.find(b => isMunicipalBoundary(b));
+            
+            const officialPopulation = muniRecord && muniRecord.population ? muniRecord.population : totalPopulation;
+            const officialArea = muniRecord && muniRecord.total_area ? parseFloat(muniRecord.total_area) : totalArea;
+
+            return {
+                name: 'Bayambang',
+                municipality: 'Bayambang',
+                province: 'Pangasinan',
+                population: typeof officialPopulation === 'number' ? officialPopulation : (parseInt(String(officialPopulation).replace(/,/g, '')) || totalPopulation),
+                total_area: officialArea,
+                agri_area: totalAgri,
+                residential_area: totalRes,
+                commercial_area: totalComm,
+                unidentified_area: totalUnidentified,
+                hazard_level: 'Moderate to High',
+                land_use: 'Mixed (Agri-Residential)',
+                status: 'Active',
+                coordinates: '15.8287, 120.4173'
+            };
+        }
+
+        function updateSidebarToMunicipal() {
+            const stats = getMunicipalStats();
+
+            setProfileText('profile-name', stats.name);
+            setProfileText('profile-total-area', formatHectares(stats.total_area));
+            setProfileText('profile-population', formatPopulation(stats.population));
+            setProfileText('profile-hazard', stats.hazard_level);
+            setProfileText('profile-official-name', stats.name);
+            setProfileText('profile-municipality', stats.municipality);
+            setProfileText('profile-province', stats.province);
+            setProfileText('profile-land-area', formatHectares(stats.total_area));
+            setProfileText('profile-land-use', stats.land_use);
+            setProfileText('profile-status', stats.status);
+            setProfileText('profile-coordinates', stats.coordinates);
+            setProfileText('profile-agri-area', formatHectares(stats.agri_area, false));
+            setProfileText('profile-residential-area', formatHectares(stats.residential_area, false));
+            setProfileText('profile-commercial-area', formatHectares(stats.commercial_area, false));
+            setProfileText('profile-unidentified-area', formatHectares(stats.unidentified_area, false));
+
+            const hazardElement = document.getElementById('profile-hazard');
+            if (hazardElement) hazardElement.style.color = '#fbbf24'; // Warning color (Yellow)
+
+            // Reset population insight values
+            const densityVal = document.getElementById('population-density-value');
+            if (densityVal) densityVal.innerText = 'N/A';
+            const avgVal = document.getElementById('population-average-value');
+            if (avgVal) avgVal.innerText = 'N/A';
+            const rankVal = document.getElementById('population-rank-value');
+            if (rankVal) rankVal.innerText = 'N/A';
+            const densityBar = document.getElementById('population-density-bar');
+            if (densityBar) densityBar.style.width = '0%';
+            const insightCaption = document.getElementById('population-insight-caption');
+            if (insightCaption) insightCaption.innerText = 'Select a barangay to view its density comparison details.';
+            
+            resetSpatialAnalysis('Select a barangay to load measurements computed from PostGIS.');
         }
 
         function updateSidebar(id) {

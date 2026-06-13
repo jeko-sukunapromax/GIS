@@ -56,6 +56,40 @@ class GisConverterController extends Controller
             $file->move($previewDir, $storedName);
 
             $conversion = $converter->convert($this->storedFile($storedPath), $extension, $fileName);
+
+            if ($request->boolean('dissolve_boundary')) {
+                $featuresJson = json_encode($conversion['geojson']['features']);
+                $result = \DB::select("
+                    SELECT ST_AsGeoJSON(ST_Union(geom)) as geojson 
+                    FROM (
+                        SELECT ST_GeomFromGeoJSON(value->>'geometry') as geom 
+                        FROM json_array_elements(?::json)
+                    ) sub
+                    WHERE geom IS NOT NULL
+                ", [$featuresJson]);
+
+                if (!empty($result) && !empty($result[0]->geojson)) {
+                    $unionedGeom = json_decode($result[0]->geojson, true);
+                    $conversion['geojson'] = [
+                        'type' => 'FeatureCollection',
+                        'features' => [
+                            [
+                                'type' => 'Feature',
+                                'properties' => [
+                                    'name' => 'Bayambang',
+                                    'description' => 'Dissolved boundary from ' . $fileName,
+                                ],
+                                'geometry' => $unionedGeom
+                            ]
+                        ]
+                    ];
+                    $conversion['feature_count'] = 1;
+                    $conversion['download_name'] = str_replace('-converted', '-dissolved', $conversion['download_name']);
+                } else {
+                    throw new \Exception('No valid polygon geometries found to dissolve.');
+                }
+            }
+
             $convertedPath = "{$previewDir}/converted.geojson";
             $converter->writeGeoJson($conversion['geojson'], $convertedPath);
             $inspection = $this->inspectGeoJson($conversion['geojson']);

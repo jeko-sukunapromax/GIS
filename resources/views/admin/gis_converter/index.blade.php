@@ -135,6 +135,29 @@
             grid-template-columns: 1fr;
         }
     }
+
+    .toggle-card:hover {
+        border-color: rgba(56, 189, 248, 0.3) !important;
+        background: rgba(56, 189, 248, 0.02) !important;
+    }
+    
+    .toggle-card.is-active {
+        border-color: rgba(56, 189, 248, 0.5) !important;
+        background: rgba(56, 189, 248, 0.06) !important;
+        box-shadow: 0 0 12px rgba(56, 189, 248, 0.08);
+    }
+    
+    .toggle-card.is-active i {
+        color: #38bdf8 !important;
+    }
+    
+    .toggle-card.is-active .switch-switch {
+        background: #0ea5e9 !important;
+    }
+    
+    .toggle-card.is-active .switch-knob {
+        transform: translateX(22px);
+    }
 </style>
 
 <div class="converter-header">
@@ -158,6 +181,23 @@
                     <input class="converter-file-input" type="file" id="gis_file" name="gis_file" accept=".geojson,.json,.kml,.zip" required>
                     <div class="mini-note">Accepted: GeoJSON, KML, or zipped Shapefile with WGS84 longitude/latitude coordinates.</div>
                 </div>
+                
+                <div id="dissolve_card" class="toggle-card" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; background: rgba(148, 163, 184, 0.03); border: 1px solid rgba(148, 163, 184, 0.12); border-radius: 10px; margin-top: 4px; transition: all 0.25s ease; cursor: pointer;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-solid fa-object-group" style="font-size: 16px; color: var(--text-muted); transition: color 0.2s ease;"></i>
+                        <span style="font-size: 13px; color: var(--text-heading); font-weight: 800; user-select: none;">
+                            Dissolve & Merge Boundaries
+                        </span>
+                    </div>
+                    <!-- Toggle Switch -->
+                    <div class="switch-switch" style="position: relative; width: 44px; height: 22px; background: rgba(148, 163, 184, 0.2); border-radius: 99px; transition: background-color 0.25s ease;">
+                        <div class="switch-knob" style="position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: #ffffff; border-radius: 50%; transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 1px 3px rgba(0,0,0,0.3);"></div>
+                    </div>
+                    
+                    <!-- Hidden Checkbox -->
+                    <input type="checkbox" id="dissolve_boundary" name="dissolve_boundary" value="1" style="display: none;">
+                </div>
+
                 <button type="submit" class="btn btn-primary" style="justify-content: center;">
                     <i class="fa-solid fa-code-compare"></i> Convert & Inspect
                 </button>
@@ -332,4 +372,22 @@
         @endif
     </div>
 </div>
+
+<script>
+    document.getElementById('dissolve_card').addEventListener('click', function(e) {
+        if (e.target.tagName === 'INPUT') return;
+        const checkbox = document.getElementById('dissolve_boundary');
+        checkbox.checked = !checkbox.checked;
+        checkbox.dispatchEvent(new Event('change'));
+    });
+    
+    document.getElementById('dissolve_boundary').addEventListener('change', function() {
+        const card = document.getElementById('dissolve_card');
+        if (this.checked) {
+            card.classList.add('is-active');
+        } else {
+            card.classList.remove('is-active');
+        }
+    });
+</script>
 @endsection

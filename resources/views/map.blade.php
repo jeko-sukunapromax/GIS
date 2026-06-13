@@ -84,27 +84,31 @@
         }
 
         .layer-category-heading {
-            color: rgba(148, 163, 184, 0.88);
+            color: rgba(56, 189, 248, 0.9);
+            font-family: 'Orbitron', sans-serif;
             font-size: 10px;
             font-weight: 700;
-            letter-spacing: 0;
-            line-height: 1.2;
-            margin-bottom: 5px;
+            letter-spacing: 1.2px;
+            margin-top: 14px;
+            margin-bottom: 8px;
             text-transform: uppercase;
         }
 
         .layer-toggle-row {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) auto auto;
+            display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 10px;
-            min-height: 32px;
-            padding: 6px 0;
-            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+            padding: 7px 6px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+            transition: background 0.15s ease;
         }
 
         .layer-toggle-row:last-child {
             border-bottom: 0;
+        }
+
+        .layer-toggle-row:hover {
+            background: rgba(255, 255, 255, 0.02);
         }
 
         .layer-toggle-label {
@@ -112,11 +116,10 @@
             color: #dbeafe;
             cursor: pointer;
             font-size: 13px;
-            font-weight: 600;
+            font-weight: 500;
             line-height: 1.25;
             overflow: hidden;
             text-overflow: ellipsis;
-            transition: color 0.2s ease;
             white-space: nowrap;
         }
 
@@ -125,22 +128,50 @@
         }
 
         .layer-count-badge {
-            min-width: 24px;
+            min-width: 22px;
             padding: 1px 6px;
-            border: 1px solid rgba(148, 163, 184, 0.16);
+            border: 1px solid rgba(148, 163, 184, 0.12);
             border-radius: 999px;
-            background: rgba(15, 23, 42, 0.64);
-            color: rgba(203, 213, 225, 0.86);
-            font-size: 11px;
-            line-height: 18px;
+            background: rgba(15, 23, 42, 0.5);
+            color: rgba(203, 213, 225, 0.75);
+            font-size: 10px;
             text-align: center;
         }
 
         .layer-checkbox {
+            appearance: none;
+            -webkit-appearance: none;
             width: 15px;
             height: 15px;
-            accent-color: #38bdf8;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            border-radius: 3px;
+            background: rgba(15, 23, 42, 0.6);
             cursor: pointer;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+        }
+
+        .layer-checkbox:hover {
+            border-color: rgba(56, 189, 248, 0.6);
+        }
+
+        .layer-checkbox:checked {
+            background: #38bdf8;
+            border-color: #38bdf8;
+        }
+
+        .layer-checkbox:checked::after {
+            content: '';
+            width: 7px;
+            height: 4px;
+            border-left: 1.8px solid #0f172a;
+            border-bottom: 1.8px solid #0f172a;
+            transform: rotate(-45deg) translate(0.5px, -0.5px);
+            position: absolute;
+            top: 3.5px;
         }
 
         .layer-feature-marker {
@@ -196,11 +227,100 @@
             user-select: none;
         }
 
-        @media (max-height: 760px) {
-            .left-map-panel {
-                height: calc(100vh - 92px) !important;
-                margin-top: 12px !important;
-            }
+        /* Unified Sidebar system - Full-height Anchored Sidebar */
+        .sidebar-container {
+            position: relative;
+            display: flex;
+            height: calc(100vh - 65px);
+            margin-top: 0;
+            z-index: 50;
+        }
+
+        .dock-rail {
+            width: 64px;
+            height: 100%;
+            background: rgba(6, 12, 20, 0.95);
+            border-right: 1px solid rgba(0, 153, 255, 0.22);
+            border-top: 0;
+            border-bottom: 0;
+            border-left: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            gap: 20px;
+            backdrop-filter: blur(12px);
+            z-index: 20;
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Vertical Dock Tab Buttons */
+        .dock-tab-btn {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: #94a3b8;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .dock-tab-btn i {
+            font-size: 16px;
+        }
+        
+        .dock-tab-label {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 7.5px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            transform: scale(0.95);
+            transition: color 0.25s ease;
+        }
+
+        .dock-tab-btn:hover {
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.05);
+            border-color: rgba(56, 189, 248, 0.15);
+        }
+
+        .dock-tab-btn.active {
+            color: #0099ff;
+            background: rgba(0, 153, 255, 0.1);
+            border-color: rgba(0, 153, 255, 0.3);
+            box-shadow: 0 0 12px rgba(0, 153, 255, 0.2), inset 0 0 6px rgba(0, 153, 255, 0.15);
+        }
+
+        .sidebar-drawer {
+            width: 360px;
+            height: 100%;
+            background: rgba(6, 12, 20, 0.85);
+            border-right: 1px solid rgba(0, 153, 255, 0.22);
+            border-top: 0;
+            border-bottom: 0;
+            border-left: 0;
+            position: absolute;
+            left: 63px; /* Align with right border of dock-rail */
+            top: 0;
+            backdrop-filter: blur(12px);
+            z-index: 10;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+            box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-drawer.collapsed {
+            transform: translateX(-100%);
+            opacity: 0;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -243,64 +363,89 @@
         </nav>
 
         <!-- Main Content Layout -->
-        <div class="flex-1 flex justify-between px-10">
+        <div class="flex-1 flex relative pointer-events-none">
             
-            <!-- Left Panel - Barangays List + Layers -->
-            <div id="leftMapPanel" class="left-map-panel w-[380px] flex flex-col h-[calc(100vh-120px)] mt-5 pointer-events-auto">
+            <!-- Unified Left Sidebar System -->
+            <div class="sidebar-container pointer-events-auto">
                 
-                <!-- Barangays Section -->
-                <div id="barangayPanel" class="flex flex-col overflow-hidden">
-                    <div class="font-orbitron text-[14px] font-bold text-cyber-primary tracking-[3px] mb-4 flex items-center gap-2.5 before:content-[''] before:block before:h-px before:bg-cyber-primary before:flex-1 before:opacity-50 after:content-[''] after:block after:h-px after:bg-cyber-primary after:flex-1 after:opacity-50">BARANGAYS</div>
+                <!-- Vertical Dock Rail -->
+                <div class="dock-rail">
+                    <!-- Barangays Tab Button -->
+                    <button onclick="switchSidebarTab('barangays')" id="tabBtn-barangays" class="dock-tab-btn active" title="Barangays">
+                        <i class="fa-solid fa-map-location-dot"></i>
+                        <span class="dock-tab-label">BARANGAYS</span>
+                    </button>
                     
-                    <!-- View Switcher -->
-                    <div class="grid grid-cols-2 gap-2 mb-4">
-                        <button onclick="switchView('all')" id="viewAllBtn" class="font-orbitron text-[10px] tracking-[2px] py-1.5 border border-cyber-primary bg-cyber-primary/15 text-white transition-all duration-300 shadow-[0_0_8px_rgba(0,153,255,0.3)]">
-                            ALL BARANGAYS
-                        </button>
-                        <button onclick="switchView('district')" id="viewDistrictBtn" class="font-orbitron text-[10px] tracking-[2px] py-1.5 border border-cyber-primary/20 bg-transparent text-cyber-muted hover:text-cyber-primary hover:border-cyber-primary/50 transition-all duration-300">
-                            BY DISTRICT
-                        </button>
-                    </div>
-
-                    <div class="bg-cyber-dark/60 border border-cyber-primary/20 px-4 py-2.5 flex items-center gap-2.5 mb-4">
-                        <input type="text" id="searchInput" placeholder="SEARCH BARANGAY..." onkeyup="filterBarangays()" class="bg-transparent border-none text-cyber-primary font-rajdhani text-[14px] w-full outline-none placeholder-cyber-primary/30 placeholder:tracking-[1px]">
-                        <i class="fa-solid fa-magnifying-glass text-cyber-primary text-[12px]"></i>
-                    </div>
-
-                    <div class="text-[11px] text-cyber-muted mb-4 tracking-[1px] flex gap-1.5 justify-between items-center">
-                        <span class="text-cyber-primary">BAYAMBANG</span>
-                        <div class="flex gap-1.5">
-                            <button onclick="toggleMultiSelectMode()" id="multiSelectBtn" class="font-orbitron text-[9px] text-cyber-muted px-2 py-1 border border-cyber-primary/20 transition-all duration-300 hover:bg-cyber-primary/10 hover:text-cyber-primary tracking-[1px]">
-                                <i class="fa-solid fa-object-ungroup mr-1"></i> MULTI
+                    <!-- Layers Tab Button -->
+                    <button onclick="switchSidebarTab('layers')" id="tabBtn-layers" class="dock-tab-btn" title="Layers">
+                        <i class="fa-solid fa-layer-group"></i>
+                        <span class="dock-tab-label">LAYERS</span>
+                    </button>
+                    
+                    <!-- Profile Tab Button -->
+                    <button onclick="switchSidebarTab('profile')" id="tabBtn-profile" class="dock-tab-btn" title="Profile/Info">
+                        <i class="fa-solid fa-chart-simple"></i>
+                        <span class="dock-tab-label">PROFILE</span>
+                    </button>
+                </div>
+                
+                <!-- Drawer Panel -->
+                <div id="sidebarDrawer" class="sidebar-drawer">
+                    <!-- Collapse Button inside Drawer -->
+                    <button onclick="toggleSidebarDrawer()" class="absolute top-[18px] right-[16px] text-cyber-primary/60 hover:text-cyber-primary transition-all duration-200 z-20" style="background: transparent; border: none; cursor: pointer;" title="Collapse Drawer">
+                        <i class="fa-solid fa-angles-left"></i>
+                    </button>
+                    
+                    <!-- Tab Content: Barangays -->
+                    <div id="tabContent-barangays" class="tab-content flex-1 flex flex-col p-5 overflow-hidden">
+                        <div class="font-orbitron text-[13px] font-bold text-cyber-primary tracking-[3px] mb-4 flex items-center gap-2.5 before:content-[''] before:block before:h-px before:bg-cyber-primary before:flex-1 before:opacity-50 before:max-w-[15px] after:content-[''] after:block after:h-px after:bg-cyber-primary/20 after:flex-1 after:opacity-20 after:max-w-[80px]">BARANGAYS</div>
+                        
+                        <!-- View Switcher -->
+                        <div class="grid grid-cols-2 gap-2 mb-4">
+                            <button onclick="switchView('all')" id="viewAllBtn" class="font-orbitron text-[10px] tracking-[2px] py-1.5 border border-cyber-primary bg-cyber-primary/15 text-white transition-all duration-300 shadow-[0_0_8px_rgba(0,153,255,0.3)]">
+                                ALL BARANGAYS
                             </button>
-                            <button onclick="selectAllBarangays()" id="selectAllBtn" class="font-orbitron text-[9px] text-cyber-primary px-2 py-1 border border-cyber-primary/30 transition-all duration-300 hover:bg-cyber-primary/10 hover:shadow-[0_0_10px_rgba(0,153,255,0.4)] tracking-[1px]">
-                                <i class="fa-solid fa-layer-group mr-1"></i> SELECT ALL
+                            <button onclick="switchView('district')" id="viewDistrictBtn" class="font-orbitron text-[10px] tracking-[2px] py-1.5 border border-cyber-primary/20 bg-transparent text-cyber-muted hover:text-cyber-primary hover:border-cyber-primary/50 transition-all duration-300">
+                                BY DISTRICT
                             </button>
                         </div>
+
+                        <div class="bg-cyber-dark/60 border border-cyber-primary/20 px-4 py-2.5 flex items-center gap-2.5 mb-4">
+                            <input type="text" id="searchInput" placeholder="SEARCH BARANGAY..." onkeyup="filterBarangays()" class="bg-transparent border-none text-cyber-primary font-rajdhani text-[14px] w-full outline-none placeholder-cyber-primary/30 placeholder:tracking-[1px]">
+                            <i class="fa-solid fa-magnifying-glass text-cyber-primary text-[12px]"></i>
+                        </div>
+
+                        <div class="text-[11px] text-cyber-muted mb-4 tracking-[1px] flex gap-1.5 justify-between items-center">
+                            <span class="text-cyber-primary">BAYAMBANG</span>
+                            <div class="flex gap-1.5">
+                                <button onclick="toggleMultiSelectMode()" id="multiSelectBtn" class="font-orbitron text-[9px] text-cyber-muted px-2 py-1 border border-cyber-primary/20 transition-all duration-300 hover:bg-cyber-primary/10 hover:text-cyber-primary tracking-[1px]">
+                                    <i class="fa-solid fa-object-ungroup mr-1"></i> MULTI
+                                </button>
+                                <button onclick="selectAllBarangays()" id="selectAllBtn" class="font-orbitron text-[9px] text-cyber-primary px-2 py-1 border border-cyber-primary/30 transition-all duration-300 hover:bg-cyber-primary/10 hover:shadow-[0_0_10px_rgba(0,153,255,0.4)] tracking-[1px]">
+                                    <i class="fa-solid fa-layer-group mr-1"></i> SELECT ALL
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto flex flex-col gap-0.5 pr-2.5 scrollbar-cyber" id="barangayList">
+                            <!-- Loaded dynamically via JS -->
+                        </div>
                     </div>
-
-                    <div class="flex-1 overflow-y-auto flex flex-col gap-0.5 pr-2.5 scrollbar-cyber" id="barangayList">
-                        <!-- Loaded dynamically via JS -->
+                    
+                    <!-- Tab Content: Layers -->
+                    <div id="tabContent-layers" class="tab-content flex-1 flex flex-col p-5 overflow-hidden hidden">
+                        <div class="font-orbitron text-[13px] font-bold text-cyber-primary tracking-[3px] mb-4 flex items-center gap-2.5 before:content-[''] before:block before:h-px before:bg-cyber-primary before:flex-1 before:opacity-50 before:max-w-[15px] after:content-[''] after:block after:h-px after:bg-cyber-primary/20 after:flex-1 after:opacity-20 after:max-w-[80px]">LAYERS</div>
+                        <div class="flex-1 overflow-y-auto pr-2 scrollbar-cyber" id="layerToggles">
+                            <!-- Loaded dynamically via JS -->
+                        </div>
                     </div>
-                </div>
-
-                <div id="panelResizeHandle" class="sidebar-resize-handle" title="Resize sidebar sections"></div>
-
-                <!-- Layers Section -->
-                <div id="layersPanel" class="layers-panel-clean flex flex-col overflow-hidden">
-                    <div class="layers-panel-title flex-shrink-0">Map Layers</div>
-                    <div class="flex-1 overflow-y-auto pr-2 scrollbar-cyber" id="layerToggles">
-                        <!-- Loaded dynamically via JS -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Panel - Barangay Profile -->
-            <div class="w-[320px] flex flex-col h-[calc(100vh-120px)] mt-5 pointer-events-auto">
-                <div id="barangayProfile" class="bg-cyber-dark/60 border border-cyber-primary/20 p-5 hidden">
-                    <div class="font-orbitron text-[14px] font-bold text-cyber-primary tracking-[3px] mb-4 flex items-center gap-2.5 before:content-[''] before:block before:h-px before:bg-cyber-primary before:flex-1 before:opacity-50 after:content-[''] after:block after:h-px after:bg-cyber-primary after:flex-1 after:opacity-50">PROFILE</div>
-                    <div id="profileContent" class="text-[13px] space-y-3">
-                        <!-- Loaded dynamically via JS -->
+                    
+                    <!-- Tab Content: Profile -->
+                    <div id="barangayProfile" class="tab-content flex-1 flex flex-col p-5 overflow-hidden hidden">
+                        <div class="font-orbitron text-[13px] font-bold text-cyber-primary tracking-[3px] mb-4 flex items-center gap-2.5 before:content-[''] before:block before:h-px before:bg-cyber-primary before:flex-1 before:opacity-50 before:max-w-[15px] after:content-[''] after:block after:h-px after:bg-cyber-primary/20 after:flex-1 after:opacity-20 after:max-w-[80px]">PROFILE</div>
+                        <div id="profileContent" class="text-[13px] space-y-3 flex-1 overflow-y-auto pr-2 scrollbar-cyber">
+                            <!-- Loaded dynamically via JS -->
+                        </div>
                     </div>
                 </div>
             </div>
@@ -449,7 +594,6 @@
             renderBarangayList(barangays);
             drawBoundaries();
             renderLayerToggles();
-            initResizableSidebar();
 
             // Show default SCOPE: BAYAMBANG HUD on load
             map.whenReady(() => {
@@ -457,60 +601,11 @@
                     const center = municipalPolygon.getBounds().getCenter();
                     showHudScope('BAYAMBANG', center);
                 }
+                showMunicipalProfile();
             });
         }
 
-        function initResizableSidebar() {
-            const panel = document.getElementById('leftMapPanel');
-            const barangayPanel = document.getElementById('barangayPanel');
-            const layersPanel = document.getElementById('layersPanel');
-            const handle = document.getElementById('panelResizeHandle');
-            if (!panel || !barangayPanel || !layersPanel || !handle) return;
 
-            const minBarangayHeight = 230;
-            const minLayersHeight = 145;
-            let startY = 0;
-            let startBarangayHeight = 0;
-
-            const getAvailableHeight = () => panel.clientHeight - handle.offsetHeight;
-
-            const applyPanelHeights = (requestedBarangayHeight) => {
-                const availableHeight = getAvailableHeight();
-                const maxBarangayHeight = Math.max(minBarangayHeight, availableHeight - minLayersHeight);
-                const barangayHeight = Math.min(Math.max(requestedBarangayHeight, minBarangayHeight), maxBarangayHeight);
-                const layersHeight = Math.max(minLayersHeight, availableHeight - barangayHeight);
-
-                barangayPanel.style.flex = `0 0 ${barangayHeight}px`;
-                layersPanel.style.flex = `0 0 ${layersHeight}px`;
-            };
-
-            const savedHeight = Number(localStorage.getItem('geoSidebarBarangayHeight'));
-            const defaultHeight = Math.round(getAvailableHeight() * 0.58);
-            applyPanelHeights(Number.isFinite(savedHeight) && savedHeight > 0 ? savedHeight : defaultHeight);
-
-            handle.addEventListener('pointerdown', (event) => {
-                startY = event.clientY;
-                startBarangayHeight = barangayPanel.getBoundingClientRect().height;
-                document.body.classList.add('resizing-sidebar');
-                handle.setPointerCapture(event.pointerId);
-            });
-
-            handle.addEventListener('pointermove', (event) => {
-                if (!document.body.classList.contains('resizing-sidebar')) return;
-                applyPanelHeights(startBarangayHeight + event.clientY - startY);
-            });
-
-            handle.addEventListener('pointerup', (event) => {
-                if (!document.body.classList.contains('resizing-sidebar')) return;
-                document.body.classList.remove('resizing-sidebar');
-                localStorage.setItem('geoSidebarBarangayHeight', Math.round(barangayPanel.getBoundingClientRect().height));
-                handle.releasePointerCapture(event.pointerId);
-            });
-
-            window.addEventListener('resize', () => {
-                applyPanelHeights(barangayPanel.getBoundingClientRect().height);
-            });
-        }
 
         function renderLayerToggles() {
             const container = document.getElementById('layerToggles');
@@ -536,11 +631,11 @@
                     const div = document.createElement('div');
                     div.className = 'layer-toggle-row';
                     div.innerHTML = `
-                        <label for="layer-${layer.id}" class="layer-toggle-label">
-                            ${escapeHtml(layer.name)}
-                        </label>
-                        <span id="layer-count-${layer.id}" class="layer-count-badge">0</span>
-                        <input type="checkbox" id="layer-${layer.id}" onchange="toggleLayer(${layer.id})" class="layer-checkbox" aria-label="${escapeHtml(layer.name)}">
+                        <label for="layer-${layer.id}" class="layer-toggle-label flex-1">${escapeHtml(layer.name)}</label>
+                        <div class="flex items-center gap-3 flex-shrink-0">
+                            <span id="layer-count-${layer.id}" class="layer-count-badge">0</span>
+                            <input type="checkbox" id="layer-${layer.id}" onchange="toggleLayer(${layer.id})" class="layer-checkbox" aria-label="${escapeHtml(layer.name)}">
+                        </div>
                     `;
                     section.appendChild(div);
 
@@ -954,7 +1049,7 @@
                 showHudScope('BAYAMBANG', center);
             }
 
-            document.getElementById('barangayProfile').classList.add('hidden');
+            showMunicipalProfile();
             Object.values(layerGroups).forEach(group => group.clearLayers());
             selectedFallbackMarkers?.clearLayers();
         }
@@ -1053,7 +1148,7 @@
                 } else {
                     if (hudMarker) map.removeLayer(hudMarker);
                     showHudScope(`${selectedIds.length} BARANGAYS`, group.getBounds().getCenter());
-                    document.getElementById('barangayProfile').classList.add('hidden');
+                    showMultipleBarangaysProfile(selectedIds);
                     Object.values(layerGroups).forEach(group => group.clearLayers());
                 }
             }
@@ -1178,12 +1273,150 @@
                     showHudScope('BAYAMBANG', center);
                 }
                 
-                // Hide barangay profile
-                document.getElementById('barangayProfile').classList.add('hidden');
+                showMunicipalProfile();
                 
                 // Clear all layer features
                 Object.values(layerGroups).forEach(group => group.clearLayers());
             }
+        }
+
+        function getMunicipalStats() {
+            let totalPopulation = 0;
+            let totalArea = 0;
+            let totalAgri = 0;
+            let totalRes = 0;
+            let totalComm = 0;
+
+            barangays.forEach(brgy => {
+                if (isMunicipalBoundary(brgy)) return;
+
+                const pop = parseInt(String(brgy.population || '0').replace(/,/g, '')) || 0;
+                totalPopulation += pop;
+
+                totalArea += parseFloat(brgy.total_area) || 0;
+                totalAgri += parseFloat(brgy.agri_area) || 0;
+                totalRes += parseFloat(brgy.residential_area) || 0;
+                totalComm += parseFloat(brgy.commercial_area) || 0;
+            });
+
+            const muniRecord = barangays.find(b => isMunicipalBoundary(b));
+            
+            const officialPopulation = muniRecord && muniRecord.population ? muniRecord.population : totalPopulation;
+            const officialArea = muniRecord && muniRecord.total_area ? parseFloat(muniRecord.total_area) : totalArea;
+            const mayorName = muniRecord && muniRecord.barangay_chairman ? muniRecord.barangay_chairman : 'Hon. Niña Jose-Quiambao';
+            const skFedName = muniRecord && muniRecord.sk_chairman ? muniRecord.sk_chairman : 'N/A';
+
+            return {
+                name: 'BAYAMBANG',
+                province: 'Pangasinan',
+                mayor: mayorName,
+                sk_chairman: skFedName,
+                population: typeof officialPopulation === 'number' ? officialPopulation : (parseInt(String(officialPopulation).replace(/,/g, '')) || totalPopulation),
+                total_area: officialArea,
+                agri_area: totalAgri,
+                residential_area: totalRes,
+                commercial_area: totalComm
+            };
+        }
+
+        function showMunicipalProfile() {
+            const profile = document.getElementById('barangayProfile');
+            const content = document.getElementById('profileContent');
+            
+            profile.classList.remove('hidden');
+            expandRightPanel();
+            const stats = getMunicipalStats();
+            
+            let skChairmanHtml = '';
+            if (stats.sk_chairman && stats.sk_chairman !== 'N/A') {
+                skChairmanHtml = `
+                    <div class="mb-3">
+                        <div class="text-cyber-muted text-[10px] uppercase tracking-[1px] mb-1">SK Federation President</div>
+                        <div class="text-white font-semibold">${stats.sk_chairman}</div>
+                    </div>
+                `;
+            }
+
+            content.innerHTML = `
+                <div class="mb-3">
+                    <div class="text-cyber-muted text-[10px] uppercase tracking-[1px] mb-1">Scope</div>
+                    <div class="text-cyber-primary font-bold text-lg tracking-wider font-orbitron">${stats.name}</div>
+                </div>
+                <div class="mb-3">
+                    <div class="text-cyber-muted text-[10px] uppercase tracking-[1px] mb-1">Province</div>
+                    <div class="text-white font-semibold">Pangasinan</div>
+                </div>
+                <div class="mb-3">
+                    <div class="text-cyber-muted text-[10px] uppercase tracking-[1px] mb-1">Municipal Mayor</div>
+                    <div class="text-white font-semibold">${stats.mayor}</div>
+                </div>
+                ${skChairmanHtml}
+                <div class="mb-3">
+                    <div class="text-cyber-muted text-[10px] uppercase tracking-[1px] mb-1">Total Population</div>
+                    <div class="text-cyber-primary font-bold text-lg">${stats.population.toLocaleString('en-US')}</div>
+                </div>
+                <div class="mb-3">
+                    <div class="text-cyber-muted text-[10px] uppercase tracking-[1px] mb-1">Total Area</div>
+                    <div class="text-white font-semibold">${formatHectares(stats.total_area)}</div>
+                </div>
+                <div class="mb-3">
+                    <div class="text-cyber-muted text-[10px] uppercase tracking-[1px] mb-1 font-semibold">Land Use (Aggregated)</div>
+                    <div class="text-xs text-cyber-muted flex flex-col gap-1 mt-1">
+                        <div>🌾 Agricultural: <span class="text-white">${formatHectares(stats.agri_area)}</span></div>
+                        <div>🏠 Residential: <span class="text-white">${formatHectares(stats.residential_area)}</span></div>
+                        <div>🏢 Commercial: <span class="text-white">${formatHectares(stats.commercial_area)}</span></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showMultipleBarangaysProfile(selectedIds) {
+            const profile = document.getElementById('barangayProfile');
+            const content = document.getElementById('profileContent');
+            
+            profile.classList.remove('hidden');
+            expandRightPanel();
+            
+            let totalPopulation = 0;
+            let totalArea = 0;
+            let totalAgri = 0;
+            let totalRes = 0;
+            let totalComm = 0;
+            
+            selectedIds.forEach(id => {
+                const brgy = barangays.find(b => parseInt(b.id) === parseInt(id));
+                if (brgy) {
+                    const pop = parseInt(String(brgy.population || '0').replace(/,/g, '')) || 0;
+                    totalPopulation += pop;
+                    totalArea += parseFloat(brgy.total_area) || 0;
+                    totalAgri += parseFloat(brgy.agri_area) || 0;
+                    totalRes += parseFloat(brgy.residential_area) || 0;
+                    totalComm += parseFloat(brgy.commercial_area) || 0;
+                }
+            });
+            
+            content.innerHTML = `
+                <div class="mb-3">
+                    <div class="text-cyber-muted text-[10px] uppercase tracking-[1px] mb-1">Scope</div>
+                    <div class="text-cyber-primary font-bold font-orbitron">${selectedIds.length} BARANGAYS SELECTED</div>
+                </div>
+                <div class="mb-3">
+                    <div class="text-cyber-muted text-[10px] uppercase tracking-[1px] mb-1">Combined Population</div>
+                    <div class="text-cyber-primary font-bold text-lg">${totalPopulation.toLocaleString('en-US')}</div>
+                </div>
+                <div class="mb-3">
+                    <div class="text-cyber-muted text-[10px] uppercase tracking-[1px] mb-1">Combined Area</div>
+                    <div class="text-white font-semibold">${formatHectares(totalArea)}</div>
+                </div>
+                <div class="mb-3">
+                    <div class="text-cyber-muted text-[10px] uppercase tracking-[1px] mb-1">Combined Land Use</div>
+                    <div class="text-xs text-cyber-muted flex flex-col gap-1 mt-1">
+                        <div>🌾 Agricultural: <span class="text-white">${formatHectares(totalAgri)}</span></div>
+                        <div>🏠 Residential: <span class="text-white">${formatHectares(totalRes)}</span></div>
+                        <div>🏢 Commercial: <span class="text-white">${formatHectares(totalComm)}</span></div>
+                    </div>
+                </div>
+            `;
         }
 
         function showBarangayProfile(brgy) {
@@ -1191,6 +1424,7 @@
             const content = document.getElementById('profileContent');
             
             profile.classList.remove('hidden');
+            expandRightPanel();
             
             content.innerHTML = `
                 <div class="mb-3">
@@ -1226,6 +1460,45 @@
                     <div class="text-white">${brgy.land_use || 'N/A'}</div>
                 </div>
             `;
+        }
+
+        let activeTab = 'barangays';
+
+        function switchSidebarTab(tabId) {
+            // Update active dock button styling
+            document.querySelectorAll('.dock-tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const activeBtn = document.getElementById(`tabBtn-${tabId}`);
+            if (activeBtn) activeBtn.classList.add('active');
+
+            // Update visible content
+            document.querySelectorAll('.sidebar-drawer .tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            let targetContentId = tabId === 'profile' ? 'barangayProfile' : `tabContent-${tabId}`;
+            const activeContent = document.getElementById(targetContentId);
+            if (activeContent) activeContent.classList.remove('hidden');
+
+            // Expand drawer if collapsed
+            const drawer = document.getElementById('sidebarDrawer');
+            if (drawer && drawer.classList.contains('collapsed')) {
+                drawer.classList.remove('collapsed');
+            }
+
+            activeTab = tabId;
+        }
+
+        function toggleSidebarDrawer() {
+            const drawer = document.getElementById('sidebarDrawer');
+            if (drawer) {
+                drawer.classList.toggle('collapsed');
+            }
+        }
+
+        function expandRightPanel() {
+            switchSidebarTab('profile');
         }
 
         // Initialize

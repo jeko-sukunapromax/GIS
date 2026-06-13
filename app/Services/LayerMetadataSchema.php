@@ -15,28 +15,34 @@ class LayerMetadataSchema
             ['key' => 'official', 'label' => 'Brgy. Captain / Official Name', 'type' => 'text', 'placeholder' => 'e.g. Capt. Juan Ramos'],
             ['key' => 'status', 'label' => 'Status', 'type' => 'select', 'options' => ['Operational', 'Under Maintenance']],
             ['key' => 'contact', 'label' => 'Contact No.', 'type' => 'text', 'placeholder' => '09XX-XXX-XXXX'],
+            ['key' => 'current_people_count', 'label' => 'Current / Avg. Occupants', 'type' => 'number', 'placeholder' => 'e.g. 15'],
         ],
         'health_center' => [
             ['key' => 'nurse', 'label' => 'Nurse / Midwife Name', 'type' => 'text', 'placeholder' => 'e.g. Maria Santos, RN'],
             ['key' => 'hours', 'label' => 'Operating Hours', 'type' => 'text', 'placeholder' => '8:00 AM - 5:00 PM'],
             ['key' => 'status', 'label' => 'Status', 'type' => 'select', 'options' => ['Operational', 'Closed']],
+            ['key' => 'current_people_count', 'label' => 'Current / Avg. Occupants', 'type' => 'number', 'placeholder' => 'e.g. 25'],
         ],
         'multipurpose_bldg' => [
             ['key' => 'capacity', 'label' => 'Holding Capacity', 'type' => 'text', 'placeholder' => 'e.g. 200 persons'],
             ['key' => 'evac_ready', 'label' => 'Evacuation Ready?', 'type' => 'select', 'options' => ['Yes', 'No']],
+            ['key' => 'current_people_count', 'label' => 'Current / Avg. Occupants', 'type' => 'number', 'placeholder' => 'e.g. 50'],
         ],
         'covered_court' => [
             ['key' => 'capacity', 'label' => 'Holding Capacity', 'type' => 'text', 'placeholder' => 'e.g. 200 persons'],
             ['key' => 'evac_ready', 'label' => 'Evacuation Ready?', 'type' => 'select', 'options' => ['Yes', 'No']],
+            ['key' => 'current_people_count', 'label' => 'Current / Avg. Occupants', 'type' => 'number', 'placeholder' => 'e.g. 100'],
         ],
         'police_post' => [
             ['key' => 'on_duty', 'label' => 'Active Officers on Duty', 'type' => 'text', 'placeholder' => 'e.g. 2 officers'],
             ['key' => 'contact', 'label' => 'Emergency Contact', 'type' => 'text', 'placeholder' => 'e.g. Hotline 911'],
+            ['key' => 'current_people_count', 'label' => 'Current / Avg. Occupants', 'type' => 'number', 'placeholder' => 'e.g. 5'],
         ],
         'evac_center' => [
             ['key' => 'capacity', 'label' => 'Holding Capacity', 'type' => 'text', 'placeholder' => 'e.g. 200 persons'],
             ['key' => 'status', 'label' => 'Status', 'type' => 'select', 'options' => ['Operational', 'Under Maintenance', 'Full', 'Closed']],
             ['key' => 'contact', 'label' => 'Contact No.', 'type' => 'text', 'placeholder' => '09XX-XXX-XXXX'],
+            ['key' => 'current_people_count', 'label' => 'Current / Avg. Occupants', 'type' => 'number', 'placeholder' => 'e.g. 80'],
         ],
         'bert_member' => [
             ['key' => 'role', 'label' => 'Responder Role', 'type' => 'text', 'placeholder' => 'e.g. Team Leader, First Aider'],

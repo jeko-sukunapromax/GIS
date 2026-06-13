@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Traits\HasSpatialGeometry;
 
 class MapFeature extends Model
 {
+    use HasSpatialGeometry;
+
     protected $fillable = [
         'barangay_id',
         'name',

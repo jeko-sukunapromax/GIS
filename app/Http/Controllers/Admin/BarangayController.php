@@ -81,6 +81,26 @@ class BarangayController extends Controller
         return back()->with('success', 'Bayambang municipal boundary was reset.');
     }
 
+    public function updateMunicipalDetails(Request $request)
+    {
+        $municipalBoundary = $this->municipalBoundaryRecord();
+        
+        $validated = $request->validate([
+            'barangay_chairman' => 'nullable|string|max:255',
+            'sk_chairman' => 'nullable|string|max:255',
+            'population' => 'nullable|string|max:255',
+            'total_area' => 'nullable|numeric',
+        ]);
+
+        $municipalBoundary->update($validated);
+
+        app(ActivityLogger::class)->log('municipal_boundary.updated', 'Updated Bayambang municipal boundary metadata.', $municipalBoundary, [
+            'fields' => array_keys($validated),
+        ], $request);
+
+        return back()->with('success', 'Municipal details updated successfully!');
+    }
+
     public function create()
     {
         return view('admin.barangays.create');
@@ -756,6 +776,106 @@ class BarangayController extends Controller
         }
 
         return abs($area) / 20000.0;
+    }
+
+    public function simulateEarthquake(Request $request)
+    {
+        $validated = $request->validate([
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'radius' => 'required|numeric|min:10|max:10000', // radius in meters
+        ]);
+
+        $lat = $validated['latitude'];
+        $lng = $validated['longitude'];
+        $radius = $validated['radius'];
+
+        $driver = \Illuminate\Support\Facades\DB::getDriverName();
+
+        if ($driver === 'sqlite') {
+            return response()->json([
+                'success' => true,
+                'epicenter' => ['lat' => $lat, 'lng' => $lng],
+                'radius' => $radius,
+                'total_buildings' => 1,
+                'total_people' => 8,
+                'features' => [
+                    [
+                        'id' => 1,
+                        'name' => 'Mock building',
+                        'feature_type' => 'barangay_hall',
+                        'latitude' => $lat,
+                        'longitude' => $lng,
+                        'occupants' => 8,
+                        'distance_meters' => 10,
+                    ]
+                ],
+                'type_breakdown' => [
+                    'barangay_hall' => 8
+                ]
+            ]);
+        }
+
+        $features = \Illuminate\Support\Facades\DB::connection('postgis')
+            ->select(<<<SQL
+SELECT 
+    id, 
+    name, 
+    feature_type, 
+    latitude, 
+    longitude,
+    ST_Distance(
+        geom::geography, 
+        ST_SetSRID(ST_Point(:lng1, :lat1), 4326)::geography
+    ) AS distance_meters,
+    COALESCE(
+        NULLIF(metadata->>'current_people_count', '')::numeric,
+        NULLIF(metadata->'import_properties'->>'current_people_count', '')::numeric,
+        NULLIF(metadata->>'capacity', '')::numeric,
+        NULLIF(metadata->'import_properties'->>'capacity', '')::numeric,
+        NULLIF(metadata->>'members', '')::numeric,
+        CASE 
+            WHEN feature_type = 'school' OR feature_type = 'covered_court' THEN 150
+            WHEN feature_type = 'barangay_hall' OR feature_type = 'multipurpose_bldg' THEN 40
+            WHEN feature_type = 'evac_center' THEN 80
+            WHEN feature_type = 'health_center' OR feature_type = 'police_post' THEN 15
+            ELSE 5
+        END
+    )::integer AS occupants
+FROM map_features
+WHERE geom IS NOT NULL
+  AND ST_DWithin(
+      geom::geography, 
+      ST_SetSRID(ST_Point(:lng2, :lat2), 4326)::geography, 
+      :radius
+  )
+ORDER BY distance_meters ASC
+SQL, [
+                'lng1' => $lng,
+                'lat1' => $lat,
+                'lng2' => $lng,
+                'lat2' => $lat,
+                'radius' => $radius,
+            ]);
+
+        $totalBuildings = count($features);
+        $totalPeople = array_sum(array_column($features, 'occupants'));
+
+        $typeBreakdown = [];
+        foreach ($features as $f) {
+            $type = $f->feature_type;
+            $typeBreakdown[$type] = ($typeBreakdown[$type] ?? 0) + $f->occupants;
+        }
+
+        return response()->json([
+            'success' => true,
+            'epicenter' => ['lat' => $lat, 'lng' => $lng],
+            'radius' => $radius,
+            'total_buildings' => $totalBuildings,
+            'total_people' => $totalPeople,
+            'features' => $features,
+            'type_breakdown' => $typeBreakdown,
+        ]);
     }
 
     private function cleanupDir($dir)

@@ -161,6 +161,154 @@
         color: #38bdf8;
         border: 1px solid rgba(56, 189, 248, 0.2);
     }
+
+    /* ── Spatial Analytics Panel ────────────────────────────── */
+    .spatial-metrics-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .spatial-metric-tile {
+        background: rgba(15, 23, 42, 0.45);
+        border: 1px solid rgba(148, 163, 184, 0.1);
+        border-radius: 10px;
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .spatial-metric-tile:hover {
+        border-color: rgba(148, 163, 184, 0.22);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .spatial-metric-icon {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+
+    .spatial-metric-label {
+        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .spatial-metric-value {
+        color: #f8fafc;
+        font-size: 18px;
+        font-weight: 800;
+        font-family: 'Outfit', sans-serif;
+        line-height: 1.1;
+    }
+
+    .spatial-qa-panel,
+    .spatial-nearest-panel {
+        padding: 16px;
+        background: rgba(15, 23, 42, 0.35);
+        border: 1px solid rgba(148, 163, 184, 0.08);
+        border-radius: 10px;
+        margin-bottom: 12px;
+    }
+
+    .spatial-qa-bars {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .spatial-qa-row {
+        display: grid;
+        grid-template-columns: 82px 1fr 70px;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .spatial-qa-label {
+        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .spatial-qa-bar-track {
+        height: 8px;
+        background: rgba(15, 23, 42, 0.6);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .spatial-qa-bar {
+        height: 100%;
+        border-radius: 4px;
+        width: 0;
+        transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .spatial-qa-val {
+        color: #cbd5e1;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: right;
+        font-family: 'Outfit', monospace;
+    }
+
+    .spatial-qa-verdict {
+        margin-top: 12px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .spatial-spinner {
+        width: 32px;
+        height: 32px;
+        border: 3px solid rgba(167, 139, 250, 0.15);
+        border-top-color: #a78bfa;
+        border-radius: 50%;
+        animation: spatialSpin 0.8s linear infinite;
+        margin: 0 auto;
+    }
+
+    @keyframes spatialSpin {
+        to { transform: rotate(360deg); }
+    }
+
+    .spatial-pulse {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #94a3b8;
+        display: inline-block;
+    }
+
+    .spatial-pulse.live {
+        background: #34d399;
+        box-shadow: 0 0 6px rgba(52, 211, 153, 0.5);
+        animation: spatialPulseAnim 2s ease-in-out infinite;
+    }
+
+    .spatial-pulse.error {
+        background: #f87171;
+    }
+
+    @keyframes spatialPulseAnim {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+    }
 </style>
 
 <div class="manage-header">
@@ -265,23 +413,118 @@
             @endforelse
         </div>
         
-        <div class="card">
+        <div class="card" id="spatialAnalyticsCard">
             <div class="card-title">
-                <i class="fa-solid fa-chart-pie"></i> Map Features Overview
+                <i class="fa-solid fa-satellite" style="color: #a78bfa;"></i> PostGIS Spatial Analytics
+                <span id="spatialSyncIndicator" style="margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; color: #94a3b8; text-transform: none; letter-spacing: 0;">
+                    <span class="spatial-pulse"></span> Loading…
+                </span>
             </div>
-            <div style="font-size: 13px; color: #94a3b8; margin-bottom: 16px;">
-                Summary of GIS features plotted within this barangay's jurisdiction.
+
+            <!-- Loading state -->
+            <div id="spatialLoading" style="text-align: center; padding: 32px 16px;">
+                <div class="spatial-spinner"></div>
+                <div style="color: #94a3b8; font-size: 13px; margin-top: 14px;">Querying PostGIS geometry engine…</div>
             </div>
-            
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <div style="display: flex; justify-content: space-between; padding: 10px; background: rgba(15,23,42,0.4); border-radius: 8px;">
-                    <span>Total Features</span>
-                    <span class="status-badge">{{ $barangay->features()->count() }} items</span>
+
+            <!-- Error state -->
+            <div id="spatialError" style="display: none; padding: 18px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.18); border-radius: 8px;">
+                <div style="display: flex; align-items: flex-start; gap: 10px;">
+                    <i class="fa-solid fa-triangle-exclamation" style="color: #f87171; margin-top: 2px;"></i>
+                    <div>
+                        <div style="color: #f87171; font-weight: 700; font-size: 13px; margin-bottom: 4px;">Spatial Analysis Unavailable</div>
+                        <div id="spatialErrorMsg" style="color: #94a3b8; font-size: 12px; line-height: 1.5;"></div>
+                    </div>
                 </div>
-                
-                <a href="{{ route('admin.features.index', ['barangay_id' => $barangay->id]) }}" class="btn btn-secondary" style="width: 100%; margin-top: 10px;">
-                    <i class="fa-solid fa-list"></i> View All Features
-                </a>
+            </div>
+
+            <!-- Data state -->
+            <div id="spatialData" style="display: none;">
+                <!-- Metrics Grid -->
+                <div class="spatial-metrics-grid">
+                    <div class="spatial-metric-tile">
+                        <div class="spatial-metric-icon" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8;">
+                            <i class="fa-solid fa-vector-square"></i>
+                        </div>
+                        <div class="spatial-metric-label">PostGIS Area</div>
+                        <div class="spatial-metric-value" id="spatialArea">—</div>
+                    </div>
+                    <div class="spatial-metric-tile">
+                        <div class="spatial-metric-icon" style="background: rgba(167, 139, 250, 0.12); color: #a78bfa;">
+                            <i class="fa-solid fa-ruler-combined"></i>
+                        </div>
+                        <div class="spatial-metric-label">Perimeter</div>
+                        <div class="spatial-metric-value" id="spatialPerimeter">—</div>
+                    </div>
+                    <div class="spatial-metric-tile">
+                        <div class="spatial-metric-icon" style="background: rgba(52, 211, 153, 0.12); color: #34d399;">
+                            <i class="fa-solid fa-location-dot"></i>
+                        </div>
+                        <div class="spatial-metric-label">Features Inside</div>
+                        <div class="spatial-metric-value" id="spatialFeatures">—</div>
+                    </div>
+                    <div class="spatial-metric-tile">
+                        <div class="spatial-metric-icon" style="background: rgba(251, 191, 36, 0.12); color: #fbbf24;">
+                            <i class="fa-solid fa-road"></i>
+                        </div>
+                        <div class="spatial-metric-label">Road Network</div>
+                        <div class="spatial-metric-value" id="spatialRoads">—</div>
+                    </div>
+                </div>
+
+                <!-- Area QA Comparison -->
+                <div class="spatial-qa-panel" id="spatialQaPanel" style="display: none;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                        <i class="fa-solid fa-scale-balanced" style="color: #a78bfa; font-size: 13px;"></i>
+                        <span style="color: #f8fafc; font-weight: 700; font-size: 13px;">Area Quality Assurance</span>
+                    </div>
+                    <div class="spatial-qa-bars">
+                        <div class="spatial-qa-row">
+                            <span class="spatial-qa-label">Stored Area</span>
+                            <div class="spatial-qa-bar-track">
+                                <div class="spatial-qa-bar" id="qaBarStored" style="background: #38bdf8;"></div>
+                            </div>
+                            <span class="spatial-qa-val" id="qaValStored">—</span>
+                        </div>
+                        <div class="spatial-qa-row">
+                            <span class="spatial-qa-label">PostGIS Area</span>
+                            <div class="spatial-qa-bar-track">
+                                <div class="spatial-qa-bar" id="qaBarComputed" style="background: #a78bfa;"></div>
+                            </div>
+                            <span class="spatial-qa-val" id="qaValComputed">—</span>
+                        </div>
+                    </div>
+                    <div id="qaVerdict" class="spatial-qa-verdict"></div>
+                </div>
+
+                <!-- Nearest Facility -->
+                <div class="spatial-nearest-panel" id="spatialNearestPanel" style="display: none;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                        <i class="fa-solid fa-compass" style="color: #34d399; font-size: 13px;"></i>
+                        <span style="color: #f8fafc; font-weight: 700; font-size: 13px;">Nearest Facility</span>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; background: rgba(15,23,42,0.45); border-radius: 8px; border: 1px solid rgba(148,163,184,0.08);">
+                        <div>
+                            <div style="color: #f8fafc; font-weight: 700; font-size: 14px;" id="nearestName">—</div>
+                            <div style="color: #94a3b8; font-size: 11px; margin-top: 3px;" id="nearestType">—</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="color: #34d399; font-weight: 800; font-size: 16px;" id="nearestDistance">—</div>
+                            <div style="color: #64748b; font-size: 10px;">from centroid</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sync Footer -->
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(148,163,184,0.1);">
+                    <div style="display: flex; align-items: center; gap: 6px; color: #64748b; font-size: 11px;">
+                        <i class="fa-solid fa-database"></i>
+                        <span>Synced: <span id="spatialSyncedAt" style="color: #94a3b8;">—</span></span>
+                    </div>
+                    <a href="{{ route('admin.features.index', ['barangay_id' => $barangay->id]) }}" class="btn btn-secondary" style="padding: 7px 14px; font-size: 12px;">
+                        <i class="fa-solid fa-list"></i> View Features
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -377,6 +620,33 @@
 </div>
 
 <script>
+    // Dynamic land use calculation
+    document.addEventListener('DOMContentLoaded', function() {
+        const totalInput = document.querySelector('input[name="total_area"]');
+        const agriInput = document.querySelector('input[name="agri_area"]');
+        const resInput = document.querySelector('input[name="residential_area"]');
+        const commInput = document.querySelector('input[name="commercial_area"]');
+        const unidentifiedInput = document.querySelector('input[name="unidentified_area"]');
+
+        if (totalInput && unidentifiedInput) {
+            function recalculateUnidentified() {
+                const total = parseFloat(totalInput.value) || 0;
+                const agri = parseFloat(agriInput.value) || 0;
+                const res = parseFloat(resInput.value) || 0;
+                const comm = parseFloat(commInput.value) || 0;
+                
+                const unidentified = total - (agri + res + comm);
+                unidentifiedInput.value = unidentified >= 0 ? parseFloat(unidentified.toFixed(5)) : 0;
+            }
+
+            [totalInput, agriInput, resInput, commInput].forEach(input => {
+                if (input) {
+                    input.addEventListener('input', recalculateUnidentified);
+                }
+            });
+        }
+    });
+
     // Toggle visibility via AJAX
     function toggleVisibility() {
         const checkbox = document.getElementById('visibilityToggle');
@@ -395,17 +665,130 @@
         .then(data => {
             if (data.success) {
                 statusText.textContent = data.is_visible ? 'Visible to public' : 'Hidden from public';
-                // Show a quick toast or let the UI speak for itself
             } else {
                 alert('Error toggling visibility');
-                checkbox.checked = !checkbox.checked; // Revert
+                checkbox.checked = !checkbox.checked;
             }
         })
         .catch(error => {
             console.error('Error:', error);
             alert('Error toggling visibility');
-            checkbox.checked = !checkbox.checked; // Revert
+            checkbox.checked = !checkbox.checked;
         });
+    }
+
+    // ── Spatial Analytics ─────────────────────────────────────────
+    (function loadSpatialAnalytics() {
+        const url = @json(route('admin.barangays.spatial-analysis', $barangay));
+
+        fetch(url, { headers: { 'Accept': 'application/json' } })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('spatialLoading').style.display = 'none';
+
+                if (data.status !== 'ready') {
+                    showSpatialError(data.message || 'PostGIS spatial analysis is unavailable.');
+                    return;
+                }
+
+                renderSpatialData(data);
+            })
+            .catch(err => {
+                document.getElementById('spatialLoading').style.display = 'none';
+                showSpatialError('Could not connect to the spatial analysis endpoint: ' + err.message);
+            });
+    })();
+
+    function showSpatialError(message) {
+        document.getElementById('spatialError').style.display = 'block';
+        document.getElementById('spatialErrorMsg').textContent = message;
+
+        const indicator = document.getElementById('spatialSyncIndicator');
+        indicator.querySelector('.spatial-pulse').classList.add('error');
+        indicator.querySelector('.spatial-pulse').classList.remove('live');
+        indicator.lastChild.textContent = ' Unavailable';
+    }
+
+    function renderSpatialData(data) {
+        document.getElementById('spatialData').style.display = 'block';
+
+        // Update indicator
+        const indicator = document.getElementById('spatialSyncIndicator');
+        indicator.querySelector('.spatial-pulse').classList.add('live');
+        indicator.lastChild.textContent = ' Live';
+
+        // Format helpers
+        const fmtHa = (v) => v != null ? parseFloat(v).toLocaleString('en-US', { maximumFractionDigits: 2 }) + ' ha' : 'N/A';
+        const fmtM = (v) => {
+            if (v == null) return 'N/A';
+            const m = parseFloat(v);
+            return m >= 1000
+                ? (m / 1000).toLocaleString('en-US', { maximumFractionDigits: 2 }) + ' km'
+                : m.toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' m';
+        };
+
+        // Metrics
+        document.getElementById('spatialArea').textContent = fmtHa(data.computed_area_hectares);
+        document.getElementById('spatialPerimeter').textContent = fmtM(data.perimeter_meters);
+        document.getElementById('spatialFeatures').textContent = data.contained_features != null ? data.contained_features : '0';
+        document.getElementById('spatialRoads').textContent = fmtM(data.road_length_meters);
+
+        // Synced at
+        if (data.synced_at) {
+            const d = new Date(data.synced_at);
+            document.getElementById('spatialSyncedAt').textContent = d.toLocaleDateString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+        }
+
+        // Area QA
+        const stored = data.stored_area_hectares;
+        const computed = data.computed_area_hectares;
+
+        if (stored != null && computed != null) {
+            const qaPanel = document.getElementById('spatialQaPanel');
+            qaPanel.style.display = 'block';
+
+            document.getElementById('qaValStored').textContent = fmtHa(stored);
+            document.getElementById('qaValComputed').textContent = fmtHa(computed);
+
+            const maxVal = Math.max(stored, computed, 1);
+            requestAnimationFrame(() => {
+                document.getElementById('qaBarStored').style.width = Math.round((stored / maxVal) * 100) + '%';
+                document.getElementById('qaBarComputed').style.width = Math.round((computed / maxVal) * 100) + '%';
+            });
+
+            const diff = data.area_difference_hectares ?? Math.abs(stored - computed);
+            const pct = stored > 0 ? ((diff / stored) * 100).toFixed(2) : 0;
+            const verdict = document.getElementById('qaVerdict');
+
+            if (diff < 0.5) {
+                verdict.style.background = 'rgba(52, 211, 153, 0.08)';
+                verdict.style.border = '1px solid rgba(52, 211, 153, 0.18)';
+                verdict.style.color = '#34d399';
+                verdict.innerHTML = '<i class="fa-solid fa-circle-check"></i> Excellent match — difference is only ' + diff.toFixed(2) + ' ha (' + pct + '%)';
+            } else if (diff < 5) {
+                verdict.style.background = 'rgba(251, 191, 36, 0.08)';
+                verdict.style.border = '1px solid rgba(251, 191, 36, 0.18)';
+                verdict.style.color = '#fbbf24';
+                verdict.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Minor discrepancy — ' + diff.toFixed(2) + ' ha difference (' + pct + '%)';
+            } else {
+                verdict.style.background = 'rgba(239, 68, 68, 0.08)';
+                verdict.style.border = '1px solid rgba(239, 68, 68, 0.18)';
+                verdict.style.color = '#f87171';
+                verdict.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Significant discrepancy — ' + diff.toFixed(2) + ' ha difference (' + pct + '%). Consider updating the stored area.';
+            }
+        }
+
+        // Nearest Facility
+        if (data.nearest_feature) {
+            const panel = document.getElementById('spatialNearestPanel');
+            panel.style.display = 'block';
+
+            document.getElementById('nearestName').textContent = data.nearest_feature.name;
+            document.getElementById('nearestType').textContent = (data.nearest_feature.feature_type || '').replace(/_/g, ' ');
+            document.getElementById('nearestDistance').textContent = fmtM(data.nearest_feature.distance_meters);
+        }
     }
 </script>
 @endsection

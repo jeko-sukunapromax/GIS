@@ -25,6 +25,7 @@ Route::prefix('admin')->name('admin.')->middleware([
 ])->group(function () {
     Route::middleware('role:staff|admin|super-admin')->group(function () {
         Route::get('map', [AdminBarangayController::class, 'map'])->name('map');
+        Route::post('map/simulate-earthquake', [AdminBarangayController::class, 'simulateEarthquake'])->name('map.simulate-earthquake');
         Route::get('barangays/{barangay}/features', [AdminBarangayController::class, 'features'])->name('barangays.features');
         Route::get('barangays/{barangay}/spatial-analysis', [AdminBarangayController::class, 'spatialAnalysis'])->name('barangays.spatial-analysis');
         Route::get('map-export', [AdminMapExportController::class, 'index'])->name('map-export.index');
@@ -58,6 +59,7 @@ Route::prefix('admin')->name('admin.')->middleware([
         Route::get('municipal-boundary', [AdminBarangayController::class, 'municipalBoundary'])->name('municipal-boundary.index');
         Route::post('municipal-boundary/upload', [AdminBarangayController::class, 'uploadMunicipalBoundary'])->name('municipal-boundary.upload');
         Route::delete('municipal-boundary/reset', [AdminBarangayController::class, 'resetMunicipalBoundary'])->name('municipal-boundary.reset');
+        Route::put('municipal-boundary/update', [AdminBarangayController::class, 'updateMunicipalDetails'])->name('municipal-boundary.update');
         Route::get('data-completeness', [AdminDataCompletenessController::class, 'index'])->name('data-completeness.index');
         Route::get('activity-logs', [AdminActivityLogController::class, 'index'])->name('activity-logs.index');
 

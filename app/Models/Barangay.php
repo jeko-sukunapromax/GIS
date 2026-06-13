@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Traits\HasSpatialGeometry;
 
 class Barangay extends Model
 {
+    use HasSpatialGeometry;
+
     protected $fillable = [
         'name',
         'municipality',

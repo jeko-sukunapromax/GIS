@@ -66,7 +66,7 @@ class IhrisAuthenticator
         return [
             'email' => $payloadEmail,
             'name' => $this->findFirstString($userPayload, ['name', 'full_name', 'fullname', 'employee_name']) ?? $email,
-            'office' => $office ?? 'iHRIS Admin Override',
+            'office' => $office ?? config('services.ihris.allowed_office', 'BDRRMC').' Office',
             'ihris_id' => $this->findFirstString($userPayload, ['ihris_id', 'employee_id', 'personnel_id', 'user_id', 'id']),
             'token' => $this->findFirstString($payload, ['token', 'access_token', 'bearer_token', 'api_token']),
             'payload' => $payload,

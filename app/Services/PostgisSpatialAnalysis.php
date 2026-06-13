@@ -11,20 +11,20 @@ class PostgisSpatialAnalysis
     public function summary(Barangay $barangay): array
     {
         try {
-            if (! $this->tableExists()) {
-                return $this->unavailable('PostGIS geometry table is not ready. Run php artisan gis:postgis-migrate and php artisan gis:postgis-sync.');
+            if (! $this->hasSpatialColumns()) {
+                return $this->unavailable('PostGIS spatial columns are not set up on barangays/map_features tables yet.');
             }
 
             $boundary = $this->boundaryMetrics($barangay);
 
             if (! $boundary) {
-                return $this->unavailable('This barangay has not been synced to PostGIS yet. Run php artisan gis:postgis-sync --truncate.');
+                return $this->unavailable('This barangay has no spatial boundary set yet. Please upload a GeoJSON/KML boundary.');
             }
 
             $featureSummary = $this->featureSummary($barangay);
             $nearestFeature = $this->nearestFeature($barangay);
             $storedArea = $this->numericOrNull($barangay->total_area);
-            $computedArea = $this->numericOrNull($boundary->computed_area_hectares ?? $boundary->area_hectares ?? null);
+            $computedArea = $this->numericOrNull($boundary->computed_area_hectares ?? null);
 
             return [
                 'status' => 'ready',
@@ -51,27 +51,30 @@ class PostgisSpatialAnalysis
         }
     }
 
-    private function tableExists(): bool
+    private function hasSpatialColumns(): bool
     {
-        $result = DB::connection('postgis')->selectOne("SELECT to_regclass('public.gis_geometries') AS table_name");
+        $result = DB::connection('postgis')->selectOne(<<<'SQL'
+SELECT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name='barangays' AND column_name='geom'
+) AS has_geom
+SQL
+        );
 
-        return filled($result?->table_name);
+        return (bool) ($result?->has_geom ?? false);
     }
 
     private function boundaryMetrics(Barangay $barangay): ?object
     {
         return DB::connection('postgis')->selectOne(<<<'SQL'
 SELECT
-    source_id,
+    id,
     name,
-    area_hectares,
     ROUND((ST_Area(geom::geography) / 10000)::numeric, 4) AS computed_area_hectares,
     ROUND(ST_Perimeter(geom::geography)::numeric, 2) AS perimeter_meters,
     updated_at
-FROM gis_geometries
-WHERE source_table = 'barangays'
-    AND source_id = ?
-ORDER BY updated_at DESC
+FROM barangays
+WHERE id = ? AND geom IS NOT NULL
 LIMIT 1
 SQL, [$barangay->id]);
     }
@@ -79,46 +82,33 @@ SQL, [$barangay->id]);
     private function featureSummary(Barangay $barangay): ?object
     {
         return DB::connection('postgis')->selectOne(<<<'SQL'
-WITH boundary AS (
-    SELECT geom
-    FROM gis_geometries
-    WHERE source_table = 'barangays'
-        AND source_id = ?
-    LIMIT 1
-)
 SELECT
     COUNT(f.id) AS contained_features,
     ROUND(COALESCE(SUM(
         CASE
-            WHEN f.feature_type = 'road_network' AND f.length_meters IS NOT NULL
-                THEN f.length_meters
+            WHEN f.feature_type = 'road_network' AND ST_GeometryType(f.geom) IN ('ST_LineString', 'ST_MultiLineString')
+                THEN ST_Length(f.geom::geography)
             ELSE 0
         END
     ), 0)::numeric, 2) AS road_length_meters
-FROM boundary b
-LEFT JOIN gis_geometries f
-    ON f.source_table = 'map_features'
-    AND ST_Intersects(b.geom, f.geom)
+FROM barangays b
+LEFT JOIN map_features f
+    ON ST_Intersects(b.geom, f.geom)
+WHERE b.id = ?
+GROUP BY b.id
 SQL, [$barangay->id]);
     }
 
     private function nearestFeature(Barangay $barangay): ?object
     {
         return DB::connection('postgis')->selectOne(<<<'SQL'
-WITH boundary AS (
-    SELECT centroid
-    FROM gis_geometries
-    WHERE source_table = 'barangays'
-        AND source_id = ?
-    LIMIT 1
-)
 SELECT
     f.name,
     f.feature_type,
     ROUND(ST_Distance(b.centroid::geography, f.geom::geography)::numeric, 2) AS distance_meters
-FROM boundary b
-JOIN gis_geometries f
-    ON f.source_table = 'map_features'
+FROM barangays b
+CROSS JOIN map_features f
+WHERE b.id = ? AND b.centroid IS NOT NULL AND f.geom IS NOT NULL
 ORDER BY b.centroid <-> f.geom
 LIMIT 1
 SQL, [$barangay->id]);

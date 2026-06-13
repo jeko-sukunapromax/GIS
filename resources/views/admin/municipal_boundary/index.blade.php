@@ -78,47 +78,88 @@
         @endif
     </div>
 
-    <div class="card">
-        <h3 style="margin-bottom: 18px;">Saved Versions</h3>
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+        <!-- Municipal Profile & Settings Card -->
+        <div class="card">
+            <h3 style="margin-bottom: 18px;">Municipal Profile & Settings</h3>
+            
+            <form action="{{ route('admin.municipal-boundary.update') }}" method="POST" style="display: grid; gap: 14px;">
+                @csrf
+                @method('PUT')
+                
+                <div>
+                    <label style="display: block; color: var(--text-muted); font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 6px;">Municipal Mayor</label>
+                    <input type="text" name="barangay_chairman" value="{{ old('barangay_chairman', $municipalBoundary->barangay_chairman) }}" placeholder="e.g. Hon. Niña Jose-Quiambao" style="width: 100%; padding: 11px; border-radius: 10px; background: rgba(15,23,42,0.52); color: #f8fafc; border: 1px solid rgba(148,163,184,0.16);">
+                </div>
 
-        @forelse($boundaryVersions as $version)
-            <div style="padding: 14px; background: rgba(15,23,42,0.35); border: 1px solid rgba(148,163,184,0.12); border-radius: 10px; margin-bottom: 12px;">
-                <div style="display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px;">
-                    <div>
-                        <div style="color: #f8fafc; font-weight: 800;">Version #{{ $version->id }}</div>
-                        <div style="color: #94a3b8; font-size: 12px; margin-top: 3px;">{{ $version->label ?? 'Boundary snapshot' }}</div>
-                        <div style="color: #64748b; font-size: 11px; margin-top: 3px;">
-                            {{ $version->created_at?->format('M d, Y h:i A') }}
-                            @if($version->created_by)
-                                · {{ $version->created_by }}
-                            @endif
+                <div>
+                    <label style="display: block; color: var(--text-muted); font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 6px;">SK Federation President</label>
+                    <input type="text" name="sk_chairman" value="{{ old('sk_chairman', $municipalBoundary->sk_chairman) }}" placeholder="e.g. Hon. John Doe" style="width: 100%; padding: 11px; border-radius: 10px; background: rgba(15,23,42,0.52); color: #f8fafc; border: 1px solid rgba(148,163,184,0.16);">
+                </div>
+
+                <div>
+                    <label style="display: block; color: var(--text-muted); font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 6px;">Official Population</label>
+                    <input type="text" name="population" value="{{ old('population', $municipalBoundary->population) }}" placeholder="e.g. 139,468" style="width: 100%; padding: 11px; border-radius: 10px; background: rgba(15,23,42,0.52); color: #f8fafc; border: 1px solid rgba(148,163,184,0.16);">
+                    <small style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 4px;">Leave blank to calculate sum of barangays dynamically.</small>
+                </div>
+
+                <div>
+                    <label style="display: block; color: var(--text-muted); font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 6px;">Official Land Area (Hectares)</label>
+                    <input type="number" step="any" name="total_area" value="{{ old('total_area', $municipalBoundary->total_area) }}" placeholder="e.g. 33658.94" style="width: 100%; padding: 11px; border-radius: 10px; background: rgba(15,23,42,0.52); color: #f8fafc; border: 1px solid rgba(148,163,184,0.16);">
+                    <small style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 4px;">Leave blank to calculate sum of barangays dynamically.</small>
+                </div>
+
+                <div style="margin-top: 8px;">
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Details
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Saved Versions Card -->
+        <div class="card">
+            <h3 style="margin-bottom: 18px;">Saved Versions</h3>
+
+            @forelse($boundaryVersions as $version)
+                <div style="padding: 14px; background: rgba(15,23,42,0.35); border: 1px solid rgba(148,163,184,0.12); border-radius: 10px; margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px;">
+                        <div>
+                            <div style="color: #f8fafc; font-weight: 800;">Version #{{ $version->id }}</div>
+                            <div style="color: #94a3b8; font-size: 12px; margin-top: 3px;">{{ $version->label ?? 'Boundary snapshot' }}</div>
+                            <div style="color: #64748b; font-size: 11px; margin-top: 3px;">
+                                {{ $version->created_at?->format('M d, Y h:i A') }}
+                                @if($version->created_by)
+                                    · {{ $version->created_by }}
+                                @endif
+                            </div>
                         </div>
                     </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <a href="{{ route('admin.barangays.boundary-versions.download', [$municipalBoundary, $version]) }}" class="btn btn-secondary" style="padding: 8px 11px; font-size: 12px;">
+                            <i class="fa-solid fa-download"></i> Download
+                        </a>
+                        <form method="POST" action="{{ route('admin.barangays.boundary-versions.restore', [$municipalBoundary, $version]) }}" onsubmit="return confirm('Restore this Bayambang boundary version?')">
+                            @csrf
+                            <button type="submit" class="btn btn-secondary" style="padding: 8px 11px; font-size: 12px;">
+                                <i class="fa-solid fa-rotate-left"></i> Restore
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ route('admin.barangays.boundary-versions.destroy', [$municipalBoundary, $version]) }}" onsubmit="return confirm('Delete this saved version?')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-danger" style="padding: 8px 11px; font-size: 12px;">
+                                <i class="fa-solid fa-trash-can"></i> Delete
+                            </button>
+                        </form>
+                    </div>
                 </div>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <a href="{{ route('admin.barangays.boundary-versions.download', [$municipalBoundary, $version]) }}" class="btn btn-secondary" style="padding: 8px 11px; font-size: 12px;">
-                        <i class="fa-solid fa-download"></i> Download
-                    </a>
-                    <form method="POST" action="{{ route('admin.barangays.boundary-versions.restore', [$municipalBoundary, $version]) }}" onsubmit="return confirm('Restore this Bayambang boundary version?')">
-                        @csrf
-                        <button type="submit" class="btn btn-secondary" style="padding: 8px 11px; font-size: 12px;">
-                            <i class="fa-solid fa-rotate-left"></i> Restore
-                        </button>
-                    </form>
-                    <form method="POST" action="{{ route('admin.barangays.boundary-versions.destroy', [$municipalBoundary, $version]) }}" onsubmit="return confirm('Delete this saved version?')">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-danger" style="padding: 8px 11px; font-size: 12px;">
-                            <i class="fa-solid fa-trash-can"></i> Delete
-                        </button>
-                    </form>
+            @empty
+                <div style="color: #94a3b8; font-size: 13px; padding: 16px; background: rgba(15,23,42,0.35); border-radius: 10px;">
+                    No versions yet. A snapshot is saved before replacing or resetting the Bayambang boundary.
                 </div>
-            </div>
-        @empty
-            <div style="color: #94a3b8; font-size: 13px; padding: 16px; background: rgba(15,23,42,0.35); border-radius: 10px;">
-                No versions yet. A snapshot is saved before replacing or resetting the Bayambang boundary.
-            </div>
-        @endforelse
+            @endforelse
+        </div>
     </div>
 </div>
 
