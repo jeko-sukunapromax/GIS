@@ -263,6 +263,71 @@
             }
         }
 
+        /* User Chip & Actions */
+        .user-chip {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            background: rgba(255,255,255,0.04);
+        }
+        .user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: rgba(0, 153, 255, 0.14);
+            color: #7dd3fc;
+            border: 1px solid rgba(125, 211, 252, 0.28);
+        }
+        .user-meta {
+            line-height: 1.1;
+        }
+        .user-name {
+            color: var(--text-heading);
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .user-office {
+            margin-top: 3px;
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+        }
+        .logout-form {
+            margin: 0;
+            display: flex;
+            align-items: center;
+        }
+        .logout-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 13px;
+            border-radius: 999px;
+            border: 1px solid rgba(248, 113, 113, 0.25);
+            background: rgba(239, 68, 68, 0.10);
+            color: #fecaca;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.18);
+            border-color: rgba(248, 113, 113, 0.45);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 10px 28px rgba(239, 68, 68, 0.16);
+        }
+
         /* Main Content Wrapper */
         .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         .content { flex: 1; padding: 32px; overflow-y: auto; }
