@@ -92,20 +92,34 @@
                         $displayProperties = $properties
                             ->except(['ip_address', 'user_agent', 'payload'])
                             ->filter(fn ($value) => $value !== null && $value !== '');
-                        $subject = $log->subject;
+                        
+                        // Safe subject handling without triggering morph relationship
+                        $subject = null;
                         $subjectType = $log->subject_type ? class_basename($log->subject_type) : null;
+                        
+                        // Only load subject if the model class exists
+                        if ($log->subject_type && class_exists($log->subject_type)) {
+                            try {
+                                $subject = $log->subject;
+                            } catch (\Exception $e) {
+                                $subject = null;
+                            }
+                        }
+                        
                         $recordType = match ($subjectType) {
                             'Barangay' => 'Barangay',
                             'MapFeature' => 'Map Feature',
                             'MapUpload' => 'Upload',
                             'User' => 'User',
                             'BoundaryVersion' => 'Boundary Version',
+                            'Finding' => 'Finding',
+                            'Audit' => 'Audit',
                             default => $subjectType,
                         };
                         $recordName = $subject?->name
                             ?? $subject?->file_name
                             ?? ($subject ? '#'.$subject->getKey() : null);
-                        $recordLabel = $recordType && $recordName ? "{$recordType}: {$recordName}" : 'System';
+                        $recordLabel = $recordType && $recordName ? "{$recordType}: {$recordName}" : ($recordType ?? 'System');
                     @endphp
                     <tr>
                         <td style="white-space: nowrap;">

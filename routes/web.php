@@ -69,6 +69,7 @@ Route::prefix('admin')->name('admin.')->middleware([
 
     Route::middleware('role:super-admin')->group(function () {
         Route::get('users', [AdminUserController::class, 'index'])->name('users.index');
+        Route::post('users/sync', [AdminUserController::class, 'sync'])->name('users.sync');
         Route::patch('users/{user}/role', [AdminUserController::class, 'updateRole'])->name('users.update-role');
         Route::patch('users/{user}/remove-admin', [AdminUserController::class, 'removeAdmin'])->name('users.remove-admin');
         Route::patch('users/{user}/deactivate', [AdminUserController::class, 'deactivate'])->name('users.deactivate');

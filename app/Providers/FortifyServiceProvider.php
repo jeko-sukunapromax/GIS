@@ -120,6 +120,7 @@ class FortifyServiceProvider extends ServiceProvider
     {
         $normalizedEmail = Str::lower(trim($email));
 
+        // Check super-admin emails first
         $superAdminEmails = collect(config('services.ihris.super_admin_emails', []))
             ->map(fn (string $email) => Str::lower(trim($email)))
             ->filter();
@@ -128,6 +129,18 @@ class FortifyServiceProvider extends ServiceProvider
             return 'super-admin';
         }
 
+        // Check admin override emails (can login but only get admin, not super-admin)
+        $adminOverrideEmails = collect(config('services.ihris.admin_override_emails', []))
+            ->map(fn (string $email) => Str::lower(trim($email)))
+            ->filter();
+
+        if ($adminOverrideEmails->contains($normalizedEmail)) {
+            return $user->roles
+                ->pluck('name')
+                ->first(fn (string $role) => in_array($role, ['admin', 'staff'], true)) ?? 'admin';
+        }
+
+        // Default role assignment for allowed office users
         return $user->roles
             ->pluck('name')
             ->first(fn (string $role) => in_array($role, ['admin', 'staff'], true)) ?? 'admin';

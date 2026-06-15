@@ -18,7 +18,7 @@ class ActivityLogController extends Controller
             ->pluck('event');
 
         $logs = Activity::query()
-            ->with(['causer', 'subject'])
+            ->with(['causer'])
             ->when($request->filled('event'), fn ($query) => $query->where('event', $request->string('event')->toString()))
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = '%'.$request->string('search')->toString().'%';
